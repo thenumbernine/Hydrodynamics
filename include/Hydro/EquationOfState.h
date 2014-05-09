@@ -1,28 +1,21 @@
 #pragma once
 
-#include <vector>
+#include "Hydro/Cell.h"
 
-class Hydro;
-class Solver;
-
+template<typename Real, int rank>
 class EquationOfState {
 public:
-	virtual void getPrimitives(Hydro *hydro) = 0;
-	virtual int numberOfStates() = 0;
-};
-
-class EulerEquationOfState : public EquationOfState {
-public:
-	virtual void getPrimitives(Hydro *hydro);
-	virtual int numberOfStates() { return 3; }
-
-	void buildEigenstate(
-		std::vector<std::vector<double> > &jacobian,
-		std::vector<double> &eigenvalues,
-		std::vector<std::vector<double> > &eigenvectors,
-		std::vector<std::vector<double> > &eigenvectorsInverse,
-		double velocity,
-		double enthalpyTotal,
-		double gamma);
+	/*
+	getPrimitives needs a Cell type
+	but Cell needs numberOfStates
+	and those are provided to Hydro by the EquationOfState child
+	
+	so since Hydro is dependent on an enum that EquationOfState provides
+	I made EquationOfState a template parameter of Hydro
+	and to prevent a circular dependency
+	now EquationOfState can't have Hydro as a template parameter
+	so instead it gets all Hydro's parameters as parameters itself
+	*/
+	virtual void getPrimitives(ICell *cell) = 0;
 };
 

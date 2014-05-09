@@ -1,0 +1,37 @@
+#pragma once
+
+#include "Hydro/ExplicitMethod.h"
+
+template<typename Hydro>
+class IterativeCrankNicolson3ExplicitMethod : public ExplicitMethod<Hydro> {
+public:
+	typedef ExplicitMethod<Hydro> Super;
+	
+	typedef typename Hydro::Real Real;
+	typedef typename Hydro::Cell Cell;
+	typedef typename Cell::StateVector StateVector;
+	
+	virtual void operator()(Hydro *hydro, Real dt, std::function<void(Hydro *hydro, Real dt, StateVector Cell::*dq_dt)> deriv);
+};
+
+template<typename Hydro>
+void IterativeCrankNicolson3ExplicitMethod<Hydro>::operator()(Hydro *hydro, Real dt, std::function<void(Hydro *hydro, Real dt, StateVector Cell::*dq_dt)> deriv) {
+	//first iteration
+	StateVector Cell::*srcQ = &Cell::tmpState0;
+	Super::copyState(hydro, srcQ, &Cell::state);
+	StateVector Cell::*firstK = &Cell::tmpState1;
+	Super::copyState(hydro, firstK, &Cell::state);
+	deriv(hydro, dt, firstK);
+	Super::addMulState(hydro, &Cell::state, firstK, dt);
+	StateVector Cell::*k = &Cell::tmpState2;
+	Super::copyState(hydro, k, &Cell::state);
+
+	//second and so on
+	for (int i = 1; i < 3; ++i) {
+		deriv(hydro, dt, k);
+		Super::copyState(hydro, &Cell::state, srcQ);
+		Super::addMulState(hydro, &Cell::state, k, .5 * dt);
+		Super::addMulState(hydro, &Cell::state, firstK, .5 * dt);
+	}
+}
+

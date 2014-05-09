@@ -1,13 +1,15 @@
 DISTDIR=dist/osx
 DIST=$(DISTDIR)/hydro
 
-OBJECTS=BoundaryMethod.o EquationOfState.o ExplicitMethod.o FluxMethod.o Hydro.o HydroApp.o InitialConditions.o Solver.o
+SOURCES=$(shell find src -type f)
+HEADERS=$(shell find include -type f)
+OBJECTS=HydroApp.o
 
 OBJDIR=obj/osx/release
 OBJPATHS=$(addprefix $(OBJDIR)/, $(OBJECTS))
 
 CC=clang++
-CFLAGS_BASE=-c -Wall -Iinclude -I../GLApp/include -std=c++11
+CFLAGS_BASE=-c -Wall -std=c++11 -Iinclude -I../GLApp/include -I../TensorMath/include
 CFLAGS_DEBUG=$(CFLAGS_BASE) -O0 -mfix-and-continue -gdwarf-2
 CFLAGS_RELEASE=$(CFLAGS_BASE) -Os
 CFLAGS=$(CFLAGS_DEBUG)
@@ -26,8 +28,8 @@ prep:
 	-mkdir -p $(OBJDIR)
 	-mkdir -p $(DISTDIR)
 
-$(OBJDIR)/%.o : src/%.cpp
-	-mkdir -p $(OBJDIR)/$(^D)
+$(OBJDIR)/%.o : src/%.cpp $(HEADERS)
+	-mkdir -p $(OBJDIR)/$(<D)
 	$(CC) $(CFLAGS) -o $@ $<
 
 $(DIST): $(OBJPATHS)

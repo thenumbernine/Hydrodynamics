@@ -3,6 +3,7 @@
 #include <string.h>
 #include <math.h>
 
+#include <iostream>
 #include <vector>
 #include <map>
 #include <string>
@@ -11,147 +12,93 @@
 #include <SDL/SDL.h>
 
 #include "GLApp/GLApp.h" 
-#include "Hydro/Hydro.h"
-#include "Hydro/InitialConditions.h"
-#include "Hydro/BoundaryMethod.h"
-#include "Hydro/EquationOfState.h"
-#include "Hydro/Solver.h"
-#include "Hydro/ExplicitMethod.h"
-#include "Hydro/FluxMethod.h"
+
 #include "Common/Exception.h"
 
-class Allocator {
+#include "Hydro/Hydro.h"
+
+#include "Hydro/EquationOfState/EulerEquationOfState.h"
+
+#include "Hydro/InitialConditions/SodInitialConditions.h"
+#include "Hydro/InitialConditions/SedovInitialConditions.h"
+#include "Hydro/InitialConditions/AdvectInitialConditions.h"
+#include "Hydro/InitialConditions/WaveInitialConditions.h"
+
+#include "Hydro/BoundaryMethod/PeriodicBoundaryMethod.h"
+#include "Hydro/BoundaryMethod/MirrorBoundaryMethod.h"
+#include "Hydro/BoundaryMethod/ConstantBoundaryMethod.h"
+#include "Hydro/BoundaryMethod/FreeFlowBoundaryMethod.h"
+
+#include "Hydro/Solver/EulerEquationBurgersSolverExplicit.h"
+#include "Hydro/Solver/EulerEquationGodunovSolverExplicit.h"
+//#include "Hydro/Solver/EulerEquationRoeSolverExplicit.h"
+
+#include "Hydro/ExplicitMethod/ForwardEulerExplicitMethod.h"
+#include "Hydro/ExplicitMethod/RungeKutta2ExplicitMethod.h"
+#include "Hydro/ExplicitMethod/RungeKutta4ExplicitMethod.h"
+#include "Hydro/ExplicitMethod/IterativeCrankNicolson3ExplicitMethod.h"
+
+#include "Hydro/FluxMethod.h"
+
+class HydroArgs {
 public:
-	virtual void *create() = 0;
+	int dim;
+	int size;
+	bool useCFL;
+	double cfl;
+	double fixedDT;
+	double gamma;
+	std::string precision;
+	std::string boundaryMethodName;
+	std::string equationOfStateName;
+	std::string solverName;
+	std::string explicitMethodName;
+	std::string fluxMethodName;
+	std::string initialConditionsName;
+	HydroArgs() 
+	: dim(1)
+	, size(256)
+	, useCFL(true)
+	, cfl(.5)
+	, fixedDT(.1)
+	, gamma(1.4)
+	, precision("double")
+	, boundaryMethodName("Mirror")
+	, equationOfStateName("Euler")
+	, solverName("EulerEquationGodunovSolverExplicit")//("EulerEquationRoeSolverExplicit")
+	, explicitMethodName("ForwardEuler")
+	, fluxMethodName("Superbee")
+	, initialConditionsName("Sod")
+	{}
 };
 
-template<typename SubType>
-class TypeAllocator : public Allocator {
-public:
-	virtual void *create() { return new SubType(); }
-};
-
-template<typename Type> struct AllocatorMap {
-	static std::map<std::string, Allocator*> allocators;
-};
-template<> std::map<std::string, Allocator*> AllocatorMap<InitialConditions>::allocators = std::map<std::string, Allocator*>();
-template<> std::map<std::string, Allocator*> AllocatorMap<BoundaryMethod>::allocators = std::map<std::string, Allocator*>();
-template<> std::map<std::string, Allocator*> AllocatorMap<EquationOfState>::allocators = std::map<std::string, Allocator*>();
-template<> std::map<std::string, Allocator*> AllocatorMap<Solver>::allocators = std::map<std::string, Allocator*>();
-template<> std::map<std::string, Allocator*> AllocatorMap<ExplicitMethod>::allocators = std::map<std::string, Allocator*>();
-template<> std::map<std::string, Allocator*> AllocatorMap<FluxMethod>::allocators = std::map<std::string, Allocator*>();
-
-template<typename Type>
-class Create {
-public:
-	Type *operator()(int &i, char **argv) {
-		std::string name = argv[++i];
-		std::map<std::string, Allocator*>::iterator iter = AllocatorMap<Type>::allocators.find(name);
-		if (iter == AllocatorMap<Type>::allocators.end()) throw Exception() << "failed to find " << name;
-		return (Type*)(iter->second->create());
-	}
-};
 
 class HydroApp : public GLApp {
-	Hydro *hydro;
+	IHydro *hydro;
 	HydroArgs args;
+	int dim;
 
 public:
 	HydroApp()
 	: hydro(NULL)
+	, dim(1)
 	{}
 
 	virtual int main(int argc, char **argv) {
-
-		AllocatorMap<InitialConditions>::allocators["Sod"] = new TypeAllocator<SodInitialConditions>();
-		AllocatorMap<InitialConditions>::allocators["Sedov"] = new TypeAllocator<SedovInitialConditions>();
-		AllocatorMap<InitialConditions>::allocators["Advect"] = new TypeAllocator<AdvectInitialConditions>();
-		AllocatorMap<InitialConditions>::allocators["Wave"] = new TypeAllocator<WaveInitialConditions>();
-
-		AllocatorMap<BoundaryMethod>::allocators["Periodic"] = new TypeAllocator<PeriodicBoundaryMethod>();
-		AllocatorMap<BoundaryMethod>::allocators["Mirror"] = new TypeAllocator<MirrorBoundaryMethod>();
-		AllocatorMap<BoundaryMethod>::allocators["Constant"] = new TypeAllocator<ConstantBoundaryMethod>();
-		AllocatorMap<BoundaryMethod>::allocators["FreeFlow"] = new TypeAllocator<FreeFlowBoundaryMethod>();
-
-		AllocatorMap<EquationOfState>::allocators["Euler"] = new TypeAllocator<EulerEquationOfState>();
-
-		AllocatorMap<Solver>::allocators["EulerEquationBurgersSolverExplicit"] = new TypeAllocator<EulerEquationBurgersSolverExplicit>();
-		AllocatorMap<Solver>::allocators["EulerEquationGodunovSolverExplicit"] = new TypeAllocator<EulerEquationGodunovSolverExplicit>();
-		AllocatorMap<Solver>::allocators["EulerEquationRoeSolverExplicit"] = new TypeAllocator<EulerEquationRoeSolverExplicit>();
-
-		AllocatorMap<ExplicitMethod>::allocators["ForwardEuler"] = new TypeAllocator<ForwardEulerExplicitMethod>();
-		AllocatorMap<ExplicitMethod>::allocators["RK2"] = new TypeAllocator<RK2ExplicitMethod>();
-		AllocatorMap<ExplicitMethod>::allocators["RK4"] = new TypeAllocator<RK4ExplicitMethod>();
-		AllocatorMap<ExplicitMethod>::allocators["ICN3"] = new TypeAllocator<ICN3ExplicitMethod>();
-
-		AllocatorMap<FluxMethod>::allocators["DonorCell"] = new TypeAllocator<DonorCellFluxMethod>();
-		AllocatorMap<FluxMethod>::allocators["LaxWendroff"] = new TypeAllocator<LaxWendroffFluxMethod>();
-		AllocatorMap<FluxMethod>::allocators["BeamWarming"] = new TypeAllocator<BeamWarmingFluxMethod>();
-		AllocatorMap<FluxMethod>::allocators["Fromm"] = new TypeAllocator<FrommFluxMethod>();
-		AllocatorMap<FluxMethod>::allocators["CHARM"] = new TypeAllocator<CHARMFluxMethod>();
-		AllocatorMap<FluxMethod>::allocators["HCUS"] = new TypeAllocator<HCUSFluxMethod>();
-		AllocatorMap<FluxMethod>::allocators["HQUICK"] = new TypeAllocator<HQUICKFluxMethod>();
-		AllocatorMap<FluxMethod>::allocators["Koren"] = new TypeAllocator<KorenFluxMethod>();
-		AllocatorMap<FluxMethod>::allocators["MinMod"] = new TypeAllocator<MinModFluxMethod>();
-		AllocatorMap<FluxMethod>::allocators["Oshker"] = new TypeAllocator<OshkerFluxMethod>();
-		AllocatorMap<FluxMethod>::allocators["Ospre"] = new TypeAllocator<OspreFluxMethod>();
-		AllocatorMap<FluxMethod>::allocators["Smart"] = new TypeAllocator<SmartFluxMethod>();
-		AllocatorMap<FluxMethod>::allocators["Sweby"] = new TypeAllocator<SwebyFluxMethod>();
-		AllocatorMap<FluxMethod>::allocators["UMIST"] = new TypeAllocator<UMISTFluxMethod>();
-		AllocatorMap<FluxMethod>::allocators["VanAlbada1"] = new TypeAllocator<VanAlbada1FluxMethod>();
-		AllocatorMap<FluxMethod>::allocators["VanAlbada2"] = new TypeAllocator<VanAlbada2FluxMethod>();
-		AllocatorMap<FluxMethod>::allocators["VanLeer"] = new TypeAllocator<VanLeerFluxMethod>();
-		AllocatorMap<FluxMethod>::allocators["MonotonizedCentral"] = new TypeAllocator<MonotonizedCentralFluxMethod>();
-		AllocatorMap<FluxMethod>::allocators["Superbee"] = new TypeAllocator<SuperbeeFluxMethod>();
-		AllocatorMap<FluxMethod>::allocators["BarthJespersen"] = new TypeAllocator<BarthJespersenFluxMethod>();
-	
 		for (int i = 0; i < argc; ++i) {
-			if (!strcmp(argv[i], "--help")) {
-				std::cout << "args:" << std::endl;
-				std::cout << "--initialConditions" << std::endl;
-				std::for_each(AllocatorMap<InitialConditions>::allocators.begin(), AllocatorMap<InitialConditions>::allocators.end(), [&](std::map<std::string, Allocator*>::value_type &value) {
-					std::cout << "\t" << value.first << std::endl;
-				});
-				std::cout << "--boundaryMethod" << std::endl;
-				std::for_each(AllocatorMap<BoundaryMethod>::allocators.begin(), AllocatorMap<BoundaryMethod>::allocators.end(), [&](std::map<std::string, Allocator*>::value_type &value) {
-					std::cout << "\t" << value.first << std::endl;
-				});
-				std::cout << "--equationOfState" << std::endl;
-				std::for_each(AllocatorMap<EquationOfState>::allocators.begin(), AllocatorMap<EquationOfState>::allocators.end(), [&](std::map<std::string, Allocator*>::value_type &value) {
-					std::cout << "\t" << value.first << std::endl;
-				});
-				std::cout << "--solver" << std::endl;
-				std::for_each(AllocatorMap<Solver>::allocators.begin(), AllocatorMap<Solver>::allocators.end(), [&](std::map<std::string, Allocator*>::value_type &value) {
-					std::cout << "\t" << value.first << std::endl;
-				});
-				std::cout << "--explicitMethod" << std::endl;
-				std::for_each(AllocatorMap<ExplicitMethod>::allocators.begin(), AllocatorMap<ExplicitMethod>::allocators.end(), [&](std::map<std::string, Allocator*>::value_type &value) {
-					std::cout << "\t" << value.first << std::endl;
-				});
-				std::cout << "--fluxMethod" << std::endl;
-				std::for_each(AllocatorMap<FluxMethod>::allocators.begin(), AllocatorMap<FluxMethod>::allocators.end(), [&](std::map<std::string, Allocator*>::value_type &value) {
-					std::cout << "\t" << value.first << std::endl;
-				});
-				std::cout << "--size" << std::endl;
-				std::cout << "--useCFL" << std::endl;
-				std::cout << "--cfl" << std::endl;
-				std::cout << "--fixedDT" << std::endl;
-				std::cout << "--gamma" << std::endl;
-				exit(0);
-			}
 			if (i < argc-1) {
 				if (!strcmp(argv[i], "--initialConditions")) {
-					args.initialConditions = Create<InitialConditions>()(i, argv);
+					args.initialConditionsName = argv[++i];
 				} else if (!strcmp(argv[i], "--boundaryMethod")) {
-					args.boundaryMethod = Create<BoundaryMethod>()(i, argv);
+					args.boundaryMethodName = argv[++i];
 				} else if (!strcmp(argv[i], "--equationOfState")) {
-					args.equationOfState = Create<EquationOfState>()(i, argv);
+					args.equationOfStateName = argv[++i];
 				} else if (!strcmp(argv[i], "--solver")) {
-					args.solver = Create<Solver>()(i, argv);
+					args.solverName = argv[++i];
 				} else if (!strcmp(argv[i], "--explicitMethod")) {
-					args.explicitMethod = Create<ExplicitMethod>()(i, argv);
+					args.explicitMethodName = argv[++i];
 				} else if (!strcmp(argv[i], "--fluxMethod")) {
-					args.fluxMethod = Create<FluxMethod>()(i, argv);
+					args.fluxMethodName = argv[++i];
 				} else if (!strcmp(argv[i], "--size")) {
 					args.size = atoi(argv[++i]);
 				} else if (!strcmp(argv[i], "--useCFL")) {
@@ -162,24 +109,173 @@ public:
 					args.fixedDT = atof(argv[++i]);
 				} else if (!strcmp(argv[i], "--gamma")) {
 					args.gamma = atof(argv[++i]);
+				} else if (!strcmp(argv[i], "--dim")) {
+					dim = atoi(argv[++i]);
+				} else if (!strcmp(argv[i], "--precision")) {
+					args.precision = argv[++i];
 				}
 			}
 		}
 
-		if (!args.initialConditions) args.initialConditions = new SodInitialConditions();
-		if (!args.boundaryMethod) args.boundaryMethod = new MirrorBoundaryMethod();
-		if (!args.equationOfState) args.equationOfState = new EulerEquationOfState();
-		if (!args.solver) args.solver = new EulerEquationRoeSolverExplicit();
-		if (!args.explicitMethod) args.explicitMethod = new ForwardEulerExplicitMethod();
-		if (!args.fluxMethod) args.fluxMethod = new SuperbeeFluxMethod();
-		
 		return GLApp::main(argc, argv);
+	}
+
+	template<typename Real, int rank, typename EquationOfState>
+	void initType() {
+		typedef ::Hydro<Real, rank, EquationOfState> Hydro;
+		typedef ::Solver<Real> Solver;
+		typedef ::ExplicitMethod<Hydro> ExplicitMethod;
+		typedef ::FluxMethod<Real> FluxMethod;
+
+		EquationOfState *equationOfState = new EquationOfState();
+
+		InitialConditions *initialConditions = NULL;
+		if (args.initialConditionsName == "Sod") {
+			initialConditions = new SodInitialConditions<Real, rank, EquationOfState>();
+		} else if (args.initialConditionsName == "Sedov") {
+			initialConditions = new SedovInitialConditions<Real, rank, EquationOfState>();
+		} else if (args.initialConditionsName == "Advect") {
+			initialConditions = new AdvectInitialConditions<Real, rank, EquationOfState>();
+		} else if (args.initialConditionsName == "Wave") {
+			initialConditions = new WaveInitialConditions<Real, rank, EquationOfState>();
+		} else {
+			throw Exception() << "unknown initial conditions " << args.initialConditionsName;
+		}
+
+		BoundaryMethod *boundaryMethod = NULL;
+		if (args.boundaryMethodName == "Periodic") {
+			boundaryMethod = new PeriodicBoundaryMethod<Hydro>();
+		} else if (args.boundaryMethodName =="Mirror") {
+			boundaryMethod = new MirrorBoundaryMethod<Hydro>();
+		} else if (args.boundaryMethodName =="Constant") {
+			boundaryMethod = new ConstantBoundaryMethod<Hydro>();
+		} else if (args.boundaryMethodName =="FreeFlow") {
+			boundaryMethod = new FreeFlowBoundaryMethod<Hydro>();
+		} else {
+			throw Exception() << "unknown boundary method " << args.boundaryMethodName;
+		}
+
+		Solver *solver = NULL;
+		if (args.solverName == "EulerEquationBurgersSolverExplicit") {
+			solver = new EulerEquationBurgersSolverExplicit<Hydro>();
+		} else if (args.solverName == "EulerEquationGodunovSolverExplicit") {
+			solver = new EulerEquationGodunovSolverExplicit<Hydro>();
+		//} else if (args.solverName == "EulerEquationRoeSolverExplicit") {
+		//	solver = new EulerEquationRoeSolverExplicit<Hydro>();
+		} else {
+			throw Exception() << "unknown solver " << args.solverName;
+		}
+
+		ExplicitMethod *explicitMethod = NULL;
+		if (args.explicitMethodName == "ForwardEuler") {
+			explicitMethod = new ForwardEulerExplicitMethod<Hydro>();
+		} else if (args.explicitMethodName == "RungeKutta2") {
+			explicitMethod = new RungeKutta2ExplicitMethod<Hydro>();
+		} else if (args.explicitMethodName == "RungeKutta4") {
+			explicitMethod = new RungeKutta4ExplicitMethod<Hydro>();
+		} else if (args.explicitMethodName == "IterativeCrankNicolson3") {
+			explicitMethod = new IterativeCrankNicolson3ExplicitMethod<Hydro>();
+		} else {
+			throw Exception() << "unknown explicit method " << args.explicitMethodName;
+		}
+
+		FluxMethod *fluxMethod = NULL;
+		if (args.fluxMethodName == "DonorCell") {
+			fluxMethod = new DonorCellFluxMethod<Real>();
+		} else if (args.fluxMethodName == "LaxWendroff") {
+			fluxMethod = new LaxWendroffFluxMethod<Real>();
+		} else if (args.fluxMethodName == "BeamWarming") {
+			fluxMethod = new BeamWarmingFluxMethod<Real>();
+		} else if (args.fluxMethodName == "Fromm") {
+			fluxMethod = new FrommFluxMethod<Real>();
+		} else if (args.fluxMethodName == "CHARM") {
+			fluxMethod = new CHARMFluxMethod<Real>();
+		} else if (args.fluxMethodName == "HCUS") {
+			fluxMethod = new HCUSFluxMethod<Real>();
+		} else if (args.fluxMethodName == "HQUICK") {
+			fluxMethod = new HQUICKFluxMethod<Real>();
+		} else if (args.fluxMethodName == "Koren") {
+			fluxMethod = new KorenFluxMethod<Real>();
+		} else if (args.fluxMethodName == "MinMod") {
+			fluxMethod = new MinModFluxMethod<Real>();
+		} else if (args.fluxMethodName == "Oshker") {
+			fluxMethod = new OshkerFluxMethod<Real>();
+		} else if (args.fluxMethodName == "Ospre") {
+			fluxMethod = new OspreFluxMethod<Real>();
+		} else if (args.fluxMethodName == "Smart") {
+			fluxMethod = new SmartFluxMethod<Real>();
+		} else if (args.fluxMethodName == "Sweby") {
+			fluxMethod = new SwebyFluxMethod<Real>();
+		} else if (args.fluxMethodName == "UMIST") {
+			fluxMethod = new UMISTFluxMethod<Real>();
+		} else if (args.fluxMethodName == "VanAlbada1") {
+			fluxMethod = new VanAlbada1FluxMethod<Real>();
+		} else if (args.fluxMethodName == "VanAlbada2") {
+			fluxMethod = new VanAlbada2FluxMethod<Real>();
+		} else if (args.fluxMethodName == "VanLeer") {
+			fluxMethod = new VanLeerFluxMethod<Real>();
+		} else if (args.fluxMethodName == "MonotonizedCentral") {
+			fluxMethod = new MonotonizedCentralFluxMethod<Real>();
+		} else if (args.fluxMethodName == "Superbee") {
+			fluxMethod = new SuperbeeFluxMethod<Real>();
+		} else if (args.fluxMethodName == "BarthJespersen") {
+			fluxMethod = new BarthJespersenFluxMethod<Real>();
+		} else {
+			throw Exception() << "unknown flux method " << args.fluxMethodName;
+		}
+
+		typedef ::Vector<int, rank> IVector;
+		hydro = new Hydro(
+			IVector(args.size),
+			args.useCFL,
+			args.cfl,
+			args.fixedDT,
+			args.gamma,
+			boundaryMethod,
+			equationOfState,
+			solver,
+			explicitMethod,
+			fluxMethod,
+			initialConditions);
+	}
+
+	template<typename Real, int rank>
+	void initPrecision() {
+		if (args.equationOfStateName == "Euler") {
+			initType<Real, rank, EulerEquationOfState<Real, rank> >();
+		} else {
+			throw Exception() << "unknown equation of state " << args.equationOfStateName;
+		}
+	}
+
+	template<int rank>
+	void initSize() {
+		if (args.precision == "single") {
+			initPrecision<float,rank>();
+		} else if (args.precision == "double") {
+			initPrecision<double,rank>();
+		} else {
+			throw Exception() << "unknown precision " << args.precision;
+		}
 	}
 
 	virtual void init() {
 		GLApp::init();
-	
-		hydro = new Hydro(args);
+		switch (args.dim) {
+		case 1:
+			initSize<1>();
+			break;
+#if 0	// fix the boundary condition static asserts before enabling these
+		case 2:
+			initSize<2>();
+			break;
+		case 3:
+			initSize<3>();
+			break;
+#endif
+		default:
+			throw Exception() << "unknown dim " << args.dim;
+		}
 	}
 
 	virtual void resize(int width, int height) {
@@ -191,7 +287,6 @@ public:
 	virtual void update() {
 		GLApp::update();
 		hydro->update();
-
 		hydro->draw();
 	}
 };

@@ -1,25 +1,40 @@
 #pragma once
 
+#include "TensorMath/Tensor.h"
+
 //cell interface values
+template<typename Real_, int rank, int numberOfStates>
 struct Interface {
+	typedef Real_ Real;
+	typedef Tensor<Real, Upper<rank> > Vector;
+	typedef Tensor<Real, Upper<numberOfStates> > StateVector;
+	
+	/*
+	in the tensor math library I don't have a generic any-2-indexes inverse function
+	i do have hardcoded a lower-lower function (for metric) that generates an upper-upper (for metric inverses)
+	so I'm working with that here:
+	*/
+	typedef Tensor<Real, Lower<numberOfStates>, Lower<numberOfStates> > StateMatrix;
+	typedef Tensor<Real, Upper<numberOfStates>, Upper<numberOfStates> > StateInverseMatrix;
+
 	//static values
-	double x;	//position
+	Vector x;	//position
 
 	//dynamic values
 
 	//used by Burgers
-	std::vector<double> r;
-	std::vector<double> flux;
-	double velocity;
+	StateVector r;
+	StateVector flux;
+	Real velocity;
 
 	//used for Godunov
-	std::vector<double> stateMid;
-	std::vector<std::vector<double> > jacobian;
-	std::vector<double> eigenvalues;
-	std::vector<std::vector<double> > eigenvectors;
-	std::vector<std::vector<double> > eigenvectorsInverse;
-	std::vector<double> rTilde;	//r projected into the eigenvector basis
-	std::vector<double> deltaQTilde;	//dq projected into eigenvector basis
+	StateVector stateMid;
+	StateMatrix jacobian;
+	StateVector eigenvalues;
+	StateMatrix eigenvectors;
+	StateInverseMatrix eigenvectorsInverse;
+	StateVector rTilde;	//r projected into the eigenvector basis
+	StateVector deltaStateTilde;	//dq projected into eigenvector basis
 };
 
 
