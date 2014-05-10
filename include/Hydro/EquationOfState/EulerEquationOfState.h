@@ -88,22 +88,9 @@ void EulerEquationOfState<Real, rank>::buildEigenstate(
 	//calculate eigenvector inverses numerically ... 
 	//eigenvectorsInverse = inverse(eigenvectors);
 
-	Real det = eigenvectors(0,0) * eigenvectors(1,1) * eigenvectors(2,2)
-			+ eigenvectors(0,1) * eigenvectors(1,2) * eigenvectors(2,0)
-			+ eigenvectors(0,2) * eigenvectors(1,0) * eigenvectors(2,1)
-			- eigenvectors(0,2) * eigenvectors(1,1) * eigenvectors(2,0)
-			- eigenvectors(0,1) * eigenvectors(1,0) * eigenvectors(2,2)
-			- eigenvectors(0,0) * eigenvectors(1,2) * eigenvectors(2,1);
+	Real det = determinant33<Real, StateMatrix>(eigenvectors);
 	if (det == 0) throw Exception() << "singular! " << eigenvectors;
-	Real invDet = Real(1) / det;
-	for (int j = 0; j < 3; ++j) {
-		int j1 = (j + 1) % 3;
-		int j2 = (j + 2) % 3;
-		for (int i = 0; i < 3; ++i) {
-			int i1 = (i + 1) % 3;
-			int i2 = (i + 2) % 3;
-			eigenvectorsInverse(j,i) = invDet * (eigenvectors(i1,j1) * eigenvectors(i2,j2) - eigenvectors(i2,j1) * eigenvectors(i1,j2));
-		}
-	}
+
+	eigenvectorsInverse = inverse(eigenvectors, det);
 }
 
