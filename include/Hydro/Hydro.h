@@ -247,12 +247,12 @@ void Hydro<Real, rank, EquationOfState>::draw() {
 			for (int side = 0; side < rank; ++side) {
 				Vector dx(0.);
 				dx(side) = (xmax(side) - xmin(side)) / (Real)size(side);
-				IVector di(0);
-				di(side) = 1;
+				IVector indexL = i.index;
+				--indexL(side);
 				
 				for (int state = 0; state < numberOfStates; ++state) {
 					glColor3fv(colors(state).v);
-					plotVertex<Real, rank>(cell.x - dx, plotScalar * cells(i.index - di).primitives(state));
+					plotVertex<Real, rank>(cell.x - dx, plotScalar * cells(indexL).primitives(state));
 					plotVertex<Real, rank>(cell.x, plotScalar * cell.primitives(state));
 				}
 			}

@@ -52,8 +52,6 @@ template<typename Hydro>
 void EulerEquationBurgersSolverExplicit<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Cell::*dq_dt) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	
-	std::for_each(hydro->cells.begin(), hydro->cells.end(), [&](Cell &cell) { (cell.*dq_dt) = StateVector(); });
-	
 	for (typename InterfaceGrid::iterator i = hydro->interfaces.begin(); i != hydro->interfaces.end(); ++i) {
 		::Vector<Interface, rank> &interface = *i;
 		bool edge = false;
@@ -194,8 +192,6 @@ template<typename Hydro>
 void EulerEquationBurgersSolverExplicit<Hydro>::integrateExternalForces(IHydro *ihydro, Real dt, StateVector Cell::*dq_dt) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	
-	std::for_each(hydro->cells.begin(), hydro->cells.end(), [&](Cell &cell) { (cell.*dq_dt) = StateVector(); });
-
 	for (typename CellGrid::iterator i = hydro->cells.begin(); i != hydro->cells.end(); ++i) {
 		Cell &cell = *i;
 		bool edge = false;
@@ -216,9 +212,7 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateExternalForces(IHydro *
 				(cell.*dq_dt)(rank+1) -= hydro->externalForce(side) * cell.state(side+1);
 			}
 		} else {
-			for (int state = 0; state < rank; ++state) {
-				(cell.*dq_dt)(state) = 0.; 
-			}
+			cell.*dq_dt = StateVector();
 		}
 	}
 }
@@ -227,8 +221,6 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateExternalForces(IHydro *
 template<typename Hydro>
 void EulerEquationBurgersSolverExplicit<Hydro>::integrateMomentumDiffusion(IHydro *ihydro, Real dt, StateVector Cell::*dq_dt) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
-	
-	std::for_each(hydro->cells.begin(), hydro->cells.end(), [&](Cell &cell) { (cell.*dq_dt) = StateVector(); });
 
 	//compute pressure
 	std::for_each(hydro->cells.begin(), hydro->cells.end(), [&](Cell &cell) {
@@ -278,9 +270,7 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateMomentumDiffusion(IHydr
 				(cell.*dq_dt)(side+1) = -dPressure / dx;
 			}
 		} else {
-			for (int state = 0; state < rank; ++state) {
-				(cell.*dq_dt)(state) = 0.; 
-			}
+			cell.*dq_dt = StateVector();
 		}
 	}
 }
@@ -288,8 +278,6 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateMomentumDiffusion(IHydr
 template<typename Hydro>
 void EulerEquationBurgersSolverExplicit<Hydro>::integrateWorkDiffusion(IHydro *ihydro, Real dt, StateVector Cell::*dq_dt) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
-
-	std::for_each(hydro->cells.begin(), hydro->cells.end(), [&](Cell &cell) { (cell.*dq_dt) = StateVector(); });
 
 	//apply work diffusion = momentum
 	for (typename CellGrid::iterator i = hydro->cells.begin(); i != hydro->cells.end(); ++i) {
@@ -301,10 +289,9 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateWorkDiffusion(IHydro *i
 				break;
 			}
 		}
+		
+		cell.*dq_dt = StateVector();
 		if (!edge) { 
-			for (int state = 0; state < rank; ++state) {
-				(cell.*dq_dt)(state) = 0.;
-			}
 			for (int side = 0; side < rank; ++side) {
 				IVector indexL = i.index;
 				--indexL(side);
@@ -319,10 +306,6 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateWorkDiffusion(IHydro *i
 				Real dx = hydro->cells(indexR).x(side) - hydro->cells(indexL).x(side);	
 			
 				(cell.*dq_dt)(rank+1) -= (pressureR * uR - pressureL * uL) / dx;
-			}
-		} else {
-			for (int state = 0; state < rank; ++state) {
-				(cell.*dq_dt)(state) = 0.;
 			}
 		}
 	}

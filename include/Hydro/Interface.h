@@ -17,6 +17,16 @@ struct Interface {
 	typedef Tensor<Real, Lower<numberOfStates>, Lower<numberOfStates> > StateMatrix;
 	typedef Tensor<Real, Upper<numberOfStates>, Upper<numberOfStates> > StateInverseMatrix;
 
+	Interface() : velocity(Real()) {
+		for (int i = 0; i < numberOfStates; ++i) {
+			for (int j = 0; j < numberOfStates; ++j) {
+				jacobian(i,j) = i == j;
+				eigenvectors(i,j) = i == j;
+				eigenvectorsInverse(i,j) = i == j;
+			}
+		}
+	}
+
 	//static values
 	Vector x;	//position
 

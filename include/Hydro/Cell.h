@@ -14,7 +14,9 @@ struct Cell : public ICell {
 	typedef Real_ Real;
 	typedef Tensor<Real, Upper<rank> > Vector;
 	typedef Tensor<Real, Upper<numberOfStates> > StateVector;
-	
+
+	Cell() : pressure(Real()) {}
+
 	Vector x;	//position
 
 	//dynamic values

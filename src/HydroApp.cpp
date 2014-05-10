@@ -65,7 +65,7 @@ public:
 	, precision("double")
 	, boundaryMethodName("Mirror")
 	, equationOfStateName("Euler")
-	, solverName("EulerEquationGodunovSolverExplicit")//("EulerEquationRoeSolverExplicit")
+	, solverName("Godunov")//("Roe")
 	, explicitMethodName("ForwardEuler")
 	, fluxMethodName("Superbee")
 	, initialConditionsName("Sod")
@@ -156,11 +156,11 @@ public:
 		}
 
 		Solver *solver = NULL;
-		if (args.solverName == "EulerEquationBurgersSolverExplicit") {
+		if (args.solverName == "Burgers") {
 			solver = new EulerEquationBurgersSolverExplicit<Hydro>();
-		} else if (args.solverName == "EulerEquationGodunovSolverExplicit") {
+		} else if (args.solverName == "Godunov") {
 			solver = new EulerEquationGodunovSolverExplicit<Hydro>();
-		//} else if (args.solverName == "EulerEquationRoeSolverExplicit") {
+		//} else if (args.solverName == "Roe") {
 		//	solver = new EulerEquationRoeSolverExplicit<Hydro>();
 		} else {
 			throw Exception() << "unknown solver " << args.solverName;
@@ -285,7 +285,6 @@ public:
 	}
 	
 	virtual void update() {
-std::cout << "update" << std::endl;
 		GLApp::update();
 		hydro->update();
 		hydro->draw();

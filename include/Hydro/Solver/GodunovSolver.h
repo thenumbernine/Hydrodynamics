@@ -207,15 +207,13 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 			}
 		} else {
 			for (int side = 0; side < rank; ++side) {
-				for (int state = 0; state < numberOfStates; ++state) {
-					interface(side).rTilde(state) = Real(0);
-				}
+				interface(side).rTilde = StateVector();
 			}
 		}
 	}
 
-	std::vector<StateVector> fluxTildes(hydro->size(0));
-	std::vector<StateVector> fluxAvgs(hydro->size(0));
+	std::vector<std::vector<StateVector>> fluxTildes(hydro->size(0));
+	std::vector<std::vector<StateVector>> fluxAvgs(hydro->size(0));
 
 	//transform cell q's into cell qTilde's (eigenspace)
 	for (typename InterfaceGrid::iterator i = hydro->interfaces.begin(); i != hydro->interfaces.end(); ++i) {
@@ -228,6 +226,8 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 			}
 		}
 		if (!edge) {
+fluxAvgs[i.index(0)].resize(rank);
+fluxTildes[i.index(0)].resize(rank);
 			for (int side = 0; side < rank; ++side) {
 				IVector indexR = i.index;
 				IVector indexL = i.index;
@@ -245,7 +245,7 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 					}
 					fluxAvg(state) = sum;
 				}
-				fluxAvgs[i.index(0)] = fluxAvg;
+fluxAvgs[i.index(0)][side] = fluxAvg;
 
 				//calculate flux
 				StateVector fluxTilde;
@@ -263,7 +263,7 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 					Real deltaFluxTilde = eigenvalue * interface(side).deltaStateTilde(state);
 					fluxTilde(state) = -.5 * deltaFluxTilde * (theta + phi * (epsilon - theta));
 				}
-				fluxTildes[i.index(0)] = fluxTilde;
+fluxTildes[i.index(0)][side] = fluxTilde;
 			
 				//reproject fluxTilde back into q
 				for (int state = 0; state < numberOfStates; ++state) {
@@ -271,15 +271,12 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 					for (int k = 0; k < numberOfStates; ++k) {
 						sum += interface(side).eigenvectors(state, k) * fluxTilde(k);
 					}
-				
 					interface(side).flux(state) = sum;
 				}
 			}
 		} else {
 			for (int side = 0; side < rank; ++side) {
-				for (int state = 0; state < numberOfStates; ++state) {
-					interface(side).flux(state) = Real(0);
-				}
+				interface(side).flux = StateVector();
 			}
 		}
 	}
@@ -295,7 +292,7 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 			}
 		}
 		
-		(cell.*dq_dt) = StateVector();
+		cell.*dq_dt = StateVector();
 		if (!edge) {
 			for (int side = 0; side < rank; ++side) {
 				IVector indexL = i.index;
@@ -371,7 +368,7 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 				+ hydro->interfaces(ix)(0).jacobian(j,1) * hydro->interfaces(ix)(0).stateMid(1)
 				+ hydro->interfaces(ix)(0).jacobian(j,2) * hydro->interfaces(ix)(0).stateMid(2);
 			
-			if (fluxAvg(j) != fluxAvgs[ix](j)) throw Exception() << __FILE__ << ":" << __LINE__ << " at " << ix << ", " << j << " is " << fluxAvg(j) << " should be " << fluxAvgs[ix](j);
+if (fluxAvg(j) != fluxAvgs[ix][0](j)) throw Exception() << __FILE__ << ":" << __LINE__ << " at " << ix << ", " << j << " is " << fluxAvg(j) << " should be " << fluxAvgs[ix][0](j);
 		}
 
 		//calculate flux
@@ -395,7 +392,7 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 			
 			fluxTilde(j) = -.5 * deltaFluxTilde * (theta + phiTilde * (epsilon - theta));
 		
-			if (fluxTilde(j) != fluxTildes[ix](j)) throw Exception() << __FILE__ << ":" << __LINE__ << " at " << ix << ", " << j << " is " << fluxTilde(j) << " should be " << fluxTildes[ix](j);
+if (fluxTilde(j) != fluxTildes[ix][0](j)) throw Exception() << __FILE__ << ":" << __LINE__ << " at " << ix << ", " << j << " is " << fluxTilde(j) << " should be " << fluxTildes[ix][0](j);
 		}
 
 		//reproject fluxTilde back into q

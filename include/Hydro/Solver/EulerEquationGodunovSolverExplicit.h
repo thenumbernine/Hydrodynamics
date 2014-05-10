@@ -125,17 +125,17 @@ void EulerEquationGodunovSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 		Real pressureMid = (hydro->gamma - 1.) * densityMid * energyThermalMid;
 		Real enthalpyTotalMid = energyTotalMid + pressureMid / densityMid;
 #else		//first compute left and right values, then average
-		Real densityL = hydro->cells(ix-1).state(0);
-		Real velocityL = hydro->cells(ix-1).state(1) / densityL;
-		Real energyTotalL = hydro->cells(ix-1).state(2) / densityL;
+		Real densityL = hydro->cells(ix-1).stateRight(0)(0);
+		Real velocityL = hydro->cells(ix-1).stateRight(0)(1) / densityL;
+		Real energyTotalL = hydro->cells(ix-1).stateRight(0)(2) / densityL;
 		Real energyKineticL = .5 * velocityL * velocityL;
 		Real energyThermalL = energyTotalL - energyKineticL;
 		Real pressureL = (hydro->gamma - 1.) * densityL * energyThermalL;
 		Real enthalpyTotalL = energyTotalL + pressureL / densityL;
 
-		Real densityR = hydro->cells(ix).state(0);
-		Real velocityR = hydro->cells(ix).state(1) / densityR;
-		Real energyTotalR = hydro->cells(ix).state(2) / densityR;
+		Real densityR = hydro->cells(ix).stateLeft(0)(0);
+		Real velocityR = hydro->cells(ix).stateLeft(0)(1) / densityR;
+		Real energyTotalR = hydro->cells(ix).stateLeft(0)(2) / densityR;
 		Real energyKineticR = .5 * velocityR * velocityR;
 		Real energyThermalR = energyTotalR - energyKineticR;
 		Real pressureR = (hydro->gamma - 1.) * densityR * energyThermalR;
