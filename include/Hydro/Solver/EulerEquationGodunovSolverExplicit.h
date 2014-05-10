@@ -6,6 +6,7 @@ template<typename Hydro>
 class EulerEquationGodunovSolverExplicit : public GodunovSolver<Hydro> {
 public:
 	enum { rank = Hydro::rank };
+	enum { numberOfStates = Hydro::numberOfStates };
 
 	typedef typename Hydro::Real Real;
 	typedef typename Hydro::Vector Vector;
@@ -13,6 +14,10 @@ public:
 	typedef typename Hydro::Interface Interface;
 	typedef typename Hydro::InterfaceVector InterfaceVector;
 	typedef typename Hydro::InterfaceGrid InterfaceGrid;
+
+	typedef typename Interface::StateVector StateVector;
+	typedef typename Interface::StateMatrix StateMatrix;
+	typedef typename Interface::StateInverseMatrix StateInverseMatrix;
 
 	virtual void initStep(IHydro *ihydro);
 };
@@ -34,7 +39,6 @@ void EulerEquationGodunovSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 		}
 		if (!edge) {
 			for (int side = 0; side < rank; ++side) {
-#if 0	//oops, this is Roe
 				IVector indexR = i.index;
 				IVector indexL = i.index;
 				--indexL(side);
@@ -51,19 +55,19 @@ void EulerEquationGodunovSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 				Vector velocityL;
 				Real velocitySqL = Real(0);
 				for (int k = 0; k < rank; ++k) {
-					velocityL(k) = hydro->cells(indexL).state(k+1) / density;
+					velocityL(k) = hydro->cells(indexL).state(k+1) / densityL;
 					velocitySqL += velocityL(k) * velocityL(k);
 				}
-				Real energyTotalL = hydro->cells(indexL).state(rank+1) / density;
+				Real energyTotalL = hydro->cells(indexL).state(rank+1) / densityL;
 
 				Real densityR = hydro->cells(indexR).state(0);
 				Vector velocityR;
 				Real velocitySqR = Real(0);
 				for (int k = 0; k < rank; ++k) {
-					velocityR(k) = hydro->cells(indexR).state(k+1) / density;
+					velocityR(k) = hydro->cells(indexR).state(k+1) / densityR;
 					velocitySqR += velocityR(k) * velocityR(k);
 				}
-				Real energyTotalR = hydro->cells(indexR).state(rank+1) / density;
+				Real energyTotalR = hydro->cells(indexR).state(rank+1) / densityR;
 			
 				Real energyKineticL = .5 * velocitySqL;
 				Real energyPotentialL = Real(0);
@@ -72,9 +76,7 @@ void EulerEquationGodunovSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 				//}
 				Real energyThermalL = energyTotalL - energyKineticL - energyPotentialL;
 				Real pressureL = (hydro->gamma - Real(1)) * densityL * energyThermalL;
-				Real speedOfSoundL = sqrt(hydro->gamma * pressureL / densityL);
 				Real enthalpyTotalL = energyTotalL + pressureL / densityL;
-				Real roeWeightL = sqrt(densityL);
 
 				Real energyKineticR = .5 * velocitySqR;
 				Real energyPotentialR = Real(0);
@@ -83,29 +85,10 @@ void EulerEquationGodunovSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 				//}
 				Real energyThermalR = energyTotalR - energyKineticR - energyPotentialR;
 				Real pressureR = (hydro->gamma - Real(1)) * densityR * energyThermalR;
-				Real speedOfSoundR = sqrt(hydro->gamma * pressureR / densityR);
 				Real enthalpyTotalR = energyTotalR + pressureR / densityR;
-				Real roeWeightR = sqrt(densityR);
 
-				Real denom = roeWeightL + roeWeightR;
-				Vector velocity = (velocityL * roeWeightL + velocityR * roeWeightR) / denom;
-				Real enthalpyTotal = (roeWeightL * enthalpyTotalL + roeWeightR * enthalpyTotalR) / denom;
-#endif				
-
-				Real densityMid = interface(side).stateMid(0);
-				Vector velocityMid;
-				Real velocitySqMid = Real(0);
-				for (int k = 0; k < rank; ++k) {
-					velocityMid(k) = interface(side).stateMid(k+1) / densityMid;
-					velocitySqMid += velocityMid(k) * velocityMid(k);
-				}
-				Real energyTotalMid = interface(side).stateMid(rank+1) / densityMid;
-				Real energyKineticMid = .5 * velocitySqMid;
-				Real energyPotentialMid = Real(0);	//TODO
-				Real energyThermalMid = energyTotalMid - energyKineticMid - energyPotentialMid;
-				Real pressureMid = (hydro->gamma - Real(1)) * densityMid * energyThermalMid;
-				//Real speedOfSoundMid = sqrt(hydro->gamma * pressureMid / densityMid);
-				Real enthalpyTotalMid = energyTotalMid + pressureMid / densityMid;
+				Vector velocity = (velocityL + velocityR) * .5;
+				Real enthalpyTotal = (enthalpyTotalL + enthalpyTotalR) * .5;
 
 				//compute eigenvectors and values at the interface based on averages
 				hydro->equationOfState->buildEigenstate(
@@ -113,9 +96,75 @@ void EulerEquationGodunovSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 					interface(side).eigenvalues, 
 					interface(side).eigenvectors, 
 					interface(side).eigenvectorsInverse, 
-					velocityMid, enthalpyTotalMid, hydro->gamma);
+					velocity, enthalpyTotal, hydro->gamma);//, normal);
+			}
+		} else {
+			for (int side = 0; side < rank; ++side) {
+				for (int i = 0; i < numberOfStates; ++i) {
+					interface(side).eigenvalues(i) = Real(0);
+					for (int j = 0; j < numberOfStates; ++j) {
+						interface(side).jacobian(i,j) = Real(0);
+						interface(side).eigenvectors(i,j) = Real(i == j);
+						interface(side).eigenvectorsInverse(i,j) = Real(i == j);
+					}
+				}
 			}
 		}
 	}
+
+#if 1	//validation with old method ... works
+	for (int ix = 1; ix < hydro->size(0); ++ix) {
+		
+		//compute averaged interface values
+#if 0		//use mid values
+		Real densityMid = hydro->interfaces(ix)(0).stateMid(0);
+		Real velocityMid = hydro->interfaces(ix)(0).stateMid(1) / densityMid;
+		Real energyTotalMid = hydro->interfaces(ix)(0).stateMid(2) / densityMid;
+		Real energyKinematicMid = .5 * velocityMid * velocityMid;
+		Real energyThermalMid = energyTotalMid - energyKinematicMid;
+		Real pressureMid = (hydro->gamma - 1.) * densityMid * energyThermalMid;
+		Real enthalpyTotalMid = energyTotalMid + pressureMid / densityMid;
+#else		//first compute left and right values, then average
+		Real densityL = hydro->cells(ix-1).state(0);
+		Real velocityL = hydro->cells(ix-1).state(1) / densityL;
+		Real energyTotalL = hydro->cells(ix-1).state(2) / densityL;
+		Real energyKineticL = .5 * velocityL * velocityL;
+		Real energyThermalL = energyTotalL - energyKineticL;
+		Real pressureL = (hydro->gamma - 1.) * densityL * energyThermalL;
+		Real enthalpyTotalL = energyTotalL + pressureL / densityL;
+
+		Real densityR = hydro->cells(ix).state(0);
+		Real velocityR = hydro->cells(ix).state(1) / densityR;
+		Real energyTotalR = hydro->cells(ix).state(2) / densityR;
+		Real energyKineticR = .5 * velocityR * velocityR;
+		Real energyThermalR = energyTotalR - energyKineticR;
+		Real pressureR = (hydro->gamma - 1.) * densityR * energyThermalR;
+		Real enthalpyTotalR = energyTotalR + pressureR / densityR;
+
+		Real velocityMid = (velocityL + velocityR) * .5;
+		Real enthalpyTotalMid = (enthalpyTotalL + enthalpyTotalR) * .5;
+#endif
+
+		//compute eigenvectors and values at the interface based on averages
+		StateVector eigenvalues;
+		StateMatrix jacobian, eigenvectors;
+		StateInverseMatrix eigenvectorsInverse;
+		hydro->equationOfState->buildEigenstate(
+				jacobian,
+				eigenvalues, 
+				eigenvectors, 
+				eigenvectorsInverse, 
+				Vector(velocityMid), enthalpyTotalMid, hydro->gamma);//, normal);
+
+		for (int i = 0; i < numberOfStates; ++i) {
+			if (eigenvalues(i) != hydro->interfaces(ix)(0).eigenvalues(i)) throw Exception() << __FILE__ << ":" << __LINE__ << " eigenvalue " << hydro->interfaces(ix)(0).eigenvalues(i) << " should be " << eigenvalues(i) << " at " << ix << ", " << i;
+			for (int j = 0; j < numberOfStates; ++j) {
+				if (jacobian(i,j) != hydro->interfaces(ix)(0).jacobian(i,j)) throw Exception() << __FILE__ << ":" << __LINE__ << " eigenvalue " << hydro->interfaces(ix)(0).jacobian(i,j) << " should be " << jacobian(i,j);
+				if (eigenvectors(i,j) != hydro->interfaces(ix)(0).eigenvectors(i,j)) throw Exception() << __FILE__ << ":" << __LINE__ << " eigenvalue " << hydro->interfaces(ix)(0).eigenvectors(i,j) << " should be " << eigenvectors(i,j);
+				if (eigenvectorsInverse(i,j) != hydro->interfaces(ix)(0).eigenvectorsInverse(i,j)) throw Exception() << __FILE__ << ":" << __LINE__ << " eigenvalue " << hydro->interfaces(ix)(0).eigenvectorsInverse(i,j) << " should be " << eigenvectorsInverse(i,j);
+			}
+		}
+	}
+#endif
 }
 

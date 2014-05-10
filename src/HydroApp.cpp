@@ -281,10 +281,11 @@ public:
 	virtual void resize(int width, int height) {
 		GLApp::resize(width, height);
 		float aspectRatio = (float)width / (float)height;	
-		glOrtho(-aspectRatio, aspectRatio, -1, 1, -1, 1);
+		glOrtho(-aspectRatio, aspectRatio, -.25, .5, -1, 1);
 	}
 	
 	virtual void update() {
+std::cout << "update" << std::endl;
 		GLApp::update();
 		hydro->update();
 		hydro->draw();

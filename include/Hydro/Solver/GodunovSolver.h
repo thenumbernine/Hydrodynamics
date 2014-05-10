@@ -91,6 +91,30 @@ typename GodunovSolver<Hydro>::Real GodunovSolver<Hydro>::calcCFLTimestep(IHydro
 			}
 		}
 	}
+
+#if 1	//validation with old method ... works
+	Real checkMinDum = HUGE_VAL;
+	for (int i = 1; i < hydro->size(0); ++i) {
+		Real maxLambda = std::max<Real>(
+			std::max<Real>(
+				0, 
+				hydro->interfaces(i)(0).eigenvalues(0)),
+			std::max<Real>(
+				hydro->interfaces(i)(0).eigenvalues(1),
+				hydro->interfaces(i)(0).eigenvalues(2)));
+		Real minLambda = std::min<Real>(
+			std::min<Real>(
+				0, 
+				hydro->interfaces(i+1)(0).eigenvalues(0)), 
+			std::min<Real>(
+				hydro->interfaces(i+1)(0).eigenvalues(1), 
+				hydro->interfaces(i+1)(0).eigenvalues(2)));
+		Real dum = (hydro->interfaces(i+1)(0).x(0) - hydro->interfaces(i)(0).x(0)) / (maxLambda - minLambda);
+		if (dum < checkMinDum) checkMinDum = dum;
+	}
+
+	if (mindum != checkMinDum) throw Exception() << __FILE__ << ":" << __LINE__ << ":\t" << mindum << " should be " << checkMinDum;
+#endif
 	return hydro->cfl * mindum;
 }
 	
@@ -146,7 +170,7 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 		InterfaceVector &interface = *i;
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
-			if (i.index(side) < hydro->nghost || i.index(side) >= hydro->size(side) + hydro->nghost - 3) {
+			if (i.index(side) < hydro->nghost || i.index(side) >= hydro->size(side) - hydro->nghost + 1) {
 				edge = true;
 				break;
 			}
@@ -190,6 +214,9 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 		}
 	}
 
+	std::vector<StateVector> fluxTildes(hydro->size(0));
+	std::vector<StateVector> fluxAvgs(hydro->size(0));
+
 	//transform cell q's into cell qTilde's (eigenspace)
 	for (typename InterfaceGrid::iterator i = hydro->interfaces.begin(); i != hydro->interfaces.end(); ++i) {
 		InterfaceVector &interface = *i;
@@ -218,6 +245,7 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 					}
 					fluxAvg(state) = sum;
 				}
+				fluxAvgs[i.index(0)] = fluxAvg;
 
 				//calculate flux
 				StateVector fluxTilde;
@@ -235,13 +263,15 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 					Real deltaFluxTilde = eigenvalue * interface(side).deltaStateTilde(state);
 					fluxTilde(state) = -.5 * deltaFluxTilde * (theta + phi * (epsilon - theta));
 				}
+				fluxTildes[i.index(0)] = fluxTilde;
 			
 				//reproject fluxTilde back into q
 				for (int state = 0; state < numberOfStates; ++state) {
-					Real sum = Real(0);
+					Real sum = fluxAvg(state);
 					for (int k = 0; k < numberOfStates; ++k) {
 						sum += interface(side).eigenvectors(state, k) * fluxTilde(k);
 					}
+				
 					interface(side).flux(state) = sum;
 				}
 			}
@@ -279,5 +309,135 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 			}
 		}
 	}
+
+#if 1	//validation
+
+	//these match
+	for (int ix = 1; ix < hydro->size(0); ++ix) {
+		StateVector &iqL = hydro->cells(ix-1).stateRight(0);
+		StateVector &iqR = hydro->cells(ix).stateLeft(0);
+		for (int j = 0; j < 3; ++j) {
+			//the change in state represented in interface eigenbasis
+			Real deltaStateTilde =
+				hydro->interfaces(ix)(0).eigenvectorsInverse(j,0) * (iqR(0) - iqL(0))
+				+ hydro->interfaces(ix)(0).eigenvectorsInverse(j,1) * (iqR(1) - iqL(1))
+				+ hydro->interfaces(ix)(0).eigenvectorsInverse(j,2) * (iqR(2) - iqL(2));
+			if (deltaStateTilde != hydro->interfaces(ix)(0).deltaStateTilde(j)) throw Exception() << __FILE__ << ":" << __LINE__ << " at " << ix;
+			hydro->interfaces(ix)(0).deltaStateTilde(j) = deltaStateTilde;
+		}
+	}
+	
+	for (int j = 0; j < 3; ++j) {
+		if (hydro->interfaces(0)(0).deltaStateTilde(j) != 0) throw Exception() << __FILE__ << ":" << __LINE__;
+		hydro->interfaces(0)(0).deltaStateTilde(j) = 0;
+		if (hydro->interfaces(hydro->size(0))(0).deltaStateTilde(j) != 0) throw Exception() << __FILE__ << ":" << __LINE__;
+		hydro->interfaces(hydro->size(0))(0).deltaStateTilde(j) = 0;
+	}
+
+	//these match
+	for (int ix = hydro->nghost; ix < hydro->size(0)-hydro->nghost+1; ++ix) {
+		for (int j = 0; j < 3; ++j) {
+			Real interfaceDeltaQTilde = hydro->interfaces(ix)(0).deltaStateTilde(j);
+			Real rTildeJ;
+			if (fabs(interfaceDeltaQTilde) > 0) {
+				if (hydro->interfaces(ix)(0).eigenvalues(j) >= 0) {
+					rTildeJ = hydro->interfaces(ix-1)(0).deltaStateTilde(j) / interfaceDeltaQTilde;
+				} else {
+					rTildeJ = hydro->interfaces(ix+1)(0).deltaStateTilde(j) / interfaceDeltaQTilde;
+				}
+			} else {
+				rTildeJ = 0;
+			}
+			if (rTildeJ != hydro->interfaces(ix)(0).rTilde(j)) throw Exception() << __FILE__ << ":" << __LINE__ << " at " << ix;
+			hydro->interfaces(ix)(0).rTilde(j) = rTildeJ;
+		}
+	}
+
+	for (int j = 0; j < 3; ++j) {
+		if (hydro->interfaces(0)(0).rTilde(j) != 0) throw Exception() << __FILE__ << ":" << __LINE__;
+		if (hydro->interfaces(1)(0).rTilde(j) != 0) throw Exception() << __FILE__ << ":" << __LINE__;
+		if (hydro->interfaces(hydro->size(0)-1)(0).rTilde(j) != 0) throw Exception() << __FILE__ << ":" << __LINE__;
+		if (hydro->interfaces(hydro->size(0))(0).rTilde(j) != 0) throw Exception() << __FILE__ << ":" << __LINE__;
+		hydro->interfaces(0)(0).rTilde(j) = hydro->interfaces(1)(0).rTilde(j) = hydro->interfaces(hydro->size(0)-1)(0).rTilde(j) = hydro->interfaces(hydro->size(0)-1)(0).rTilde(j) = 0;
+	}
+
+	StateVector fluxTilde;
+	StateVector fluxAvg;
+
+	for (int ix = hydro->nghost-1; ix < hydro->size(0)+hydro->nghost-2; ++ix) {
+		for (int j = 0; j < 3; ++j) {
+			fluxAvg(j) = 
+				hydro->interfaces(ix)(0).jacobian(j,0) * hydro->interfaces(ix)(0).stateMid(0)
+				+ hydro->interfaces(ix)(0).jacobian(j,1) * hydro->interfaces(ix)(0).stateMid(1)
+				+ hydro->interfaces(ix)(0).jacobian(j,2) * hydro->interfaces(ix)(0).stateMid(2);
+			
+			if (fluxAvg(j) != fluxAvgs[ix](j)) throw Exception() << __FILE__ << ":" << __LINE__ << " at " << ix << ", " << j << " is " << fluxAvg(j) << " should be " << fluxAvgs[ix](j);
+		}
+
+		//calculate flux
+		for (int j = 0; j < 3; ++j) {
+			Real theta = 0;
+			if (hydro->interfaces(ix)(0).eigenvalues(j) >= 0) {
+				theta = 1;
+			} else {
+				theta = -1;
+			}
+			
+			Real phiTilde = (*hydro->fluxMethod)(hydro->interfaces(ix)(0).rTilde(j));
+			Real dx = hydro->interfaces(ix)(0).x(0) - hydro->interfaces(ix-1)(0).x(0);
+			Real epsilon = hydro->interfaces(ix)(0).eigenvalues(j) * dt / dx;
+			
+			//interfaceFlux[ix][k] = fluxTilde[ix][j] * interfaceEigenvectors[ix][k][j]
+			//flux in eigenvector basis is the q vector transformed by the inverse then scaled by the eigenvalue
+			//should the eigenvalue be incorperated here, after flux limiter is taken into account, or beforehand?
+			//1D says after, but notes say before ...
+			Real deltaFluxTilde = hydro->interfaces(ix)(0).eigenvalues(j) * hydro->interfaces(ix)(0).deltaStateTilde(j);
+			
+			fluxTilde(j) = -.5 * deltaFluxTilde * (theta + phiTilde * (epsilon - theta));
+		
+			if (fluxTilde(j) != fluxTildes[ix](j)) throw Exception() << __FILE__ << ":" << __LINE__ << " at " << ix << ", " << j << " is " << fluxTilde(j) << " should be " << fluxTildes[ix](j);
+		}
+
+		//reproject fluxTilde back into q
+		for (int j = 0; j < 3; ++j) {
+			Real flux = fluxAvg(j)
+				+ hydro->interfaces(ix)(0).eigenvectors(j,0) * fluxTilde(0) 
+				+ hydro->interfaces(ix)(0).eigenvectors(j,1) * fluxTilde(1) 
+				+ hydro->interfaces(ix)(0).eigenvectors(j,2) * fluxTilde(2);
+
+			if (hydro->interfaces(ix)(0).flux(j) != flux) throw Exception() << __FILE__ << ":" << __LINE__ << " at " << ix << ", " << j << " is " << hydro->interfaces(ix)(0).flux(j) << " should be " << flux;
+			hydro->interfaces(ix)(0).flux(j) = flux;
+		}
+	}
+	
+	//zero boundary flux
+	for (int j = 0; j < 3; ++j) {
+		hydro->interfaces(0)(0).flux(j) = hydro->interfaces(hydro->size(0))(0).flux(j) = 0;
+	}
+
+	//update cells
+	Real error = 0.;
+	//bad: nonzero ... but the validation test isn't perfect either
+	for (int i = hydro->nghost; i < hydro->size(0)-hydro->nghost; ++i) {
+		for (int j = 0; j < 3; ++j) {
+			Real validationDqDt = -(hydro->interfaces(i+1)(0).flux(j) - hydro->interfaces(i)(0).flux(j)) / (hydro->interfaces(i+1)(0).x(0) - hydro->interfaces(i)(0).x(0));
+			Cell &cell = hydro->cells(i);
+			Real alreadyThere = (cell.*dq_dt)(j);
+			error += fabs(validationDqDt - alreadyThere);
+			(cell.*dq_dt)(j) = validationDqDt;
+		}
+	}
+	//good
+	for (int i = 0; i < hydro->nghost; ++i) {
+		for (int j = 0; j < 3; ++j) {
+			Cell &cell = hydro->cells(i);
+			Real alreadyThere = (cell.*dq_dt)(j);
+			error += fabs(alreadyThere);
+			(cell.*dq_dt)(j) = 0.;
+		}
+	}
+
+	if (error != 0) throw Exception() << __FILE__ << ":" << __LINE__ << ":\t" << error;
+#endif
 }
 
