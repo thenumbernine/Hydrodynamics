@@ -19,6 +19,8 @@ public:
 
 template<typename Hydro>
 void EulerEquationGodunovSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
+	PROFILE()
+
 	GodunovSolver<Hydro>::initStep(ihydro);
 	
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);

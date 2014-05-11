@@ -4,8 +4,6 @@
 #include <math.h>
 
 #include <iostream>
-#include <vector>
-#include <map>
 #include <string>
 
 #include <OpenGL/gl.h>
@@ -14,6 +12,8 @@
 #include "GLApp/GLApp.h" 
 
 #include "Common/Exception.h"
+
+#include "Profile.h"
 
 #include "Hydro/Hydro.h"
 
@@ -24,8 +24,9 @@
 #include "Hydro/InitialConditions/AdvectInitialConditions.h"
 #include "Hydro/InitialConditions/WaveInitialConditions.h"
 
-//#include "Hydro/BoundaryMethod/PeriodicBoundaryMethod.h"
 #include "Hydro/BoundaryMethod/MirrorBoundaryMethod.h"
+//TODO get these working for all dimensions
+//#include "Hydro/BoundaryMethod/PeriodicBoundaryMethod.h"
 //#include "Hydro/BoundaryMethod/ConstantBoundaryMethod.h"
 //#include "Hydro/BoundaryMethod/FreeFlowBoundaryMethod.h"
 
@@ -283,9 +284,15 @@ public:
 	}
 	
 	virtual void update() {
+		PROFILE()
+
 		GLApp::update();
 		hydro->update();
 		hydro->draw();
+	}
+
+	virtual void shutdown() {
+		Profiler::done();
 	}
 };
 GLAPP_MAIN(HydroApp)

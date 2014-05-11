@@ -8,8 +8,10 @@ struct ICell {
 };
 
 //cell-centered values
-template<typename Real_, int rank, int numberOfStates>
+template<typename Real_, int rank, int numberOfStates_>
 struct Cell : public ICell {
+	enum { numberOfStates = numberOfStates_ };
+	
 	//static values
 	typedef Real_ Real;
 	typedef Tensor<Real, Upper<rank> > Vector;

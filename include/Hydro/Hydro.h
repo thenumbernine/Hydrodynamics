@@ -185,28 +185,33 @@ void Hydro<Real, rank, EquationOfState>::resetCoordinates(Vector xmin_, Vector x
 
 template<typename Real, int rank, typename EquationOfState>
 void Hydro<Real, rank, EquationOfState>::boundary() {
+	PROFILE()
 	(*boundaryMethod)(this);
 }
 
 template<typename Real, int rank, typename EquationOfState>
 void Hydro<Real, rank, EquationOfState>::step(Real dt) {
+	PROFILE()
 	boundary();
 	solver->step(this, dt);
 }
 
 template<typename Real, int rank, typename EquationOfState>
 void Hydro<Real, rank, EquationOfState>::update() {
+	PROFILE()
+	
 	solver->initStep(this);
 
 	Real dt = useCFL 
 		? solver->calcCFLTimestep(this)
 		: fixedDT;
-	
+
 	step(dt);
 }
 
 template<typename Real, int rank, typename EquationOfState>
 void Hydro<Real, rank, EquationOfState>::getPrimitives() {
+	PROFILE()
 	std::for_each(cells.begin(), cells.end(), [&](Cell &cell) {
 		ICell *icell = dynamic_cast<ICell*>(&cell);
 		equationOfState->getPrimitives(icell);
@@ -222,29 +227,60 @@ template<> void plotVertex<double, 2>(::Tensor<double, Upper<2> > x, double valu
 template<> void plotVertex<float, 3>(::Tensor<float, Upper<3> > x, float value) { glVertex4f(x(0), x(1), value, x(2)); }
 template<> void plotVertex<double, 3>(::Tensor<double, Upper<3> > x, double value) { glVertex4d(x(0), x(1), value, x(2)); }
 
-template<typename Real, int rank, typename EquationOfState>
-void Hydro<Real, rank, EquationOfState>::draw() {
-	getPrimitives();
+template <int rank>
+struct Plot {
+	template<typename Cell>
+	static void plot(Cell cell, int state) {
+		typedef typename Cell::Real Real;
+		
+		const float plotScalar = .1;
 
-	static ::Vector<::Vector<float, 3>, numberOfStates> colors;
-	static bool initColors = false;
-	if (!initColors) {
-		initColors = true;
-		for (int i = 0; i < numberOfStates; ++i) {
-			float lenSq = 0.;
-			for (int j = 0; j < 3; ++j) {
-				colors(i)(j) = (float)rand() / (float)RAND_MAX;
-				lenSq += colors(i)(j) * colors(i)(j);
-			}
-			float len = sqrt(lenSq);
-			for (int j = 0; j < 3; ++j) {
-				colors(i)(j) /= len;
+		//color by state value, neglect height or use it for coordinates
+		glColor3f(0, cell.state(0), 0);	//color by density
+		plotVertex<Real, rank>(cell.x, plotScalar * cell.primitives(state));
+	}
+};
+
+template<>
+struct Plot<1> {
+	enum { rank = 1 };
+	template<typename Cell>
+	static void plot(Cell cell, int state) {
+		enum { numberOfStates = Cell::numberOfStates };
+		typedef typename Cell::Real Real;
+		
+		const float plotScalar = .1;
+		
+		static ::Vector<::Vector<float, 3>, numberOfStates> colors;
+		static bool initColors = false;
+		if (!initColors) {
+			initColors = true;
+			for (int i = 0; i < numberOfStates; ++i) {
+				float lenSq = 0.;
+				for (int j = 0; j < 3; ++j) {
+					colors(i)(j) = (float)rand() / (float)RAND_MAX;
+					lenSq += colors(i)(j) * colors(i)(j);
+				}
+				float len = sqrt(lenSq);
+				for (int j = 0; j < 3; ++j) {
+					colors(i)(j) /= len;
+				}
 			}
 		}
+		
+		//color by variable, show states by height
+		glColor3fv(colors(state).v);
+		plotVertex<Real, rank>(cell.x, plotScalar * cell.primitives(state));
 	}
+};
 
-	const Real plotScalar = .1;
-	glBegin(GL_LINES);
+template<typename Real, int rank, typename EquationOfState>
+void Hydro<Real, rank, EquationOfState>::draw() {
+	PROFILE()
+
+	getPrimitives();
+
+	glBegin(GL_POINTS);
 	for (typename CellGrid::iterator i = cells.begin(); i != cells.end(); ++i) {
 		Cell &cell = *i;
 		bool edge = false;
@@ -260,19 +296,7 @@ void Hydro<Real, rank, EquationOfState>::draw() {
 				--indexL(side);
 				
 				for (int state = 0; state < numberOfStates; ++state) {
-					
-					if (rank == 1) {
-						//color by variable, show states by height
-						glColor3fv(colors(state).v);
-						plotVertex<Real, rank>(cells(indexL).x, plotScalar * cells(indexL).primitives(state));
-						plotVertex<Real, rank>(cell.x, plotScalar * cell.primitives(state));
-					} else if (rank == 2) {
-						//color by state value, neglect height or use it for coordinates
-						glColor3f(0, cell.state(0), 0);	//color by density
-						plotVertex<Real, rank>(cells(indexL).x, plotScalar * cells(indexL).primitives(state));
-						plotVertex<Real, rank>(cell.x, plotScalar * cell.primitives(state));
-					
-					}
+					Plot<rank>::template plot<Cell>(cell, state);
 				}
 			}
 		}

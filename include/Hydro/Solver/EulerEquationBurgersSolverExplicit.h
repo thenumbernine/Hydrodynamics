@@ -27,6 +27,8 @@ public:
 
 template<typename Hydro>
 void EulerEquationBurgersSolverExplicit<Hydro>::step(IHydro *ihydro, Real dt) {
+	PROFILE()
+
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	
 	(*hydro->explicitMethod)(hydro, dt, [&](Hydro *hydro, Real dt, StateVector Cell::*dq_dt){

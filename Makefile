@@ -3,7 +3,7 @@ DIST=$(DISTDIR)/hydro
 
 SOURCES=$(shell find src -type f)
 HEADERS=$(shell find include -type f)
-OBJECTS=HydroApp.o
+OBJECTS=HydroApp.o Profile.o
 
 OBJDIR=obj/osx/release
 OBJPATHS=$(addprefix $(OBJDIR)/, $(OBJECTS))

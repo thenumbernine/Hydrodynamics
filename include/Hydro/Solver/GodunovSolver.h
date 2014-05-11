@@ -25,6 +25,8 @@ public:
 
 template<typename Hydro>
 void GodunovSolver<Hydro>::initStep(IHydro *ihydro) {
+	PROFILE()
+
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	
 	std::for_each(hydro->cells.begin(), hydro->cells.end(), [&](Cell &cell) {
@@ -59,6 +61,8 @@ void GodunovSolver<Hydro>::initStep(IHydro *ihydro) {
 
 template<typename Hydro>
 typename GodunovSolver<Hydro>::Real GodunovSolver<Hydro>::calcCFLTimestep(IHydro *ihydro) {
+	PROFILE()
+	
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	
 	Real mindum = HUGE_VAL;
@@ -97,6 +101,8 @@ typename GodunovSolver<Hydro>::Real GodunovSolver<Hydro>::calcCFLTimestep(IHydro
 	
 template<typename Hydro>
 void GodunovSolver<Hydro>::step(IHydro *ihydro, Real dt) {
+	PROFILE()
+
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	(*hydro->explicitMethod)(hydro, dt, [&](IHydro *ihydro, Real dt, StateVector Cell::*dq_dt){
 		integrateFlux(ihydro, dt, dq_dt);
@@ -105,6 +111,8 @@ void GodunovSolver<Hydro>::step(IHydro *ihydro, Real dt) {
 
 template<typename Hydro>
 void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Cell::*dq_dt) {
+	PROFILE()
+	
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	
 	std::for_each(hydro->cells.begin(), hydro->cells.end(), [&](Cell &cell) { (cell.*dq_dt) = StateVector(); });
@@ -189,8 +197,6 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 		}
 	}
 
-	std::vector<std::vector<StateVector>> fluxTildes(hydro->size(0));
-	std::vector<std::vector<StateVector>> fluxAvgs(hydro->size(0));
 
 	//transform cell q's into cell qTilde's (eigenspace)
 	for (typename InterfaceGrid::iterator i = hydro->interfaces.begin(); i != hydro->interfaces.end(); ++i) {
@@ -203,8 +209,6 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 			}
 		}
 		if (!edge) {
-fluxAvgs[i.index(0)].resize(rank);
-fluxTildes[i.index(0)].resize(rank);
 			for (int side = 0; side < rank; ++side) {
 				IVector indexR = i.index;
 				IVector indexL = i.index;
@@ -222,7 +226,6 @@ fluxTildes[i.index(0)].resize(rank);
 					}
 					fluxAvg(state) = sum;
 				}
-fluxAvgs[i.index(0)][side] = fluxAvg;
 
 				//calculate flux
 				StateVector fluxTilde;
@@ -240,7 +243,6 @@ fluxAvgs[i.index(0)][side] = fluxAvg;
 					Real deltaFluxTilde = eigenvalue * interface(side).deltaStateTilde(state);
 					fluxTilde(state) = -.5 * deltaFluxTilde * (theta + phi * (epsilon - theta));
 				}
-fluxTildes[i.index(0)][side] = fluxTilde;
 			
 				//reproject fluxTilde back into q
 				for (int state = 0; state < numberOfStates; ++state) {
