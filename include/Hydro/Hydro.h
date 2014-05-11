@@ -210,6 +210,10 @@ template<typename Real, int rank> void plotVertex(::Tensor<Real, Upper<rank> > x
 
 template<> void plotVertex<float, 1>(::Tensor<float, Upper<1> > x, float value) { glVertex2f(x(0), value); }
 template<> void plotVertex<double, 1>(::Tensor<double, Upper<1> > x, double value) { glVertex2d(x(0), value); }
+template<> void plotVertex<float, 2>(::Tensor<float, Upper<2> > x, float value) { glVertex3f(x(0), x(1), value); }
+template<> void plotVertex<double, 2>(::Tensor<double, Upper<2> > x, double value) { glVertex3d(x(0), x(1), value); }
+template<> void plotVertex<float, 3>(::Tensor<float, Upper<3> > x, float value) { glVertex4f(x(0), x(1), value, x(2)); }
+template<> void plotVertex<double, 3>(::Tensor<double, Upper<3> > x, double value) { glVertex4d(x(0), x(1), value, x(2)); }
 
 template<typename Real, int rank, typename EquationOfState>
 void Hydro<Real, rank, EquationOfState>::draw() {

@@ -11,13 +11,8 @@ public:
 	typedef typename Hydro::Real Real;
 	typedef typename Hydro::Vector Vector;
 	typedef typename Hydro::IVector IVector;
-	typedef typename Hydro::Interface Interface;
 	typedef typename Hydro::InterfaceVector InterfaceVector;
 	typedef typename Hydro::InterfaceGrid InterfaceGrid;
-
-	typedef typename Interface::StateVector StateVector;
-	typedef typename Interface::StateMatrix StateMatrix;
-	typedef typename Interface::StateInverseMatrix StateInverseMatrix;
 
 	virtual void initStep(IHydro *ihydro);
 };
@@ -96,7 +91,7 @@ void EulerEquationGodunovSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 					interface(side).eigenvalues, 
 					interface(side).eigenvectors, 
 					interface(side).eigenvectorsInverse, 
-					velocity, enthalpyTotal, hydro->gamma);//, normal);
+					velocity, enthalpyTotal, hydro->gamma, normal);
 			}
 		} else {
 			for (int side = 0; side < rank; ++side) {

@@ -24,14 +24,14 @@
 #include "Hydro/InitialConditions/AdvectInitialConditions.h"
 #include "Hydro/InitialConditions/WaveInitialConditions.h"
 
-#include "Hydro/BoundaryMethod/PeriodicBoundaryMethod.h"
+//#include "Hydro/BoundaryMethod/PeriodicBoundaryMethod.h"
 #include "Hydro/BoundaryMethod/MirrorBoundaryMethod.h"
-#include "Hydro/BoundaryMethod/ConstantBoundaryMethod.h"
-#include "Hydro/BoundaryMethod/FreeFlowBoundaryMethod.h"
+//#include "Hydro/BoundaryMethod/ConstantBoundaryMethod.h"
+//#include "Hydro/BoundaryMethod/FreeFlowBoundaryMethod.h"
 
 #include "Hydro/Solver/EulerEquationBurgersSolverExplicit.h"
 #include "Hydro/Solver/EulerEquationGodunovSolverExplicit.h"
-//#include "Hydro/Solver/EulerEquationRoeSolverExplicit.h"
+#include "Hydro/Solver/EulerEquationRoeSolverExplicit.h"
 
 #include "Hydro/ExplicitMethod/ForwardEulerExplicitMethod.h"
 #include "Hydro/ExplicitMethod/RungeKutta2ExplicitMethod.h"
@@ -65,7 +65,7 @@ public:
 	, precision("double")
 	, boundaryMethodName("Mirror")
 	, equationOfStateName("Euler")
-	, solverName("Godunov")//("Roe")
+	, solverName("Roe")
 	, explicitMethodName("ForwardEuler")
 	, fluxMethodName("Superbee")
 	, initialConditionsName("Sod")
@@ -143,14 +143,16 @@ public:
 		}
 
 		BoundaryMethod *boundaryMethod = NULL;
-		if (args.boundaryMethodName == "Periodic") {
-			boundaryMethod = new PeriodicBoundaryMethod<Hydro>();
-		} else if (args.boundaryMethodName =="Mirror") {
+		if (args.boundaryMethodName =="Mirror") {
 			boundaryMethod = new MirrorBoundaryMethod<Hydro>();
+#if 0
+		} else if (args.boundaryMethodName == "Periodic") {
+			boundaryMethod = new PeriodicBoundaryMethod<Hydro>();
 		} else if (args.boundaryMethodName =="Constant") {
 			boundaryMethod = new ConstantBoundaryMethod<Hydro>();
 		} else if (args.boundaryMethodName =="FreeFlow") {
 			boundaryMethod = new FreeFlowBoundaryMethod<Hydro>();
+#endif
 		} else {
 			throw Exception() << "unknown boundary method " << args.boundaryMethodName;
 		}
@@ -160,8 +162,8 @@ public:
 			solver = new EulerEquationBurgersSolverExplicit<Hydro>();
 		} else if (args.solverName == "Godunov") {
 			solver = new EulerEquationGodunovSolverExplicit<Hydro>();
-		//} else if (args.solverName == "Roe") {
-		//	solver = new EulerEquationRoeSolverExplicit<Hydro>();
+		} else if (args.solverName == "Roe") {
+			solver = new EulerEquationRoeSolverExplicit<Hydro>();
 		} else {
 			throw Exception() << "unknown solver " << args.solverName;
 		}
@@ -265,14 +267,12 @@ public:
 		case 1:
 			initSize<1>();
 			break;
-#if 0	// fix the boundary condition static asserts before enabling these
 		case 2:
 			initSize<2>();
 			break;
 		case 3:
 			initSize<3>();
 			break;
-#endif
 		default:
 			throw Exception() << "unknown dim " << args.dim;
 		}
