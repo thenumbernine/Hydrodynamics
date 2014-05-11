@@ -11,7 +11,7 @@ OBJPATHS=$(addprefix $(OBJDIR)/, $(OBJECTS))
 CC=clang++
 CFLAGS_BASE=-c -Wall -std=c++11 -Iinclude -I../GLApp/include -I../TensorMath/include
 CFLAGS_DEBUG=$(CFLAGS_BASE) -O0 -mfix-and-continue -gdwarf-2
-CFLAGS_RELEASE=$(CFLAGS_BASE) -Os
+CFLAGS_RELEASE=$(CFLAGS_BASE) -O3
 CFLAGS=$(CFLAGS_RELEASE)
 
 LD=clang++

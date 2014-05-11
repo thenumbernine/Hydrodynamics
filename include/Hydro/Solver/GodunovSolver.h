@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Hydro/Solver.h"
+#include "Parallel.h"
 
 template<typename Hydro>
 class GodunovSolver : public Solver<typename Hydro::Real> {
@@ -28,8 +29,9 @@ void GodunovSolver<Hydro>::initStep(IHydro *ihydro) {
 	PROFILE()
 
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
-	
-	std::for_each(hydro->cells.begin(), hydro->cells.end(), [&](Cell &cell) {
+
+	RangeParallelFor(IVector(), hydro->size, [&](IVector index) {
+		Cell &cell = hydro->cells(index);
 		for (int side = 0; side < rank; ++side) {
 			cell.stateLeft(side) = cell.stateRight(side) = cell.state;
 		}
@@ -114,22 +116,20 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 	PROFILE()
 	
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
-	
-	std::for_each(hydro->cells.begin(), hydro->cells.end(), [&](Cell &cell) { (cell.*dq_dt) = StateVector(); });
 
-	for (typename InterfaceGrid::iterator i = hydro->interfaces.begin(); i != hydro->interfaces.end(); ++i) {
-		InterfaceVector &interface = *i;
+	RangeParallelFor(IVector(), hydro->size+1, [&](IVector index) {
+		InterfaceVector &interface = hydro->interfaces(index);
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
-			if (i.index(side) < 1 || i.index(side) >= hydro->size(side)) {
+			if (index(side) < 1 || index(side) >= hydro->size(side)) {
 				edge = true;
 				break;
 			}
 		}
 		if (!edge) {
 			for (int side = 0; side < rank; ++side) {
-				IVector indexR = i.index;
-				IVector indexL = i.index;
+				IVector indexR = index;
+				IVector indexL = index;
 				--indexL(side);
 				
 				StateVector stateLeft = hydro->cells(indexL).stateRight(side);
@@ -149,13 +149,13 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 				}
 			}
 		}
-	}
+	});
 
-	for (typename InterfaceGrid::iterator i = hydro->interfaces.begin(); i != hydro->interfaces.end(); ++i) {
-		InterfaceVector &interface = *i;
+	RangeParallelFor(IVector(), hydro->size+1, [&](IVector index) {
+		InterfaceVector &interface = hydro->interfaces(index);
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
-			if (i.index(side) < hydro->nghost || i.index(side) >= hydro->size(side) - hydro->nghost + 1) {
+			if (index(side) < hydro->nghost || index(side) >= hydro->size(side) - hydro->nghost + 1) {
 				edge = true;
 				break;
 			}
@@ -163,15 +163,15 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 		if (!edge) {
 			for (int side = 0; side < rank; ++side) {
 				/*
-				IVector cellIndexL2 = i.index; cellIndexL2(side) -= 2;
-				IVector cellIndexL1 = i.index; --cellIndexL1(side);
-				IVector cellIndexR1 = i.index;
-				IVector cellIndexR2 = i.index; ++cellIndexR2(side);
+				IVector cellIndexL2 = index; cellIndexL2(side) -= 2;
+				IVector cellIndexL1 = index; --cellIndexL1(side);
+				IVector cellIndexR1 = index;
+				IVector cellIndexR2 = index; ++cellIndexR2(side);
 				*/
 
-				IVector interfaceIndexL = i.index;
+				IVector interfaceIndexL = index;
 				--interfaceIndexL(side);
-				IVector interfaceIndexR = i.index;
+				IVector interfaceIndexR = index;
 				++interfaceIndexR(side); 
 				
 				for (int state = 0; state < numberOfStates; ++state) {
@@ -195,23 +195,23 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 				interface(side).rTilde = StateVector();
 			}
 		}
-	}
+	});
 
 
 	//transform cell q's into cell qTilde's (eigenspace)
-	for (typename InterfaceGrid::iterator i = hydro->interfaces.begin(); i != hydro->interfaces.end(); ++i) {
-		InterfaceVector &interface = *i;
+	RangeParallelFor(IVector(), hydro->size+1, [&](IVector index) {
+		InterfaceVector &interface = hydro->interfaces(index);
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
-			if (i.index(side) < hydro->nghost - 1 || i.index(side) >= hydro->size(side) + hydro->nghost - 2) {
+			if (index(side) < hydro->nghost - 1 || index(side) >= hydro->size(side) + hydro->nghost - 2) {
 				edge = true;
 				break;
 			}
 		}
 		if (!edge) {
 			for (int side = 0; side < rank; ++side) {
-				IVector indexR = i.index;
-				IVector indexL = i.index;
+				IVector indexR = index;
+				IVector indexL = index;
 				--indexL(side);
 				
 				Real dx = interface(side).x(side) - hydro->interfaces(indexL)(side).x(side);
@@ -258,14 +258,14 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 				interface(side).flux = StateVector();
 			}
 		}
-	}
+	});
 
 	//update cells
-	for (typename CellGrid::iterator i = hydro->cells.begin(); i != hydro->cells.end(); ++i) {
-		Cell &cell = *i;
+	RangeParallelFor(IVector(), hydro->size, [&](IVector index) {
+		Cell &cell = hydro->cells(index);
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
-			if (i.index(side) < hydro->nghost || i.index(side) >= hydro->size(side) - hydro->nghost) {
+			if (index(side) < hydro->nghost || index(side) >= hydro->size(side) - hydro->nghost) {
 				edge = true;
 				break;
 			}
@@ -274,8 +274,8 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 		cell.*dq_dt = StateVector();
 		if (!edge) {
 			for (int side = 0; side < rank; ++side) {
-				IVector indexL = i.index;
-				IVector indexR = i.index;
+				IVector indexL = index;
+				IVector indexR = index;
 				++indexR(side);
 				Real dx = hydro->interfaces(indexR)(side).x(side) - hydro->interfaces(indexL)(side).x(side);		
 				for (int state = 0; state < numberOfStates; ++state) {
@@ -284,6 +284,6 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 				}
 			}
 		}
-	}
+	});
 }
 

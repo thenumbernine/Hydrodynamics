@@ -279,8 +279,7 @@ public:
 
 	virtual void resize(int width, int height) {
 		GLApp::resize(width, height);
-		float aspectRatio = (float)width / (float)height;
-		glOrtho(-aspectRatio, aspectRatio, -1., 1., -1., 1.);
+		hydro->resize(width, height);
 	}
 	
 	virtual void update() {

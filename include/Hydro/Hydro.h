@@ -22,6 +22,7 @@ class IHydro {
 public:
 	virtual void update() = 0;
 	virtual void draw() = 0;
+	virtual void resize(int width, int height) = 0;
 };
 
 template<typename Real_, int rank_, typename EquationOfState_>
@@ -85,6 +86,7 @@ public:
 public:
 	virtual void update();
 	virtual void draw();
+	virtual void resize(int width, int height);
 };
 
 #include "Hydro/Solver.h"
@@ -218,6 +220,42 @@ void Hydro<Real, rank, EquationOfState>::getPrimitives() {
 	});
 }
 
+template<int rank>
+struct HydroResize {
+	static void resize(int width, int height) {
+		const float zNear = 1;
+		const float zFar = 1000;
+		float aspectRatio = (float)width / (float)height;
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glFrustum(-aspectRatio * zNear, aspectRatio * zNear, -zNear, zNear, zNear, zFar);
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+		glTranslatef(0,0,2);
+	}
+};
+
+template<>
+struct HydroResize<1> {
+	static void resize(int width, int height) {
+		float aspectRatio = (float)width / (float)height;
+		glOrtho(-aspectRatio, aspectRatio, -.25, .5, -1., 1.);
+	}
+};
+
+template<>
+struct HydroResize<2> {
+	static void resize(int width, int height) {
+		float aspectRatio = (float)width / (float)height;
+		glOrtho(-aspectRatio, aspectRatio, -1., 1., -1., 1.);
+	}
+};
+
+template<typename Real, int rank, typename EquationOfState>
+void Hydro<Real, rank, EquationOfState>::resize(int width, int height) {
+	HydroResize<rank>::resize(width, height);
+}
+
 template<typename Real, int rank> void plotVertex(::Tensor<Real, Upper<rank> > x, Real value);
 
 template<> void plotVertex<float, 1>(::Tensor<float, Upper<1> > x, float value) { glVertex2f(x(0), value); }
@@ -228,7 +266,7 @@ template<> void plotVertex<float, 3>(::Tensor<float, Upper<3> > x, float value) 
 template<> void plotVertex<double, 3>(::Tensor<double, Upper<3> > x, double value) { glVertex4d(x(0), x(1), value, x(2)); }
 
 template <int rank>
-struct Plot {
+struct HydroPlot {
 	template<typename Cell>
 	static void plot(Cell cell, int state) {
 		typedef typename Cell::Real Real;
@@ -242,7 +280,7 @@ struct Plot {
 };
 
 template<>
-struct Plot<1> {
+struct HydroPlot<1> {
 	enum { rank = 1 };
 	template<typename Cell>
 	static void plot(Cell cell, int state) {
@@ -291,13 +329,8 @@ void Hydro<Real, rank, EquationOfState>::draw() {
 			}
 		}
 		if (!edge) {
-			for (int side = 0; side < rank; ++side) {
-				IVector indexL = i.index;
-				--indexL(side);
-				
-				for (int state = 0; state < numberOfStates; ++state) {
-					Plot<rank>::template plot<Cell>(cell, state);
-				}
+			for (int state = 0; state < numberOfStates; ++state) {
+				HydroPlot<rank>::template plot<Cell>(cell, state);
 			}
 		}
 	}
