@@ -256,15 +256,23 @@ void Hydro<Real, rank, EquationOfState>::draw() {
 		}
 		if (!edge) {
 			for (int side = 0; side < rank; ++side) {
-				Vector dx(0.);
-				dx(side) = (xmax(side) - xmin(side)) / (Real)size(side);
 				IVector indexL = i.index;
 				--indexL(side);
 				
 				for (int state = 0; state < numberOfStates; ++state) {
-					glColor3fv(colors(state).v);
-					plotVertex<Real, rank>(cell.x - dx, plotScalar * cells(indexL).primitives(state));
-					plotVertex<Real, rank>(cell.x, plotScalar * cell.primitives(state));
+					
+					if (rank == 1) {
+						//color by variable, show states by height
+						glColor3fv(colors(state).v);
+						plotVertex<Real, rank>(cells(indexL).x, plotScalar * cells(indexL).primitives(state));
+						plotVertex<Real, rank>(cell.x, plotScalar * cell.primitives(state));
+					} else if (rank == 2) {
+						//color by state value, neglect height or use it for coordinates
+						glColor3f(0, cell.state(0), 0);	//color by density
+						plotVertex<Real, rank>(cells(indexL).x, plotScalar * cells(indexL).primitives(state));
+						plotVertex<Real, rank>(cell.x, plotScalar * cell.primitives(state));
+					
+					}
 				}
 			}
 		}

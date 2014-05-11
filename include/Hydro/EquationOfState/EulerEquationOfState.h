@@ -43,58 +43,84 @@ void EulerEquationOfState<Real, rank>::getPrimitives(ICell *icell) {
 	cell->primitives(rank+1) = cell->state(rank+1) / cell->state(0);
 }
 
-template<typename Real, int rank>
-void buildPerpendicularBasis(
-	::Tensor<Real, Upper<rank> > normal, 
-	::Vector<::Tensor<Real, Upper<rank> >, rank-1> &tangents) 
-{
-	//1) pick normal's max abs component
-	//2) fill in all axii but that component
-	//3) apply Graham-Schmidt
-	// what about coordinate system handedness?
+template<int rank>
+struct BuildPerpendicularBasis {
+	template<typename Real>
+	static void go(
+		::Tensor<Real, Upper<rank> > normal, 
+		::Vector<::Tensor<Real, Upper<rank> >, rank-1> &tangents) 
+	{
+		//1) pick normal's max abs component
+		//2) fill in all axii but that component
+		//3) apply Graham-Schmidt
+		// what about coordinate system handedness?
 
-	int maxAxis = -1;
-	Real maxValue = -HUGE_VAL;
-	for (int k = 0; k < rank; ++k) {
-		Real absNormal = fabs(normal(k));
-		if (absNormal > maxValue) {
-			maxValue = absNormal;
-			maxAxis = k;
+		int maxAxis = -1;
+		Real maxValue = -HUGE_VAL;
+		for (int k = 0; k < rank; ++k) {
+			Real absNormal = fabs(normal(k));
+			if (absNormal > maxValue) {
+				maxValue = absNormal;
+				maxAxis = k;
+			}
+		}
+
+		for (int j = 0; j < rank-1; ++j) {
+			if (j < maxAxis) {
+				tangents(j)(j) = 1;
+			} else {
+				tangents(j)(j+1) = 1;
+			}
+		
+			for (int k = j-1; k >= 0; --k) {
+				Real num = Real(0), denom = Real(0);
+				for (int i = 0; i < rank; ++i) {
+					num += tangents(j)(i) * tangents(k)(i);
+					denom += tangents(j)(i) * tangents(j)(i);
+				}
+				tangents(j) -= tangents(j) * (num / denom);
+			}
+			{
+				Real num = Real(0), denom = Real(0);
+				for (int i = 0; i < rank; ++i) {
+					num += tangents(j)(i) * normal(i);
+					denom += tangents(j)(i) * tangents(j)(i);
+				}
+				tangents(j) -= tangents(j) * (num / denom);
+			}
+			{
+				Real len = Real(0);
+				for (int k = 0; k < rank; ++k) {
+					len += sqrt(tangents(j)(k) * tangents(j)(k));
+				}
+				tangents(j) *= Real(1) / len;
+			}
 		}
 	}
+};
 
-	for (int j = 0; j < rank-1; ++j) {
-		if (j < maxAxis) {
-			tangents(j)(j) = 1;
-		} else {
-			tangents(j)(j+1) = 1;
-		}
-	
-		for (int k = j-1; k >= 0; --k) {
-			Real num = Real(0), denom = Real(0);
-			for (int i = 0; i < rank; ++i) {
-				num += tangents(j)(i) * tangents(k)(i);
-				denom += tangents(j)(i) * tangents(j)(i);
-			}
-			tangents(j) -= tangents(j) * (num / denom);
-		}
-		{
-			Real num = Real(0), denom = Real(0);
-			for (int i = 0; i < rank; ++i) {
-				num += tangents(j)(i) * normal(i);
-				denom += tangents(j)(i) * tangents(j)(i);
-			}
-			tangents(j) -= tangents(j) * (num / denom);
-		}
-		{
-			Real len = Real(0);
-			for (int k = 0; k < rank; ++k) {
-				len += sqrt(tangents(j)(k) * tangents(j)(k));
-			}
-			tangents(j) *= Real(1) / len;
-		}
+template<>
+struct BuildPerpendicularBasis<1> {
+	template<typename Real>
+	static void go(
+		::Tensor<Real, Upper<1> > normal, 
+		::Vector<::Tensor<Real, Upper<1> >, 0> &tangents)
+	{
 	}
-}
+};
+
+template<>
+struct BuildPerpendicularBasis<2> {
+	template<typename Real>
+	static void go(
+		::Tensor<Real, Upper<2> > normal, 
+		::Vector<::Tensor<Real, Upper<2> >, 1> &tangents) 
+	{
+		tangents(0)(0) = -normal(1);
+		tangents(0)(1) = normal(0);
+	}
+};
+
 
 //from Numerical Reicipes 2nd ed:
 template<typename OutputType, typename InputType>
@@ -197,7 +223,7 @@ void EulerEquationOfState<Real, rank>::buildEigenstate(
 	Real speedOfSound = sqrt((gamma - 1.) * (enthalpyTotal - .5 * velocity(0) * velocity(0)));
 
 	::Vector<Vector, rank-1> tangents;
-	buildPerpendicularBasis<Real, rank>(normal, tangents);
+	BuildPerpendicularBasis<rank>::template go<Real>(normal, tangents);
 	
 	Real velocityAlongNormal = Real(0);
 	::Vector<Real, rank-1> velocityAlongTangents;
