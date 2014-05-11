@@ -25,19 +25,19 @@ void EulerEquationGodunovSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 	
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 
-	for (typename InterfaceGrid::iterator i = hydro->interfaces.begin(); i != hydro->interfaces.end(); ++i) {
-		InterfaceVector &interface = *i;
+	RangeParallelFor(IVector(), hydro->size+1, [&](IVector index) {
+		InterfaceVector &interface = hydro->interfaces(index);
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
-			if (i.index(side) < 1 || i.index(side) >= hydro->size(side)) {
+			if (index(side) < 1 || index(side) >= hydro->size(side)) {
 				edge = true;
 				break;
 			}
 		}
 		if (!edge) {
 			for (int side = 0; side < rank; ++side) {
-				IVector indexR = i.index;
-				IVector indexL = i.index;
+				IVector indexR = index;
+				IVector indexL = index;
 				--indexL(side);
 
 				Vector xL = interface(side).x;
@@ -107,6 +107,6 @@ void EulerEquationGodunovSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 				}
 			}
 		}
-	}
+	});
 }
 

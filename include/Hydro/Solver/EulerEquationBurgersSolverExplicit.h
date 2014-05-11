@@ -10,6 +10,7 @@ public:
 	typedef typename Hydro::Real Real;
 	typedef typename Hydro::Cell Cell;
 	typedef typename Hydro::Interface Interface;
+	typedef typename Hydro::InterfaceVector InterfaceVector;
 	typedef typename Hydro::IVector IVector;
 	typedef typename Cell::Vector Vector;
 	typedef typename Cell::StateVector StateVector;
@@ -53,20 +54,20 @@ void EulerEquationBurgersSolverExplicit<Hydro>::step(IHydro *ihydro, Real dt) {
 template<typename Hydro>
 void EulerEquationBurgersSolverExplicit<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Cell::*dq_dt) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
-	
-	for (typename InterfaceGrid::iterator i = hydro->interfaces.begin(); i != hydro->interfaces.end(); ++i) {
-		::Vector<Interface, rank> &interface = *i;
+
+	RangeParallelFor(IVector(), hydro->size+1, [&](IVector index) {
+		InterfaceVector &interface = hydro->interfaces(index);
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
-			if (i.index(side) < hydro->nghost - 1 || i.index(side) >= hydro->size(side) + hydro->nghost - 2) {
+			if (index(side) < hydro->nghost - 1 || index(side) >= hydro->size(side) + hydro->nghost - 2) {
 				edge = true;
 				break;
 			}
 		}
 		if (!edge) {
 			for (int side = 0; side < rank; ++side) {
-				IVector indexR = i.index;
-				IVector indexL = i.index;
+				IVector indexR = index;
+				IVector indexL = index;
 				--indexL(side);
 				Real uL = hydro->cells(indexL).state(side+1) / hydro->cells(indexL).state(0);
 				Real uR = hydro->cells(indexR).state(side+1) / hydro->cells(indexR).state(0);
@@ -77,14 +78,14 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateFlux(IHydro *ihydro, Re
 				interface(side).velocity = 0.;
 			}
 		}
-	}
+	});
 
 	//compute flux and advect for each state vector
-	for (typename InterfaceGrid::iterator i = hydro->interfaces.begin(); i != hydro->interfaces.end(); ++i) {
-		::Vector<Interface, rank> &interface = *i;
+	RangeParallelFor(IVector(), hydro->size+1, [&](IVector index) {
+		InterfaceVector &interface = hydro->interfaces(index);
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
-			if (i.index(side) < hydro->nghost || i.index(side) >= hydro->size(side) + hydro->nghost - 3) {
+			if (index(side) < hydro->nghost || index(side) >= hydro->size(side) + hydro->nghost - 3) {
 				edge = true;
 				break;
 			}
@@ -92,10 +93,10 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateFlux(IHydro *ihydro, Re
 		if (!edge) {
 			for (int state = 0; state < numberOfStates; ++state) {
 				for (int side = 0; side < rank; ++side) {
-					IVector indexL2 = i.index; indexL2(side) -= 2;
-					IVector indexL1 = i.index; --indexL1(side);
-					IVector indexR1 = i.index;
-					IVector indexR2 = i.index; ++indexR2(side);
+					IVector indexL2 = index; indexL2(side) -= 2;
+					IVector indexL1 = index; --indexL1(side);
+					IVector indexR1 = index;
+					IVector indexR2 = index; ++indexR2(side);
 					
 					Real qL2 = hydro->cells(indexL2).state(state);
 					Real qL1 = hydro->cells(indexL1).state(state);
@@ -121,14 +122,14 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateFlux(IHydro *ihydro, Re
 				}
 			}
 		}
-	}
+	});
 	
 	//construct flux
-	for (typename InterfaceGrid::iterator i = hydro->interfaces.begin(); i != hydro->interfaces.end(); ++i) {
-		::Vector<Interface, rank> &interface = *i;
+	RangeParallelFor(IVector(), hydro->size+1, [&](IVector index) {
+		InterfaceVector &interface = hydro->interfaces(index);
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
-			if (i.index(side) < hydro->nghost - 1 || i.index(side) >= hydro->size(side) + hydro->nghost - 2) {
+			if (index(side) < hydro->nghost - 1 || index(side) >= hydro->size(side) + hydro->nghost - 2) {
 				edge = true;
 				break;
 			}
@@ -136,10 +137,10 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateFlux(IHydro *ihydro, Re
 		if (!edge) {
 			//flux calculation
 			for (int side = 0; side < rank; ++side) {
-				IVector indexR = i.index;
-				IVector indexL = i.index;
+				IVector indexR = index;
+				IVector indexL = index;
 				--indexL(side);
-				Real dx = hydro->cells(i.index).x(side) - hydro->cells(indexL).x(side);			
+				Real dx = hydro->cells(index).x(side) - hydro->cells(indexL).x(side);			
 				for (int state = 0; state < numberOfStates; ++state) {
 					Real phi = (*hydro->fluxMethod)(interface(side).r(state));
 					Real velocity = interface(side).velocity;
@@ -161,14 +162,14 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateFlux(IHydro *ihydro, Re
 				}
 			}
 		}
-	}
+	});
 
 	//update cells
-	for (typename CellGrid::iterator i = hydro->cells.begin(); i != hydro->cells.end(); ++i) {
-		Cell &cell = *i;
+	RangeParallelFor(IVector(), hydro->size, [&](IVector index) {
+		Cell &cell = hydro->cells(index);
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
-			if (i.index(side) < hydro->nghost || i.index(side) >= hydro->size(side) - hydro->nghost) {
+			if (index(side) < hydro->nghost || index(side) >= hydro->size(side) - hydro->nghost) {
 				edge = true;
 				break;
 			}
@@ -177,8 +178,8 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateFlux(IHydro *ihydro, Re
 		(cell.*dq_dt) = StateVector();
 		if (!edge) {
 			for (int side = 0; side < rank; ++side) {
-				IVector indexL = i.index;
-				IVector indexR = i.index;
+				IVector indexL = index;
+				IVector indexR = index;
 				++indexR(side);
 				Real dx = hydro->interfaces(indexR)(side).x(side) - hydro->interfaces(indexL)(side).x(side);
 				for (int state = 0; state < numberOfStates; ++state) {
@@ -187,18 +188,18 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateFlux(IHydro *ihydro, Re
 				}
 			}
 		}
-	}
+	});
 }
 
 template<typename Hydro>
 void EulerEquationBurgersSolverExplicit<Hydro>::integrateExternalForces(IHydro *ihydro, Real dt, StateVector Cell::*dq_dt) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	
-	for (typename CellGrid::iterator i = hydro->cells.begin(); i != hydro->cells.end(); ++i) {
-		Cell &cell = *i;
+	RangeParallelFor(IVector(), hydro->size, [&](IVector index) {
+		Cell &cell = hydro->cells(index);
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
-			if (i.index(side) < hydro->nghost || i.index(side) >= hydro->size(side) - hydro->nghost) {
+			if (index(side) < hydro->nghost || index(side) >= hydro->size(side) - hydro->nghost) {
 				edge = true;
 				break;
 			}
@@ -216,7 +217,7 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateExternalForces(IHydro *
 		} else {
 			cell.*dq_dt = StateVector();
 		}
-	}
+	});
 }
 
 
@@ -225,7 +226,8 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateMomentumDiffusion(IHydr
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 
 	//compute pressure
-	std::for_each(hydro->cells.begin(), hydro->cells.end(), [&](Cell &cell) {
+	RangeParallelFor(IVector(), hydro->size, [&](IVector index) {
+		Cell &cell = hydro->cells(index);
 		Vector x = cell.x;
 		Real density = cell.state(0);
 		Vector velocity;
@@ -245,11 +247,11 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateMomentumDiffusion(IHydr
 	});
 
 	//apply momentum diffusion = pressure
-	for (typename CellGrid::iterator i = hydro->cells.begin(); i != hydro->cells.end(); ++i) {
-		Cell &cell = *i;
+	RangeParallelFor(IVector(), hydro->size, [&](IVector index) {
+		Cell &cell = hydro->cells(index);
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
-			if (i.index(side) < hydro->nghost || i.index(side) >= hydro->size(side) - hydro->nghost) {
+			if (index(side) < hydro->nghost || index(side) >= hydro->size(side) - hydro->nghost) {
 				edge = true;
 				break;
 			}
@@ -258,9 +260,9 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateMomentumDiffusion(IHydr
 			(cell.*dq_dt)(0) = 0.;
 			(cell.*dq_dt)(rank+1) = 0.;
 			for (int side = 0; side < rank; ++side) {
-				IVector indexL = i.index;
+				IVector indexL = index;
 				--indexL(side);
-				IVector indexR = i.index;
+				IVector indexR = index;
 				++indexR(side);
 		
 				Real pressureL = hydro->cells(indexL).pressure;
@@ -274,7 +276,7 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateMomentumDiffusion(IHydr
 		} else {
 			cell.*dq_dt = StateVector();
 		}
-	}
+	});
 }
 
 template<typename Hydro>
@@ -282,11 +284,11 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateWorkDiffusion(IHydro *i
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 
 	//apply work diffusion = momentum
-	for (typename CellGrid::iterator i = hydro->cells.begin(); i != hydro->cells.end(); ++i) {
-		Cell &cell = *i;
+	RangeParallelFor(IVector(), hydro->size, [&](IVector index) {
+		Cell &cell = hydro->cells(index);
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
-			if (i.index(side) < hydro->nghost || i.index(side) >= hydro->size(side) - hydro->nghost) {
+			if (index(side) < hydro->nghost || index(side) >= hydro->size(side) - hydro->nghost) {
 				edge = true;
 				break;
 			}
@@ -295,9 +297,9 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateWorkDiffusion(IHydro *i
 		cell.*dq_dt = StateVector();
 		if (!edge) { 
 			for (int side = 0; side < rank; ++side) {
-				IVector indexL = i.index;
+				IVector indexL = index;
 				--indexL(side);
-				IVector indexR = i.index;
+				IVector indexR = index;
 				++indexR(side);
 
 				Real uR = hydro->cells(indexR).state(side+1) / hydro->cells(indexR).state(0);
@@ -310,6 +312,6 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateWorkDiffusion(IHydro *i
 				(cell.*dq_dt)(rank+1) -= (pressureR * uR - pressureL * uL) / dx;
 			}
 		}
-	}
+	});
 }
 

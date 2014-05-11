@@ -3,3 +3,9 @@ combined with my TensorMath library so I can write every dimension case at once 
 
 bugs:
 - slight antisymmetry of axii visible in the 2D case
+- Burgers on 2D
+
+fixes:
+- speed up parallel for more
+- cut down on all those dereferences?
+- draw n>1-D with quads and heat colors
