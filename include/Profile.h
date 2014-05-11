@@ -137,4 +137,4 @@ struct Profiler {
 #define LINE_STRING	STRINGIZE(__LINE__)
 #define PROFILE_NAME __FILE__ "(" LINE_STRING ")" //FUNCTION_STRING //function not expanding 
 #define PROFILE()	Profiler profiler(PROFILE_NAME);
-
+#define PROFILER_DONE()	Profiler::done();

@@ -291,7 +291,7 @@ public:
 	}
 
 	virtual void shutdown() {
-		Profiler::done();
+		PROFILER_DONE()
 	}
 };
 GLAPP_MAIN(HydroApp)

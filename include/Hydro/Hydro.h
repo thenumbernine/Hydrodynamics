@@ -231,7 +231,7 @@ struct HydroResize {
 		glFrustum(-aspectRatio * zNear, aspectRatio * zNear, -zNear, zNear, zNear, zFar);
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
-		glTranslatef(0,0,2);
+		glTranslatef(0,0,-3);
 	}
 };
 
