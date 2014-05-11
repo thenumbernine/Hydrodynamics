@@ -139,14 +139,21 @@ void Hydro<Real, rank, EquationOfState>::resetCoordinates(Vector xmin_, Vector x
 
 	for (typename InterfaceGrid::iterator i = interfaces.begin(); i != interfaces.end(); ++i) {
 		InterfaceVector &interface = *i;
-		for (int k = 0; k < rank; ++k) {	//which side
-			if (!(i.index(k) == 0 || i.index(k) == size(k))) {
-				IVector nextIndex = i.index;
-				IVector prevIndex = nextIndex;
-				--prevIndex(k);
-				
-				for (int j = 0; j < 3; ++j) {	//which element of the position vector
-					interface(k).x(j) = .5 * (cells(nextIndex).x(j) + cells(prevIndex).x(j));
+		bool edge = false;
+		for (int side = 0; side < rank; ++side) {	//which side
+			if (i.index(side) < 1 || i.index(side) >= size(side)) {
+				edge = true;
+				break;
+			}
+		}
+		if (!edge) {
+			for (int side = 0; side < rank; ++side) {
+				IVector indexR = i.index;
+				IVector indexL = indexR;
+				--indexL(side);
+
+				for (int k = 0; k < rank; ++k) {
+					interface(side).x(k) = (cells(indexR).x(k) + cells(indexL).x(k)) * Real(.5);
 				}
 			}
 		}

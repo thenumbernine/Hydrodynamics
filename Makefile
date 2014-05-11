@@ -12,13 +12,13 @@ CC=clang++
 CFLAGS_BASE=-c -Wall -std=c++11 -Iinclude -I../GLApp/include -I../TensorMath/include
 CFLAGS_DEBUG=$(CFLAGS_BASE) -O0 -mfix-and-continue -gdwarf-2
 CFLAGS_RELEASE=$(CFLAGS_BASE) -Os
-CFLAGS=$(CFLAGS_DEBUG)
+CFLAGS=$(CFLAGS_RELEASE)
 
 LD=clang++
 LDFLAGS_BASE=-L../GLApp/dist/osx -lGLApp -lSDL -lSDLmain -framework Cocoa -framework OpenGL
 LDFLAGS_DEBUG=$(LDFLAGS_BASE)
 LDFLAGS_RELEASE=$(LDFLAGS_BASE)
-LDFLAGS=$(LDFLAGS_DEBUG)
+LDFLAGS=$(LDFLAGS_RELEASE)
 
 .PHONY: all prep clean distclean test
 

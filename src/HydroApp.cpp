@@ -56,7 +56,7 @@ public:
 	std::string fluxMethodName;
 	std::string initialConditionsName;
 	HydroArgs() 
-	: dim(1)
+	: dim(2)
 	, size(256)
 	, useCFL(true)
 	, cfl(.5)
@@ -76,12 +76,10 @@ public:
 class HydroApp : public GLApp {
 	IHydro *hydro;
 	HydroArgs args;
-	int dim;
 
 public:
 	HydroApp()
 	: hydro(NULL)
-	, dim(1)
 	{}
 
 	virtual int main(int argc, char **argv) {
@@ -110,7 +108,7 @@ public:
 				} else if (!strcmp(argv[i], "--gamma")) {
 					args.gamma = atof(argv[++i]);
 				} else if (!strcmp(argv[i], "--dim")) {
-					dim = atoi(argv[++i]);
+					args.dim = atoi(argv[++i]);
 				} else if (!strcmp(argv[i], "--precision")) {
 					args.precision = argv[++i];
 				}
@@ -280,8 +278,8 @@ public:
 
 	virtual void resize(int width, int height) {
 		GLApp::resize(width, height);
-		float aspectRatio = (float)width / (float)height;	
-		glOrtho(-aspectRatio, aspectRatio, -.25, .5, -1, 1);
+		float aspectRatio = (float)width / (float)height;
+		glOrtho(-aspectRatio, aspectRatio, -1., 1., -1., 1.);
 	}
 	
 	virtual void update() {
