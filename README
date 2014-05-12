@@ -6,6 +6,6 @@ bugs:
 - Burgers on 2D
 
 fixes:
-- speed up parallel for more
+- thread pool in place of spawning & destroying threads
 - cut down on all those dereferences?
 - draw n>1-D with quads and heat colors

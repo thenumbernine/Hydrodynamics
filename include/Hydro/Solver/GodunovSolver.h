@@ -31,36 +31,39 @@ void GodunovSolver<Hydro>::initStep(IHydro *ihydro) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 
 	//should only be up to < size
-	Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
-		Cell &cell = v.second;
-		for (int side = 0; side < rank; ++side) {
-			cell.stateLeft(side) = cell.stateRight(side) = cell.state;
-		}
-	});
+	{
+		PROFILE()
+		Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+			Cell &cell = v.second;
+			for (int side = 0; side < rank; ++side) {
+				cell.stateLeft(side) = cell.stateRight(side) = cell.state;
+			}
+		});
+	}
 
-	Parallel::For(hydro->interfaces.begin(), hydro->interfaces.end(), [&](typename InterfaceGrid::value_type &v) {
-		IVector index = v.first;
-		InterfaceVector &interface = v.second;
-		bool edge = false;
-		for (int side = 0; side < rank; ++side) {
-			if (index(side) < 1 || index(side) >= hydro->size(side)) {
-				edge = true;
-				break;
-			}
-		}
-		if (!edge) {
+	{
+		PROFILE()
+		Parallel::For(hydro->interfaces.begin(), hydro->interfaces.end(), [&](typename InterfaceGrid::value_type &v) {
+			IVector index = v.first;
+			InterfaceVector &interface = v.second;
+			bool edge = false;
 			for (int side = 0; side < rank; ++side) {
-				IVector indexR = index;
-				IVector indexL = index;
-				--indexL(side);
-				interface(side).stateMid = (hydro->cells(indexL).stateRight(side) + hydro->cells(indexR).stateLeft(side)) * Real(.5);
+				if (index(side) < 1 || index(side) >= hydro->size(side)) {
+					edge = true;
+					break;
+				}
 			}
-		} else {
-			for (int side = 0; side < rank; ++side) {
-				interface(side).stateMid = StateVector();
+			if (!edge) {
+				for (int side = 0; side < rank; ++side) {
+					interface(side).stateMid = (interface(side).cellLeft->stateRight(side) + interface(side).cellRight->stateLeft(side)) * Real(.5);
+				}
+			} else {
+				for (int side = 0; side < rank; ++side) {
+					interface(side).stateMid = StateVector();
+				}
 			}
-		}
-	});
+		});
+	}
 }
 
 template<typename Hydro>
@@ -70,13 +73,13 @@ typename GodunovSolver<Hydro>::Real GodunovSolver<Hydro>::calcCFLTimestep(IHydro
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	
 	Real mindum = Parallel::Reduce(
-		hydro->interfaces.begin(), 
-		hydro->interfaces.end(),
-		[&](typename InterfaceGrid::value_type &v) -> Real 
+		hydro->cells.begin(), 
+		hydro->cells.end(),
+		[&](typename CellGrid::value_type &v) -> Real 
 	{
 		Real mindum = HUGE_VAL;
 		IVector index = v.first;
-		InterfaceVector &interface = v.second;
+		Cell &cell = v.second;
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
 			if (index(side) < 1 || index(side) >= hydro->size(side)) {
@@ -86,17 +89,14 @@ typename GodunovSolver<Hydro>::Real GodunovSolver<Hydro>::calcCFLTimestep(IHydro
 		}
 		if (!edge) {
 			for (int side = 0; side < rank; ++side) {
-				IVector indexR = index;
-				++indexR(side);
-				
 				Real maxLambda = Real();
 				Real minLambda = Real();
 				for (int state = 0; state < numberOfStates; ++state) {
-					maxLambda = std::max<Real>(maxLambda, interface(side).eigenvalues(state));
-					minLambda = std::min<Real>(minLambda, hydro->interfaces(indexR)(side).eigenvalues(state));
+					maxLambda = std::max<Real>(maxLambda, cell.interfaceLeft(side)->eigenvalues(state));
+					minLambda = std::min<Real>(minLambda, cell.interfaceRight(side)->eigenvalues(state));
 				}
 				
-				Real dx = hydro->interfaces(indexR)(side).x(side) - interface(side).x(side);
+				Real dx = cell.interfaceRight(side)->x(side) - cell.interfaceLeft(side)->x(side);
 				
 				Real dum = dx / (maxLambda - minLambda);
 				if (dum < mindum) mindum = dum;
@@ -129,177 +129,184 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 	
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 
-	Parallel::For(hydro->interfaces.begin(), hydro->interfaces.end(), [&](typename InterfaceGrid::value_type &v) {
-		IVector index = v.first;
-		InterfaceVector &interface = v.second;
-		bool edge = false;
-		for (int side = 0; side < rank; ++side) {
-			if (index(side) < 1 || index(side) >= hydro->size(side)) {
-				edge = true;
-				break;
-			}
-		}
-		if (!edge) {
+	{
+		PROFILE()
+		Parallel::For(hydro->interfaces.begin(), hydro->interfaces.end(), [&](typename InterfaceGrid::value_type &v) {
+			IVector index = v.first;
+			InterfaceVector &interface = v.second;
+			bool edge = false;
 			for (int side = 0; side < rank; ++side) {
-				IVector indexR = index;
-				IVector indexL = index;
-				--indexL(side);
-				
-				StateVector stateLeft = hydro->cells(indexL).stateRight(side);
-				StateVector stateRight = hydro->cells(indexR).stateLeft(side);
-				for (int state = 0; state < numberOfStates; ++state) {
-					Real sum = Real(0);
-					for (int k = 0; k < numberOfStates; ++k) {
-						sum += interface(side).eigenvectorsInverse(state,k) * (stateRight(k) - stateLeft(k));
-					}
-					interface(side).deltaStateTilde(state) = sum;
+				if (index(side) < 1 || index(side) >= hydro->size(side)) {
+					edge = true;
+					break;
 				}
 			}
-		} else {
-			for (int side = 0; side < rank; ++side) {
-				for (int state = 0; state < numberOfStates; ++state) {
-					interface(side).deltaStateTilde(state) = Real(0);
-				}
-			}
-		}
-	});
-
-	Parallel::For(hydro->interfaces.begin(), hydro->interfaces.end(), [&](typename InterfaceGrid::value_type &v) {
-		IVector index = v.first;
-		InterfaceVector &interface = v.second;
-		bool edge = false;
-		for (int side = 0; side < rank; ++side) {
-			if (index(side) < hydro->nghost || index(side) >= hydro->size(side) - hydro->nghost + 1) {
-				edge = true;
-				break;
-			}
-		}
-		if (!edge) {
-			for (int side = 0; side < rank; ++side) {
-				/*
-				IVector cellIndexL2 = index; cellIndexL2(side) -= 2;
-				IVector cellIndexL1 = index; --cellIndexL1(side);
-				IVector cellIndexR1 = index;
-				IVector cellIndexR2 = index; ++cellIndexR2(side);
-				*/
-
-				IVector interfaceIndexL = index;
-				--interfaceIndexL(side);
-				IVector interfaceIndexR = index;
-				++interfaceIndexR(side); 
-				
-				for (int state = 0; state < numberOfStates; ++state) {
-					Real interfaceDeltaStateTildeL = hydro->interfaces(interfaceIndexL)(side).deltaStateTilde(state);
-					Real interfaceDeltaStateTilde = interface(side).deltaStateTilde(state);
-					Real interfaceDeltaStateTildeR = hydro->interfaces(interfaceIndexR)(side).deltaStateTilde(state);
-					
-					if (fabs(interfaceDeltaStateTilde) > Real(0)) {
-						if (interface(side).eigenvalues(state) > Real(0)) {
-							interface(side).rTilde(state) = interfaceDeltaStateTildeL / interfaceDeltaStateTilde;
-						} else {
-							interface(side).rTilde(state) = interfaceDeltaStateTildeR / interfaceDeltaStateTilde;
+			if (!edge) {
+				for (int side = 0; side < rank; ++side) {
+					StateVector stateLeft = interface(side).cellLeft->stateRight(side);
+					StateVector stateRight = interface(side).cellRight->stateLeft(side);
+					for (int state = 0; state < numberOfStates; ++state) {
+						Real sum = Real(0);
+						for (int k = 0; k < numberOfStates; ++k) {
+							sum += interface(side).eigenvectorsInverse(state,k) * (stateRight(k) - stateLeft(k));
 						}
-					} else {
-						interface(side).rTilde(state) = Real(0);						
+						interface(side).deltaStateTilde(state) = sum;
+					}
+				}
+			} else {
+				for (int side = 0; side < rank; ++side) {
+					for (int state = 0; state < numberOfStates; ++state) {
+						interface(side).deltaStateTilde(state) = Real(0);
 					}
 				}
 			}
-		} else {
-			for (int side = 0; side < rank; ++side) {
-				interface(side).rTilde = StateVector();
-			}
-		}
-	});
+		});
+	}
 
+	{
+		PROFILE()
+		Parallel::For(hydro->interfaces.begin(), hydro->interfaces.end(), [&](typename InterfaceGrid::value_type &v) {
+			IVector index = v.first;
+			InterfaceVector &interface = v.second;
+			bool edge = false;
+			for (int side = 0; side < rank; ++side) {
+				if (index(side) < hydro->nghost || index(side) >= hydro->size(side) - hydro->nghost + 1) {
+					edge = true;
+					break;
+				}
+			}
+			if (!edge) {
+				for (int side = 0; side < rank; ++side) {
+					/*
+					IVector cellIndexL2 = index; cellIndexL2(side) -= 2;
+					IVector cellIndexL1 = index; --cellIndexL1(side);
+					IVector cellIndexR1 = index;
+					IVector cellIndexR2 = index; ++cellIndexR2(side);
+					*/
+
+					IVector interfaceIndexL = index;
+					--interfaceIndexL(side);
+					IVector interfaceIndexR = index;
+					++interfaceIndexR(side); 
+					
+					for (int state = 0; state < numberOfStates; ++state) {
+						Real interfaceDeltaStateTildeL = hydro->interfaces(interfaceIndexL)(side).deltaStateTilde(state);
+						Real interfaceDeltaStateTilde = interface(side).deltaStateTilde(state);
+						Real interfaceDeltaStateTildeR = hydro->interfaces(interfaceIndexR)(side).deltaStateTilde(state);
+						
+						if (fabs(interfaceDeltaStateTilde) > Real(0)) {
+							if (interface(side).eigenvalues(state) > Real(0)) {
+								interface(side).rTilde(state) = interfaceDeltaStateTildeL / interfaceDeltaStateTilde;
+							} else {
+								interface(side).rTilde(state) = interfaceDeltaStateTildeR / interfaceDeltaStateTilde;
+							}
+						} else {
+							interface(side).rTilde(state) = Real(0);						
+						}
+					}
+				}
+			} else {
+				for (int side = 0; side < rank; ++side) {
+					interface(side).rTilde = StateVector();
+				}
+			}
+		});
+	}
 
 	//transform cell q's into cell qTilde's (eigenspace)
-	Parallel::For(hydro->interfaces.begin(), hydro->interfaces.end(), [&](typename InterfaceGrid::value_type &v) {
-		IVector index = v.first;
-		InterfaceVector &interface = v.second;
-		bool edge = false;
-		for (int side = 0; side < rank; ++side) {
-			if (index(side) < hydro->nghost - 1 || index(side) >= hydro->size(side) + hydro->nghost - 2) {
-				edge = true;
-				break;
-			}
-		}
-		if (!edge) {
+	{
+		PROFILE()
+		Parallel::For(hydro->interfaces.begin(), hydro->interfaces.end(), [&](typename InterfaceGrid::value_type &v) {
+			IVector index = v.first;
+			InterfaceVector &interface = v.second;
+			bool edge = false;
 			for (int side = 0; side < rank; ++side) {
-				IVector indexR = index;
-				IVector indexL = index;
-				--indexL(side);
+				if (index(side) < hydro->nghost - 1 || index(side) >= hydro->size(side) + hydro->nghost - 2) {
+					edge = true;
+					break;
+				}
+			}
+			if (!edge) {
+				for (int side = 0; side < rank; ++side) {
+					IVector indexR = index;
+					IVector indexL = index;
+					--indexL(side);
+					
+					Real dx = interface(side).x(side) - hydro->interfaces(indexL)(side).x(side);
+
+					//simplification: rather than E * L * E^-1 * q, just do A * q for A the original matrix
+					//...and use that on the flux L & R avg (which doesn't get scaled in eigenvector basis space
+					StateVector fluxAvg;
+					for (int state = 0; state < numberOfStates; ++state) {
+						Real sum = Real(0);
+						for (int k = 0; k < numberOfStates; ++k) {
+							sum += interface(side).jacobian(state, k) * interface(side).stateMid(k);
+						}
+						fluxAvg(state) = sum;
+					}
+
+					//calculate flux
+					StateVector fluxTilde;
+					for (int state = 0; state < numberOfStates; ++state) {
+						Real theta = Real(0);
+						Real eigenvalue = interface(side).eigenvalues(state);
+						if (eigenvalue >= Real(0)) {
+							theta = Real(1);
+						} else {
+							theta = Real(-1);
+						}
+
+						Real phi = (*hydro->fluxMethod)(interface(side).rTilde(state));
+						Real epsilon = eigenvalue * dt / dx;
+						Real deltaFluxTilde = eigenvalue * interface(side).deltaStateTilde(state);
+						fluxTilde(state) = -.5 * deltaFluxTilde * (theta + phi * (epsilon - theta));
+					}
 				
-				Real dx = interface(side).x(side) - hydro->interfaces(indexL)(side).x(side);
-
-				//simplification: rather than E * L * E^-1 * q, just do A * q for A the original matrix
-				//...and use that on the flux L & R avg (which doesn't get scaled in eigenvector basis space
-				StateVector fluxAvg;
-				for (int state = 0; state < numberOfStates; ++state) {
-					Real sum = Real(0);
-					for (int k = 0; k < numberOfStates; ++k) {
-						sum += interface(side).jacobian(state, k) * interface(side).stateMid(k);
+					//reproject fluxTilde back into q
+					for (int state = 0; state < numberOfStates; ++state) {
+						Real sum = fluxAvg(state);
+						for (int k = 0; k < numberOfStates; ++k) {
+							sum += interface(side).eigenvectors(state, k) * fluxTilde(k);
+						}
+						interface(side).flux(state) = sum;
 					}
-					fluxAvg(state) = sum;
 				}
-
-				//calculate flux
-				StateVector fluxTilde;
-				for (int state = 0; state < numberOfStates; ++state) {
-					Real theta = Real(0);
-					Real eigenvalue = interface(side).eigenvalues(state);
-					if (eigenvalue >= Real(0)) {
-						theta = Real(1);
-					} else {
-						theta = Real(-1);
-					}
-
-					Real phi = (*hydro->fluxMethod)(interface(side).rTilde(state));
-					Real epsilon = eigenvalue * dt / dx;
-					Real deltaFluxTilde = eigenvalue * interface(side).deltaStateTilde(state);
-					fluxTilde(state) = -.5 * deltaFluxTilde * (theta + phi * (epsilon - theta));
-				}
-			
-				//reproject fluxTilde back into q
-				for (int state = 0; state < numberOfStates; ++state) {
-					Real sum = fluxAvg(state);
-					for (int k = 0; k < numberOfStates; ++k) {
-						sum += interface(side).eigenvectors(state, k) * fluxTilde(k);
-					}
-					interface(side).flux(state) = sum;
+			} else {
+				for (int side = 0; side < rank; ++side) {
+					interface(side).flux = StateVector();
 				}
 			}
-		} else {
-			for (int side = 0; side < rank; ++side) {
-				interface(side).flux = StateVector();
-			}
-		}
-	});
+		});
+	}
 
 	//update cells
-	Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
-		IVector index = v.first;
-		Cell &cell = v.second;
-		bool edge = false;
-		for (int side = 0; side < rank; ++side) {
-			if (index(side) < hydro->nghost || index(side) >= hydro->size(side) - hydro->nghost) {
-				edge = true;
-				break;
-			}
-		}
-		
-		cell.*dq_dt = StateVector();
-		if (!edge) {
+	{
+		PROFILE()
+		Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+			IVector index = v.first;
+			Cell &cell = v.second;
+			bool edge = false;
 			for (int side = 0; side < rank; ++side) {
-				IVector indexL = index;
-				IVector indexR = index;
-				++indexR(side);
-				Real dx = hydro->interfaces(indexR)(side).x(side) - hydro->interfaces(indexL)(side).x(side);		
-				for (int state = 0; state < numberOfStates; ++state) {
-					Real df = hydro->interfaces(indexR)(side).flux(state) - hydro->interfaces(indexL)(side).flux(state);
-					(cell.*dq_dt)(state) -= df / dx;
+				if (index(side) < hydro->nghost || index(side) >= hydro->size(side) - hydro->nghost) {
+					edge = true;
+					break;
 				}
 			}
-		}
-	});
+			
+			cell.*dq_dt = StateVector();
+			if (!edge) {
+				for (int side = 0; side < rank; ++side) {
+					IVector indexL = index;
+					IVector indexR = index;
+					++indexR(side);
+					Real dx = hydro->interfaces(indexR)(side).x(side) - hydro->interfaces(indexL)(side).x(side);		
+					for (int state = 0; state < numberOfStates; ++state) {
+						Real df = hydro->interfaces(indexR)(side).flux(state) - hydro->interfaces(indexL)(side).flux(state);
+						(cell.*dq_dt)(state) -= df / dx;
+					}
+				}
+			}
+		});
+	}
 }
 

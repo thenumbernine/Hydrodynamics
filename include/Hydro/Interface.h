@@ -2,6 +2,9 @@
 
 #include "TensorMath/Tensor.h"
 
+template<typename Real, int rank, int numberOfStates>
+struct Cell;
+
 //cell interface values
 template<typename Real_, int rank, int numberOfStates>
 struct Interface {
@@ -18,7 +21,11 @@ struct Interface {
 	typedef Tensor<Real, Lower<numberOfStates>, Lower<numberOfStates> > StateMatrix;
 	typedef Tensor<Real, Upper<numberOfStates>, Upper<numberOfStates> > StateInverseMatrix;
 
-	Interface() : velocity(Real()) {
+	Interface() 
+	: velocity(Real())
+	, cellLeft(NULL)
+	, cellRight(NULL)
+	{
 		for (int i = 0; i < numberOfStates; ++i) {
 			for (int j = 0; j < numberOfStates; ++j) {
 				jacobian(i,j) = i == j;
@@ -46,6 +53,9 @@ struct Interface {
 	StateInverseMatrix eigenvectorsInverse;
 	StateVector rTilde;	//r projected into the eigenvector basis
 	StateVector deltaStateTilde;	//dq projected into eigenvector basis
+
+	typedef ::Cell<Real, rank, numberOfStates> Cell;
+	Cell *cellLeft, *cellRight; 
 };
 
 

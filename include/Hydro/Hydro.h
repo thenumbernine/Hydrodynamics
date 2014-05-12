@@ -148,6 +148,48 @@ void Hydro<Real, rank, EquationOfState>::resetCoordinates(Vector xmin_, Vector x
 		}
 	});
 
+	Parallel::For(cells.begin(), cells.end(), [&](typename CellGrid::value_type &v) {
+		IVector index = v.first;
+		Cell &cell = v.second;
+		bool edge = false;
+		for (int side = 0; side < rank; ++side) {
+			if (index(side) >= size(side)) {
+				edge = true;
+				break;
+			}
+		}
+		if (!edge) {
+			for (int side = 0; side < rank; ++side) {
+				IVector indexL = index;
+				IVector indexR = index;
+				++indexR(side);
+				cell.interfaceLeft(side) = &interfaces(indexL)(side);
+				cell.interfaceRight(side) = &interfaces(indexR)(side);
+			}
+		}
+	});
+
+	Parallel::For(interfaces.begin(), interfaces.end(), [&](typename InterfaceGrid::value_type &v) {
+		IVector index = v.first;
+		InterfaceVector &interface = v.second;
+		bool edge = false;
+		for (int side = 0; side < rank; ++side) {
+			if (index(side) < 1) {
+				edge = true;
+				break;
+			}
+		}
+		if (!edge) {
+			for (int side = 0; side < rank; ++side) {
+				IVector indexR = index;
+				IVector indexL = index;
+				--indexL(side);
+				interface(side).cellLeft = &cells(indexL);
+				interface(side).cellRight = &cells(indexR);
+			}
+		}
+	});
+
 	Parallel::For(interfaces.begin(), interfaces.end(), [&](typename InterfaceGrid::value_type &v) {
 		IVector index = v.first;
 		InterfaceVector &interface = v.second;
@@ -160,12 +202,11 @@ void Hydro<Real, rank, EquationOfState>::resetCoordinates(Vector xmin_, Vector x
 		}
 		if (!edge) {
 			for (int side = 0; side < rank; ++side) {
-				IVector indexR = index;
-				IVector indexL = indexR;
-				--indexL(side);
-
 				for (int k = 0; k < rank; ++k) {
-					interface(side).x(k) = (cells(indexR).x(k) + cells(indexL).x(k)) * Real(.5);
+					interface(side).x(k) = (
+						interface(side).cellRight->x(k) 
+						+ interface(side).cellLeft->x(k)
+					) * Real(.5);
 				}
 			}
 		}
@@ -177,20 +218,20 @@ void Hydro<Real, rank, EquationOfState>::resetCoordinates(Vector xmin_, Vector x
 		for (int k = 0; k < rank; ++k) {
 			//extrapolate based on which edge it is
 			if (index(k) == size(k)) {
-				IVector prevIndex = index;
-				--prevIndex(k);
-				IVector prev2Index = prevIndex;
-				--prev2Index(k);
+				IVector indexL = index;
+				--indexL(k);
+				IVector indexL2 = indexL;
+				--indexL2(k);
 				for (int j = 0; j < 3; ++j) {
-					interface(k).x(j) = 2. * interfaces(prevIndex)(k).x(j) - interfaces(prev2Index)(k).x(j);
+					interface(k).x(j) = 2. * interfaces(indexL)(k).x(j) - interfaces(indexL2)(k).x(j);
 				}
 			} else if (index(k) == 0) {
-				IVector nextIndex = index;
-				++nextIndex(k);
-				IVector next2Index = nextIndex;
-				++next2Index(k);
+				IVector indexR = index;
+				++indexR(k);
+				IVector indexR2 = indexR;
+				++indexR2(k);			
 				for (int j = 0; j < 3; ++j) {
-					interface(k).x(j) = 2. * interfaces(nextIndex)(k).x(j) - interfaces(next2Index)(k).x(j);
+					interface(k).x(j) = 2. * interfaces(indexR)(k).x(j) - interfaces(indexR2)(k).x(j);
 				}
 			}
 		}

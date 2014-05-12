@@ -7,6 +7,9 @@ struct ICell {
 	virtual ~ICell() {}
 };
 
+template<typename Real, int rank, int numberOfStates>
+struct Interface;
+
 //cell-centered values
 template<typename Real_, int rank, int numberOfStates_>
 struct Cell : public ICell {
@@ -42,5 +45,10 @@ struct Cell : public ICell {
 	StateVector tmpState2;
 	StateVector tmpState3;
 	StateVector tmpState4;
+
+	//working towards arbitrary geometry
+	typedef ::Interface<Real, rank, numberOfStates> Interface;
+	::Vector<Interface*, rank> interfaceLeft;
+	::Vector<Interface*, rank> interfaceRight;
 };
 
