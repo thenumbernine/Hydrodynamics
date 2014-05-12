@@ -69,9 +69,12 @@ typename GodunovSolver<Hydro>::Real GodunovSolver<Hydro>::calcCFLTimestep(IHydro
 	
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	
-	Real mindum = HUGE_VAL;
-
-	Parallel::For(hydro->interfaces.begin(), hydro->interfaces.end(), [&](typename InterfaceGrid::value_type &v) {
+	Real mindum = Parallel::Reduce(
+		hydro->interfaces.begin(), 
+		hydro->interfaces.end(),
+		[&](typename InterfaceGrid::value_type &v) -> Real 
+	{
+		Real mindum = HUGE_VAL;
 		IVector index = v.first;
 		InterfaceVector &interface = v.second;
 		bool edge = false;
@@ -99,7 +102,13 @@ typename GodunovSolver<Hydro>::Real GodunovSolver<Hydro>::calcCFLTimestep(IHydro
 				if (dum < mindum) mindum = dum;
 			}
 		}
-	});
+		return mindum;
+	},
+		HUGE_VAL,
+		[&](Real a, Real b) -> Real {
+			return std::min<Real>(a,b);
+		}
+	);
 
 	return hydro->cfl * mindum;
 }
