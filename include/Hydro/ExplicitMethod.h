@@ -8,6 +8,7 @@ protected:
 	enum { numberOfStates = Hydro::numberOfStates };
 	typedef typename Hydro::Real Real;
 	typedef typename Hydro::Cell Cell;
+	typedef typename Hydro::CellGrid CellGrid;
 	typedef typename Cell::StateVector StateVector;
 	
 	void copyState(Hydro *hydro, StateVector Cell::*dst, StateVector Cell::*src);
@@ -18,16 +19,15 @@ public:
 
 template<typename Hydro>
 void ExplicitMethod<Hydro>::copyState(Hydro *hydro, StateVector Cell::*dst, StateVector Cell::*src) {
-	std::for_each(hydro->cells.begin(), hydro->cells.end(), [&](Cell &cell) {
-		for (int state = 0; state < numberOfStates; ++state) {
-			(cell.*dst)(state) = (cell.*src)(state);
-		}
+	Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+		v.second.*dst = v.second.*src;
 	});
 }
 
 template<typename Hydro>
 void ExplicitMethod<Hydro>::addMulState(Hydro *hydro, StateVector Cell::*dst, StateVector Cell::*src, Real dt) {
-	std::for_each(hydro->cells.begin(), hydro->cells.end(), [&](Cell &cell) {
+	Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+		Cell &cell = v.second;
 		for (int state = 0; state < numberOfStates; ++state) {
 			(cell.*dst)(state) += (cell.*src)(state) * dt;
 		}

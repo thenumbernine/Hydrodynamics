@@ -46,12 +46,16 @@ struct Profiler {
 	struct ProfileEntry {
 		Stat duration;
 		Stat durationExcludingChildren;
+		double accumDuration;
+		double accumDurationExcludingChildren;
 		const char *name;
 		const char *parentName;
 		int order;
 
 		ProfileEntry()
-		: name(NULL)
+		: accumDuration(0)
+		, accumDurationExcludingChildren(0)
+		, name(NULL)
 		, parentName(NULL)
 		, order(0)
 		{}
@@ -67,7 +71,7 @@ struct Profiler {
 				<< " \t"
 				<< name << std::endl;
 			++spaces;	
-			std::for_each(childNames.begin(), childNames.end(), [&](std::map<const char *, bool>::value_type v) {
+			std::for_each(childNames.begin(), childNames.end(), [&](std::pair<const char *, bool> v) {
 				profileMap[v.first].print(spaces);
 			});
 		}
@@ -101,12 +105,36 @@ struct Profiler {
 
 		ProfileEntry &entry = profileMap[name];
 		entry.name = name;
-		entry.duration.accum(duration);
-		entry.durationExcludingChildren.accum(duration - subDurations);
+		entry.accumDuration += duration;
+		entry.accumDurationExcludingChildren += duration - subDurations;
 		if (lastProfiler) {
 			entry.parentName = lastProfiler->name;
 			profileMap[lastProfiler->name].childNames[entry.name] = true;
 		}
+	}
+
+	static double beginTime;
+	static double frames;
+	static void beginFrame() {
+		static bool initd = false;
+		if (!initd) {
+			initd = true;
+			beginTime = getTime();
+			frames = 0;
+		}
+		//initialize accum values of all entries to zero
+		for (std::map<const char *, ProfileEntry>::iterator i = profileMap.begin(); i != profileMap.end(); ++i) {
+			i->second.accumDuration = 0;
+			i->second.accumDurationExcludingChildren = 0;
+		}
+	}
+	static void endFrame() {
+		//record accum values into stat values 
+		for (std::map<const char *, ProfileEntry>::iterator i = profileMap.begin(); i != profileMap.end(); ++i) {
+			i->second.duration.accum(i->second.accumDuration);
+			i->second.durationExcludingChildren.accum(i->second.accumDurationExcludingChildren);
+		}
+		++frames;
 	}
 
 	static void done() {
@@ -126,6 +154,8 @@ struct Profiler {
 		});
 		
 		profileMap[rootName].print();
+	
+		std::cout << "Average FPS: " << frames / (getTime() - beginTime) << std::endl;
 	}
 };
 
@@ -137,4 +167,7 @@ struct Profiler {
 #define LINE_STRING	STRINGIZE(__LINE__)
 #define PROFILE_NAME __FILE__ "(" LINE_STRING ")" //FUNCTION_STRING //function not expanding 
 #define PROFILE()	Profiler profiler(PROFILE_NAME);
-#define PROFILER_DONE()	Profiler::done();
+#define PROFILE_BEGIN_FRAME()	Profiler::beginFrame();
+#define PROFILE_END_FRAME()		Profiler::endFrame();
+#define PROFILE_DONE()	Profiler::done();
+

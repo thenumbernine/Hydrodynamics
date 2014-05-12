@@ -14,6 +14,7 @@ struct Cell : public ICell {
 	
 	//static values
 	typedef Real_ Real;
+	typedef Vector<int, rank> IVector;
 	typedef Tensor<Real, Upper<rank> > Vector;
 	typedef Tensor<Real, Upper<numberOfStates> > StateVector;
 

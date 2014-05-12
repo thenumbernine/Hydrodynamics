@@ -6,6 +6,7 @@
 template<typename Real_, int rank, int numberOfStates>
 struct Interface {
 	typedef Real_ Real;
+	typedef Vector<int, rank> IVector;
 	typedef Tensor<Real, Upper<rank> > Vector;
 	typedef Tensor<Real, Upper<numberOfStates> > StateVector;
 	

@@ -33,70 +33,80 @@ void EulerEquationRoeSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 	
 		//I should really use tbb or gcs or something,
 		//but writing my own is too much fun ...
-		RangeParallelFor(IVector(1), hydro->size, [&](IVector index) {
-			InterfaceVector &interface = hydro->interfaces(index);
+		Parallel::For(hydro->interfaces.begin(), hydro->interfaces.end(), [&](typename InterfaceGrid::value_type &v) {
+			IVector index = v.first;
+			InterfaceVector &interface = v.second;
+			bool edge = false;
 			for (int side = 0; side < rank; ++side) {
-				IVector indexR = index;
-				IVector indexL = index;
-				--indexL(side);
-
-				Vector xL = interface(side).x;
-				Vector xR = interface(side).x;
-				xL(side) = hydro->cells(indexL).x(side);
-				xR(side) = hydro->cells(indexR).x(side);
-
-				Vector normal;
-				normal(side) = Real(1);
-
-				Real densityL = hydro->cells(indexL).state(0);
-				Vector velocityL;
-				Real velocitySqL = Real(0);
-				for (int k = 0; k < rank; ++k) {
-					velocityL(k) = hydro->cells(indexL).state(k+1) / densityL;
-					velocitySqL += velocityL(k) * velocityL(k);
+				if (index(side) < 1 || index(side) >= hydro->size(side)) {
+					edge = true;
+					break;
 				}
-				Real energyTotalL = hydro->cells(indexL).state(rank+1) / densityL;
-				Real roeWeightL = sqrt(densityL);
+			}
+			if (!edge) {
+				for (int side = 0; side < rank; ++side) {
+					IVector indexR = index;
+					IVector indexL = index;
+					--indexL(side);
 
-				Real energyKineticL = .5 * velocitySqL;
-				Real energyPotentialL = Real(0);
-				//for (int k = 0; k < rank; ++k) {
-				//	energyPotentialL += (xL(side) - hydro->xmin(side)) * hydro->externalForce(side);
-				//}
-				Real energyThermalL = energyTotalL - energyKineticL - energyPotentialL;
-				Real pressureL = (hydro->gamma - Real(1)) * densityL * energyThermalL;
-				Real enthalpyTotalL = energyTotalL + pressureL / densityL;
+					Vector xL = interface(side).x;
+					Vector xR = interface(side).x;
+					xL(side) = hydro->cells(indexL).x(side);
+					xR(side) = hydro->cells(indexR).x(side);
 
-				Real densityR = hydro->cells(indexR).state(0);
-				Vector velocityR;
-				Real velocitySqR = Real(0);
-				for (int k = 0; k < rank; ++k) {
-					velocityR(k) = hydro->cells(indexR).state(k+1) / densityR;
-					velocitySqR += velocityR(k) * velocityR(k);
+					Vector normal;
+					normal(side) = Real(1);
+
+					Real densityL = hydro->cells(indexL).state(0);
+					Vector velocityL;
+					Real velocitySqL = Real(0);
+					for (int k = 0; k < rank; ++k) {
+						velocityL(k) = hydro->cells(indexL).state(k+1) / densityL;
+						velocitySqL += velocityL(k) * velocityL(k);
+					}
+					Real energyTotalL = hydro->cells(indexL).state(rank+1) / densityL;
+					Real roeWeightL = sqrt(densityL);
+
+					Real energyKineticL = .5 * velocitySqL;
+					Real energyPotentialL = Real(0);
+					//for (int k = 0; k < rank; ++k) {
+					//	energyPotentialL += (xL(side) - hydro->xmin(side)) * hydro->externalForce(side);
+					//}
+					Real energyThermalL = energyTotalL - energyKineticL - energyPotentialL;
+					Real pressureL = (hydro->gamma - Real(1)) * densityL * energyThermalL;
+					Real enthalpyTotalL = energyTotalL + pressureL / densityL;
+
+					Real densityR = hydro->cells(indexR).state(0);
+					Vector velocityR;
+					Real velocitySqR = Real(0);
+					for (int k = 0; k < rank; ++k) {
+						velocityR(k) = hydro->cells(indexR).state(k+1) / densityR;
+						velocitySqR += velocityR(k) * velocityR(k);
+					}
+					Real energyTotalR = hydro->cells(indexR).state(rank+1) / densityR;
+					Real roeWeightR = sqrt(densityR);
+				
+					Real energyKineticR = .5 * velocitySqR;
+					Real energyPotentialR = Real(0);
+					//for (int k = 0; k < rank; ++k) {
+					//	energyPotentialR += (xR(side) - hydro->xmin(side)) * hydro->externalForce(side);
+					//}
+					Real energyThermalR = energyTotalR - energyKineticR - energyPotentialR;
+					Real pressureR = (hydro->gamma - Real(1)) * densityR * energyThermalR;
+					Real enthalpyTotalR = energyTotalR + pressureR / densityR;
+
+					Real denom = roeWeightL + roeWeightR;
+					Vector velocity = (velocityL * roeWeightL + velocityR * roeWeightR) / denom;
+					Real enthalpyTotal = (enthalpyTotalL * roeWeightL + enthalpyTotalR * roeWeightR) / denom;
+
+					//compute eigenvectors and values at the interface based on averages
+					hydro->equationOfState->buildEigenstate(
+						interface(side).jacobian,
+						interface(side).eigenvalues, 
+						interface(side).eigenvectors, 
+						interface(side).eigenvectorsInverse, 
+						velocity, enthalpyTotal, hydro->gamma, normal);
 				}
-				Real energyTotalR = hydro->cells(indexR).state(rank+1) / densityR;
-				Real roeWeightR = sqrt(densityR);
-			
-				Real energyKineticR = .5 * velocitySqR;
-				Real energyPotentialR = Real(0);
-				//for (int k = 0; k < rank; ++k) {
-				//	energyPotentialR += (xR(side) - hydro->xmin(side)) * hydro->externalForce(side);
-				//}
-				Real energyThermalR = energyTotalR - energyKineticR - energyPotentialR;
-				Real pressureR = (hydro->gamma - Real(1)) * densityR * energyThermalR;
-				Real enthalpyTotalR = energyTotalR + pressureR / densityR;
-
-				Real denom = roeWeightL + roeWeightR;
-				Vector velocity = (velocityL * roeWeightL + velocityR * roeWeightR) / denom;
-				Real enthalpyTotal = (enthalpyTotalL * roeWeightL + enthalpyTotalR * roeWeightR) / denom;
-
-				//compute eigenvectors and values at the interface based on averages
-				hydro->equationOfState->buildEigenstate(
-					interface(side).jacobian,
-					interface(side).eigenvalues, 
-					interface(side).eigenvectors, 
-					interface(side).eigenvectorsInverse, 
-					velocity, enthalpyTotal, hydro->gamma, normal);
 			}
 		});
 	}

@@ -4,6 +4,7 @@
 #include "Hydro/Interface.h"
 #include "TensorMath/Grid.h"
 #include "TensorMath/Vector.h"
+#include "Parallel.h"
 
 class BoundaryMethod;
 
@@ -108,7 +109,13 @@ Hydro<Real, rank, EquationOfState>::Hydro(IVector size_,
 	FluxMethod *fluxMethod_,
 	InitialConditions *initialConditions_)
 : nghost(2) 
-, cells(size_)
+
+//cells is plus one so memory indexing matches interfaces.
+//TODO make modular so they both are just 'size', 
+// get rid of ghost cells, and introduce solid interfaces for applying boundary conditions
+//I'm going to do some ugly pointer math to try and speed the loops up
+, cells(size_+1)		
+
 , interfaces(size_+1)
 {
 	size = size_;
@@ -133,24 +140,27 @@ void Hydro<Real, rank, EquationOfState>::resetCoordinates(Vector xmin_, Vector x
 	xmin = xmin_;
 	xmax = xmax_;
 
-	for (typename CellGrid::iterator i = cells.begin(); i != cells.end(); ++i) {
+	Parallel::For(cells.begin(), cells.end(), [&](typename CellGrid::value_type &v) {
+		IVector index = v.first;
+		Cell &cell = v.second;
 		for (int j = 0; j < rank; ++j) {
-			i->x(j) = xmin(j) + (xmax(j) - xmin(j)) * (Real)i.index(j) / (Real)(size(j)-1);
+			cell.x(j) = xmin(j) + (xmax(j) - xmin(j)) * (Real)index(j) / (Real)(size(j)-1);
 		}
-	}
+	});
 
-	for (typename InterfaceGrid::iterator i = interfaces.begin(); i != interfaces.end(); ++i) {
-		InterfaceVector &interface = *i;
+	Parallel::For(interfaces.begin(), interfaces.end(), [&](typename InterfaceGrid::value_type &v) {
+		IVector index = v.first;
+		InterfaceVector &interface = v.second;
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {	//which side
-			if (i.index(side) < 1 || i.index(side) >= size(side)) {
+			if (index(side) < 1 || index(side) >= size(side)) {
 				edge = true;
 				break;
 			}
 		}
 		if (!edge) {
 			for (int side = 0; side < rank; ++side) {
-				IVector indexR = i.index;
+				IVector indexR = index;
 				IVector indexL = indexR;
 				--indexL(side);
 
@@ -159,21 +169,23 @@ void Hydro<Real, rank, EquationOfState>::resetCoordinates(Vector xmin_, Vector x
 				}
 			}
 		}
-	}
-	for (typename InterfaceGrid::iterator i = interfaces.begin(); i != interfaces.end(); ++i) {
-		InterfaceVector &interface = *i;
+	});
+
+	Parallel::For(interfaces.begin(), interfaces.end(), [&](typename InterfaceGrid::value_type &v) {
+		IVector index = v.first;
+		InterfaceVector &interface = v.second;	
 		for (int k = 0; k < rank; ++k) {
 			//extrapolate based on which edge it is
-			if (i.index(k) == size(k)) {
-				IVector prevIndex = i.index;
+			if (index(k) == size(k)) {
+				IVector prevIndex = index;
 				--prevIndex(k);
 				IVector prev2Index = prevIndex;
 				--prev2Index(k);
 				for (int j = 0; j < 3; ++j) {
 					interface(k).x(j) = 2. * interfaces(prevIndex)(k).x(j) - interfaces(prev2Index)(k).x(j);
 				}
-			} else if (i.index(k) == 0) {
-				IVector nextIndex = i.index;
+			} else if (index(k) == 0) {
+				IVector nextIndex = index;
 				++nextIndex(k);
 				IVector next2Index = nextIndex;
 				++next2Index(k);
@@ -182,7 +194,7 @@ void Hydro<Real, rank, EquationOfState>::resetCoordinates(Vector xmin_, Vector x
 				}
 			}
 		}
-	}
+	});
 }
 
 template<typename Real, int rank, typename EquationOfState>
@@ -214,8 +226,8 @@ void Hydro<Real, rank, EquationOfState>::update() {
 template<typename Real, int rank, typename EquationOfState>
 void Hydro<Real, rank, EquationOfState>::getPrimitives() {
 	PROFILE()
-	std::for_each(cells.begin(), cells.end(), [&](Cell &cell) {
-		ICell *icell = dynamic_cast<ICell*>(&cell);
+	Parallel::For(cells.begin(), cells.end(), [&](typename CellGrid::value_type &v) {
+		ICell *icell = dynamic_cast<ICell*>(&v.second);
 		equationOfState->getPrimitives(icell);
 	});
 }
@@ -268,14 +280,14 @@ template<> void plotVertex<double, 3>(::Tensor<double, Upper<3> > x, double valu
 template <int rank>
 struct HydroPlot {
 	template<typename Cell>
-	static void plot(Cell cell, int state) {
+	static void plot(Cell &cell) {
 		typedef typename Cell::Real Real;
 		
 		const float plotScalar = .1;
 
 		//color by state value, neglect height or use it for coordinates
 		glColor3f(0, cell.state(0), 0);	//color by density
-		plotVertex<Real, rank>(cell.x, plotScalar * cell.primitives(state));
+		plotVertex<Real, rank>(cell.x, plotScalar * cell.primitives(0));
 	}
 };
 
@@ -283,7 +295,7 @@ template<>
 struct HydroPlot<1> {
 	enum { rank = 1 };
 	template<typename Cell>
-	static void plot(Cell cell, int state) {
+	static void plot(Cell &cell) {
 		enum { numberOfStates = Cell::numberOfStates };
 		typedef typename Cell::Real Real;
 		
@@ -307,8 +319,10 @@ struct HydroPlot<1> {
 		}
 		
 		//color by variable, show states by height
-		glColor3fv(colors(state).v);
-		plotVertex<Real, rank>(cell.x, plotScalar * cell.primitives(state));
+		for (int state = 0; state < numberOfStates; ++state) {
+			glColor3fv(colors(state).v);
+			plotVertex<Real, rank>(cell.x, plotScalar * cell.primitives(state));
+		}
 	}
 };
 
@@ -319,21 +333,20 @@ void Hydro<Real, rank, EquationOfState>::draw() {
 	getPrimitives();
 
 	glBegin(GL_POINTS);
-	for (typename CellGrid::iterator i = cells.begin(); i != cells.end(); ++i) {
-		Cell &cell = *i;
+	std::for_each(cells.begin(), cells.end(), [&](typename CellGrid::value_type &v) {
+		IVector index = v.first;
+		Cell &cell = v.second;
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
-			if (i.index(side) < nghost-1 || i.index(side) >= size(side) - nghost) {
+			if (index(side) < nghost-1 || index(side) >= size(side) - nghost) {
 				edge = true;
 				break;
 			}
 		}
 		if (!edge) {
-			for (int state = 0; state < numberOfStates; ++state) {
-				HydroPlot<rank>::template plot<Cell>(cell, state);
-			}
+			HydroPlot<rank>::template plot<Cell>(cell);
 		}
-	}
+	});
 	glEnd();
 }
 

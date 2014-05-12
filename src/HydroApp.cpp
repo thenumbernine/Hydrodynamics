@@ -283,15 +283,19 @@ public:
 	}
 	
 	virtual void update() {
-		PROFILE()
+		PROFILE_BEGIN_FRAME()	
+		{
+			PROFILE()
 
-		GLApp::update();
-		hydro->update();
-		hydro->draw();
+			GLApp::update();
+			hydro->update();
+			hydro->draw();
+		}	
+		PROFILE_END_FRAME()
 	}
 
 	virtual void shutdown() {
-		PROFILER_DONE()
+		PROFILE_DONE()
 	}
 };
 GLAPP_MAIN(HydroApp)

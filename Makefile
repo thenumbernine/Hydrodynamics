@@ -1,47 +1,75 @@
-DISTDIR=dist/osx
-DIST=$(DISTDIR)/hydro
+# PLATFORM: osx
+# BUILD: debug, release
 
+OBJECTS=HydroApp.o Profile.o
 SOURCES=$(shell find src -type f)
 HEADERS=$(shell find include -type f)
-OBJECTS=HydroApp.o Profile.o
 
-OBJDIR=obj/osx/release
+DISTDIR_BASE=dist
+DIST_FILENAME=hydro
+DISTDIR=$(DISTDIR_BASE)/$(PLATFORM)/$(BUILD)
+DIST=$(DISTDIR)/$(DIST_FILENAME)
+
+OBJDIR_BASE=obj
+OBJDIR=$(OBJDIR_BASE)/$(PLATFORM)/$(BUILD)
 OBJPATHS=$(addprefix $(OBJDIR)/, $(OBJECTS))
 
 CC=clang++
 CFLAGS_BASE=-c -Wall -std=c++11 -Iinclude -I../GLApp/include -I../TensorMath/include
-CFLAGS_DEBUG=$(CFLAGS_BASE) -O0 -mfix-and-continue -gdwarf-2
-CFLAGS_RELEASE=$(CFLAGS_BASE) -O3
-CFLAGS=$(CFLAGS_RELEASE)
+CFLAGS_debug=-O0 -mfix-and-continue -gdwarf-2 -DDEBUG
+CFLAGS_release=-O3 -DNDEBUG
 
 LD=clang++
-LDFLAGS_BASE=-L../GLApp/dist/osx -lGLApp -lSDL -lSDLmain -framework Cocoa -framework OpenGL
-LDFLAGS_DEBUG=$(LDFLAGS_BASE)
-LDFLAGS_RELEASE=$(LDFLAGS_BASE)
-LDFLAGS=$(LDFLAGS_RELEASE)
+LDFLAGS_BASE=-L../GLApp/dist/$(PLATFORM)/$(BUILD) -lGLApp -lSDL -lSDLmain -framework Cocoa -framework OpenGL
 
-.PHONY: all prep clean distclean test
+.PHONY: default
+default: osx
 
-all: prep $(DIST)
+.PHONY: help
+help:
+	echo "make <platform>"
+	echo "platform: osx"
 
-prep:
-	-mkdir -p $(OBJDIR)
-	-mkdir -p $(DISTDIR)
+.PHONY: osx
+osx:
+	$(MAKE) PLATFORM="osx" build_platform
+
+.PHONY: build_platform
+build_platform: $(PLATFORM)_debug $(PLATFORM)_release
+
+.PHONY: $(PLATFORM)_debug
+$(PLATFORM)_debug:
+	$(MAKE) BUILD="debug" dist
+
+.PHONY: $(PLATFORM)_release
+$(PLATFORM)_release:
+	$(MAKE) BUILD="release" dist
+
+.PHONY: dist
+dist: CFLAGS= $(CFLAGS_BASE)
+dist: CFLAGS+= $(CFLAGS_$(BUILD))
+dist: LDFLAGS= $(LDFLAGS_BASE)
+dist: LDFLAGS+= $(LDFLAGS_$(BUILD))
+dist: $(DIST)
 
 $(OBJDIR)/%.o : src/%.cpp $(HEADERS)
-	-mkdir -p $(OBJDIR)/$(<D)
+	-mkdir -p $(@D)
 	$(CC) $(CFLAGS) -o $@ $<
 
 $(DIST): $(OBJPATHS)
+	-mkdir -p $(@D)
 	$(LD) $(LDFLAGS) -o $@ $^
-	install_name_tool -change dist/osx/libGLApp.dylib ../GLApp/dist/osx/libGLApp.dylib dist/osx/hydro
+	install_name_tool -change dist/$(PLATFORM)/$(BUILD)/libGLApp.dylib ../GLApp/dist/$(PLATFORM)/$(BUILD)/libGLApp.dylib $@
 
+.PHONY: clean
 clean:
-	-rm -f $(OBJPATHS)
+	-rm -fr $(OBJDIR_BASE)
 
+.PHONY: distclean
 distclean:
-	-rm -f $(DIST)
+	-rm -fr $(DISTDIR_BASE)
 
+.PHONY: test
 test: $(DIST)
 	$(MAKE) -C test run
 

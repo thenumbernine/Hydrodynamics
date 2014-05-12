@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Hydro/Solver/EulerEquationBurgersSolver.h"
+#include "Parallel.h"
 
 template<typename Hydro>
 class EulerEquationBurgersSolverExplicit : public EulerEquationBurgersSolver<Hydro> {
@@ -55,8 +56,9 @@ template<typename Hydro>
 void EulerEquationBurgersSolverExplicit<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Cell::*dq_dt) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 
-	RangeParallelFor(IVector(), hydro->size+1, [&](IVector index) {
-		InterfaceVector &interface = hydro->interfaces(index);
+	Parallel::For(hydro->interfaces.begin(), hydro->interfaces.end(), [&](typename InterfaceGrid::value_type &v) {
+		IVector index = v.first;
+		InterfaceVector &interface = v.second;
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
 			if (index(side) < hydro->nghost - 1 || index(side) >= hydro->size(side) + hydro->nghost - 2) {
@@ -81,8 +83,9 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateFlux(IHydro *ihydro, Re
 	});
 
 	//compute flux and advect for each state vector
-	RangeParallelFor(IVector(), hydro->size+1, [&](IVector index) {
-		InterfaceVector &interface = hydro->interfaces(index);
+	Parallel::For(hydro->interfaces.begin(), hydro->interfaces.end(), [&](typename InterfaceGrid::value_type &v) {
+		IVector index = v.first;
+		InterfaceVector &interface = v.second;
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
 			if (index(side) < hydro->nghost || index(side) >= hydro->size(side) + hydro->nghost - 3) {
@@ -125,8 +128,9 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateFlux(IHydro *ihydro, Re
 	});
 	
 	//construct flux
-	RangeParallelFor(IVector(), hydro->size+1, [&](IVector index) {
-		InterfaceVector &interface = hydro->interfaces(index);
+	Parallel::For(hydro->interfaces.begin(), hydro->interfaces.end(), [&](typename InterfaceGrid::value_type &v) {
+		IVector index = v.first;
+		InterfaceVector &interface = v.second;
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
 			if (index(side) < hydro->nghost - 1 || index(side) >= hydro->size(side) + hydro->nghost - 2) {
@@ -165,8 +169,9 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateFlux(IHydro *ihydro, Re
 	});
 
 	//update cells
-	RangeParallelFor(IVector(), hydro->size, [&](IVector index) {
-		Cell &cell = hydro->cells(index);
+	Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+		IVector index = v.first;
+		Cell &cell = v.second;
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
 			if (index(side) < hydro->nghost || index(side) >= hydro->size(side) - hydro->nghost) {
@@ -195,8 +200,9 @@ template<typename Hydro>
 void EulerEquationBurgersSolverExplicit<Hydro>::integrateExternalForces(IHydro *ihydro, Real dt, StateVector Cell::*dq_dt) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	
-	RangeParallelFor(IVector(), hydro->size, [&](IVector index) {
-		Cell &cell = hydro->cells(index);
+	Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename InterfaceGrid::value_type &v) {
+		IVector index = v.first;
+		Cell &cell = v.second;
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
 			if (index(side) < hydro->nghost || index(side) >= hydro->size(side) - hydro->nghost) {
@@ -226,29 +232,40 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateMomentumDiffusion(IHydr
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 
 	//compute pressure
-	RangeParallelFor(IVector(), hydro->size, [&](IVector index) {
-		Cell &cell = hydro->cells(index);
-		Vector x = cell.x;
-		Real density = cell.state(0);
-		Vector velocity;
-		Real velocitySq = Real();
+	Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+		IVector index = v.first;
+		Cell &cell = v.second;
+		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
-			velocity(side) = cell.state(side+1) / density;
-			velocitySq += velocity(side) * velocity(side);
+			if (index(side) >= hydro->size(side)) {
+				edge = true;
+				break;
+			}
 		}
-		Real energyTotal = cell.state(rank+1) / density;
-		Real energyKinetic = .5 * velocitySq;
-		Real energyPotential = 0.;
-//		for (int side = 0; side < rank; ++side) {
-//			energyPotential += (x(side) - hydro->xmin(side)) * hydro->externalForce(side);
-//		}
-		Real energyThermal = energyTotal - energyKinetic - energyPotential;
-		cell.pressure = (hydro->gamma - 1.) * density * energyThermal;
+		if (!edge) {
+			Vector x = cell.x;
+			Real density = cell.state(0);
+			Vector velocity;
+			Real velocitySq = Real();
+			for (int side = 0; side < rank; ++side) {
+				velocity(side) = cell.state(side+1) / density;
+				velocitySq += velocity(side) * velocity(side);
+			}
+			Real energyTotal = cell.state(rank+1) / density;
+			Real energyKinetic = .5 * velocitySq;
+			Real energyPotential = 0.;
+	//		for (int side = 0; side < rank; ++side) {
+	//			energyPotential += (x(side) - hydro->xmin(side)) * hydro->externalForce(side);
+	//		}
+			Real energyThermal = energyTotal - energyKinetic - energyPotential;
+			cell.pressure = (hydro->gamma - 1.) * density * energyThermal;
+		}
 	});
 
 	//apply momentum diffusion = pressure
-	RangeParallelFor(IVector(), hydro->size, [&](IVector index) {
-		Cell &cell = hydro->cells(index);
+	Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+		IVector index = v.first;
+		Cell &cell = v.second;
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
 			if (index(side) < hydro->nghost || index(side) >= hydro->size(side) - hydro->nghost) {
@@ -284,8 +301,9 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateWorkDiffusion(IHydro *i
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 
 	//apply work diffusion = momentum
-	RangeParallelFor(IVector(), hydro->size, [&](IVector index) {
-		Cell &cell = hydro->cells(index);
+	Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+		IVector index = v.first;
+		Cell &cell = v.second;
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
 			if (index(side) < hydro->nghost || index(side) >= hydro->size(side) - hydro->nghost) {

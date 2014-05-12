@@ -24,27 +24,39 @@ typename EulerEquationBurgersSolver<Hydro>::Real EulerEquationBurgersSolver<Hydr
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	Real mindum = HUGE_VAL;
 
-	for (typename CellGrid::iterator i = hydro->cells.begin(); i != hydro->cells.end(); ++i) {
-		Cell &cell = *i;
-		Vector velocity;
-		Real velocitySq = Real();
-		for (int k = 0; k < rank; ++k) {
-			velocity(k) = cell.state(k+1) / cell.state(0);
-			velocitySq += velocity(k);
+	//Parallel::Reduce
+	std::for_each(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+		IVector index = v.first;
+		Cell &cell = v.second;
+		bool edge = false;
+		for (int side = 0; side < rank; ++side) {
+			if (index(side) >= hydro->size(side)) {
+				edge = true;
+				break;
+			}
 		}
-		Real velocityMag = sqrt(velocitySq);
-		Real energyTotal = cell.state(rank+1) / cell.state(0);
-		Real energyKinematic = .5 * velocitySq;
-		Real energyThermal = energyTotal - energyKinematic;
-		Real speedOfSound = sqrt(hydro->gamma * (hydro->gamma - 1.) * energyThermal);
-		for (int k = 0; k < rank; ++k) {
-			IVector nextIndex = i.index;
-			++nextIndex(k);
-			Real dx = hydro->interfaces(nextIndex)(k).x(k) - hydro->interfaces(i.index)(k).x(k);
-			Real dum = dx / (speedOfSound + velocityMag);
-			if (dum < mindum) mindum = dum;
+		if (!edge) {
+			Vector velocity;
+			Real velocitySq = Real();
+			for (int k = 0; k < rank; ++k) {
+				velocity(k) = cell.state(k+1) / cell.state(0);
+				velocitySq += velocity(k);
+			}
+			Real velocityMag = sqrt(velocitySq);
+			Real energyTotal = cell.state(rank+1) / cell.state(0);
+			Real energyKinematic = .5 * velocitySq;
+			Real energyThermal = energyTotal - energyKinematic;
+			Real speedOfSound = sqrt(hydro->gamma * (hydro->gamma - 1.) * energyThermal);
+			for (int k = 0; k < rank; ++k) {
+				IVector nextIndex = index;
+				++nextIndex(k);
+				Real dx = hydro->interfaces(nextIndex)(k).x(k) - hydro->interfaces(index)(k).x(k);
+				Real dum = dx / (speedOfSound + velocityMag);
+				if (dum < mindum) mindum = dum;
+			}
 		}
-	}
+	});
+
 	return hydro->cfl * mindum;
 }
 
