@@ -16,7 +16,6 @@ public:
 	typedef typename Cell::Vector Vector;
 	typedef typename Cell::StateVector StateVector;
 	typedef typename Hydro::CellGrid CellGrid;
-	typedef typename Hydro::InterfaceGrid InterfaceGrid;
 	
 	virtual void step(IHydro *hydro, Real dt);
 	
@@ -56,9 +55,9 @@ template<typename Hydro>
 void EulerEquationBurgersSolverExplicit<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Cell::*dq_dt) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 
-	Parallel::For(hydro->interfaces.begin(), hydro->interfaces.end(), [&](typename InterfaceGrid::value_type &v) {
+	Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		IVector index = v.first;
-		InterfaceVector &interface = v.second;
+		InterfaceVector &interface = v.second.interfaces;
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
 			if (index(side) < hydro->nghost - 1 || index(side) >= hydro->size(side) + hydro->nghost - 2) {
@@ -83,9 +82,9 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateFlux(IHydro *ihydro, Re
 	});
 
 	//compute flux and advect for each state vector
-	Parallel::For(hydro->interfaces.begin(), hydro->interfaces.end(), [&](typename InterfaceGrid::value_type &v) {
+	Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		IVector index = v.first;
-		InterfaceVector &interface = v.second;
+		InterfaceVector &interface = v.second.interfaces;
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
 			if (index(side) < hydro->nghost || index(side) >= hydro->size(side) + hydro->nghost - 3) {
@@ -128,9 +127,9 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateFlux(IHydro *ihydro, Re
 	});
 	
 	//construct flux
-	Parallel::For(hydro->interfaces.begin(), hydro->interfaces.end(), [&](typename InterfaceGrid::value_type &v) {
+	Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		IVector index = v.first;
-		InterfaceVector &interface = v.second;
+		InterfaceVector &interface = v.second.interfaces;
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
 			if (index(side) < hydro->nghost - 1 || index(side) >= hydro->size(side) + hydro->nghost - 2) {
@@ -186,9 +185,9 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateFlux(IHydro *ihydro, Re
 				IVector indexL = index;
 				IVector indexR = index;
 				++indexR(side);
-				Real dx = hydro->interfaces(indexR)(side).x(side) - hydro->interfaces(indexL)(side).x(side);
+				Real dx = hydro->cells(indexR).interfaces(side).x(side) - hydro->cells(indexL).interfaces(side).x(side);
 				for (int state = 0; state < numberOfStates; ++state) {
-					Real df = hydro->interfaces(indexR)(side).flux(state) - hydro->interfaces(indexL)(side).flux(state);
+					Real df = hydro->cells(indexR).interfaces(side).flux(state) - hydro->cells(indexL).interfaces(side).flux(state);
 					(cell.*dq_dt)(state) -= df / dx;
 				}
 			}
@@ -200,7 +199,7 @@ template<typename Hydro>
 void EulerEquationBurgersSolverExplicit<Hydro>::integrateExternalForces(IHydro *ihydro, Real dt, StateVector Cell::*dq_dt) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	
-	Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename InterfaceGrid::value_type &v) {
+	Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		IVector index = v.first;
 		Cell &cell = v.second;
 		bool edge = false;

@@ -52,7 +52,7 @@ typename EulerEquationBurgersSolver<Hydro>::Real EulerEquationBurgersSolver<Hydr
 			for (int k = 0; k < rank; ++k) {
 				IVector nextIndex = index;
 				++nextIndex(k);
-				Real dx = hydro->interfaces(nextIndex)(k).x(k) - hydro->interfaces(index)(k).x(k);
+				Real dx = hydro->cells(nextIndex).interfaces(k).x(k) - hydro->cells(index).interfaces(k).x(k);
 				Real dum = dx / (speedOfSound + velocityMag);
 				if (dum < mindum) mindum = dum;
 			}

@@ -64,9 +64,7 @@ public:	//'til I can work out access
 
 	typedef ::Grid<Cell, rank> CellGrid;
 	typedef ::Vector<Interface, rank> InterfaceVector;
-	typedef ::Grid<InterfaceVector, rank> InterfaceGrid;
-	CellGrid cells;	//size^n
-	InterfaceGrid interfaces; //(size+1)^n * n
+	CellGrid cells;
 public:
 	Hydro(IVector size_,
 		bool useCFL_,
@@ -109,14 +107,7 @@ Hydro<Real, rank, EquationOfState>::Hydro(IVector size_,
 	FluxMethod *fluxMethod_,
 	InitialConditions *initialConditions_)
 : nghost(2) 
-
-//cells is plus one so memory indexing matches interfaces.
-//TODO make modular so they both are just 'size', 
-// get rid of ghost cells, and introduce solid interfaces for applying boundary conditions
-//I'm going to do some ugly pointer math to try and speed the loops up
 , cells(size_+1)		
-
-, interfaces(size_+1)
 {
 	size = size_;
 	useCFL = useCFL_;
@@ -148,9 +139,9 @@ void Hydro<Real, rank, EquationOfState>::resetCoordinates(Vector xmin_, Vector x
 		}
 	});
 
-	Parallel::For(interfaces.begin(), interfaces.end(), [&](typename InterfaceGrid::value_type &v) {
+	Parallel::For(cells.begin(), cells.end(), [&](typename CellGrid::value_type &v) {
 		IVector index = v.first;
-		InterfaceVector &interface = v.second;
+		InterfaceVector &interface = v.second.interfaces;
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {	//which side
 			if (index(side) < 1 || index(side) >= size(side)) {
@@ -170,9 +161,9 @@ void Hydro<Real, rank, EquationOfState>::resetCoordinates(Vector xmin_, Vector x
 		}
 	});
 
-	Parallel::For(interfaces.begin(), interfaces.end(), [&](typename InterfaceGrid::value_type &v) {
+	Parallel::For(cells.begin(), cells.end(), [&](typename CellGrid::value_type &v) {
 		IVector index = v.first;
-		InterfaceVector &interface = v.second;	
+		InterfaceVector &interface = v.second.interfaces;
 		for (int k = 0; k < rank; ++k) {
 			//extrapolate based on which edge it is
 			if (index(k) == size(k)) {
@@ -181,7 +172,7 @@ void Hydro<Real, rank, EquationOfState>::resetCoordinates(Vector xmin_, Vector x
 				IVector indexL2 = indexL;
 				--indexL2(k);
 				for (int j = 0; j < 3; ++j) {
-					interface(k).x(j) = 2. * interfaces(indexL)(k).x(j) - interfaces(indexL2)(k).x(j);
+					interface(k).x(j) = 2. * cells(indexL).interfaces(k).x(j) - cells(indexL2).interfaces(k).x(j);
 				}
 			} else if (index(k) == 0) {
 				IVector indexR = index;
@@ -189,7 +180,7 @@ void Hydro<Real, rank, EquationOfState>::resetCoordinates(Vector xmin_, Vector x
 				IVector indexR2 = indexR;
 				++indexR2(k);			
 				for (int j = 0; j < 3; ++j) {
-					interface(k).x(j) = 2. * interfaces(indexR)(k).x(j) - interfaces(indexR2)(k).x(j);
+					interface(k).x(j) = 2. * cells(indexR).interfaces(k).x(j) - cells(indexR2).interfaces(k).x(j);
 				}
 			}
 		}
@@ -276,76 +267,125 @@ template<> void plotVertex<double, 2>(::Tensor<double, Upper<2> > x, double valu
 template<> void plotVertex<float, 3>(::Tensor<float, Upper<3> > x, float value) { glVertex4f(x(0), x(1), value, x(2)); }
 template<> void plotVertex<double, 3>(::Tensor<double, Upper<3> > x, double value) { glVertex4d(x(0), x(1), value, x(2)); }
 
-template <int rank>
+template<int rank>
 struct HydroPlot {
-	template<typename Cell>
-	static void plot(Cell &cell) {
-		typedef typename Cell::Real Real;
-		
-		const float plotScalar = .1;
+	template<typename Hydro>
+	static void draw(Hydro &hydro) {
+		typedef typename Hydro::CellGrid CellGrid;
+		typedef typename Hydro::Cell Cell;
+		typedef typename Hydro::IVector IVector;
+		typedef typename Hydro::Real Real;
+		glBegin(GL_TRIANGLE_STRIP);
+		std::for_each(hydro.cells.begin(), hydro.cells.end(), [&](typename CellGrid::value_type &v) {
+			IVector index = v.first;
+			Cell &cell = v.second;
+			bool edge = false;
+			for (int side = 0; side < rank; ++side) {
+				if (index(side) < hydro.nghost-1 || index(side) >= hydro.size(side) - hydro.nghost) {
+					edge = true;
+					break;
+				}
+			}
+			if (!edge) {
+				const float plotScalar = .1;
 
-		//color by state value, neglect height or use it for coordinates
-		glColor3f(0, cell.state(0), 0);	//color by density
-		plotVertex<Real, rank>(cell.x, plotScalar * cell.primitives(0));
+				//color by state value, neglect height or use it for coordinates
+				glColor3f(0, cell.state(0), 0);	//color by density
+				plotVertex<Real, rank>(cell.x, plotScalar * cell.primitives(0));		
+			}
+		});
+		glEnd();
 	}
 };
 
+//1D case
 template<>
 struct HydroPlot<1> {
-	enum { rank = 1 };
-	template<typename Cell>
-	static void plot(Cell &cell) {
-		enum { numberOfStates = Cell::numberOfStates };
-		typedef typename Cell::Real Real;
-		
-		const float plotScalar = .1;
-		
-		static ::Vector<::Vector<float, 3>, numberOfStates> colors;
-		static bool initColors = false;
-		if (!initColors) {
-			initColors = true;
-			for (int i = 0; i < numberOfStates; ++i) {
-				float lenSq = 0.;
+	template<typename Hydro>
+	static void draw(Hydro &hydro) {
+		typedef typename Hydro::CellGrid CellGrid;
+		typedef typename Hydro::Cell Cell;
+		typedef typename Hydro::IVector IVector;
+		for (int state = 0; state < 3; ++state) {
+			::Vector<float,3> color;
+			color(state) = 1;
+			glColor3fv(color.v);
+			glBegin(GL_LINE_STRIP);
+			std::for_each(hydro.cells.begin(), hydro.cells.end(), [&](typename CellGrid::value_type &v) {
+				IVector index = v.first;
+				Cell &cell = v.second;
+				glVertex2d(cell.x(0), .1 * cell.primitives(state));
+			});
+			glEnd();
+		}
+	}
+};
+
+//2D case
+template<>
+struct HydroPlot<2> {
+	template<typename Hydro>
+	static void draw(Hydro &hydro) {
+		static GLuint texID = 0;
+		static bool init = false;
+		if (!init) {
+			init = true;
+			glGenTextures(1, &texID);
+			glBindTexture(GL_TEXTURE_1D, texID);
+
+			float colors[][3] = {
+				{.5, .5, .5},
+				{1, 1, 0},
+				{1, .5, 0},
+				{1, 0, 0}
+			};
+
+			const int width = 256;
+			float data[width*3];
+			for (int i = 0; i < width; ++i) {
+				::Vector<float,3> c;
+				float f = (float)i / (float)width * (float)numberof(colors);
+				int ci = (int)f;
+				float s = f - (float)ci;
+
 				for (int j = 0; j < 3; ++j) {
-					colors(i)(j) = (float)rand() / (float)RAND_MAX;
-					lenSq += colors(i)(j) * colors(i)(j);
-				}
-				float len = sqrt(lenSq);
-				for (int j = 0; j < 3; ++j) {
-					colors(i)(j) /= len;
+					data[3 * i + j] = colors[ci][j] * (1.f - s) + colors[ci+1][j] * s;
 				}
 			}
+
+			glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, width, 0, GL_RGB, GL_FLOAT, data);
+			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		}
 		
-		//color by variable, show states by height
-		for (int state = 0; state < numberOfStates; ++state) {
-			glColor3fv(colors(state).v);
-			plotVertex<Real, rank>(cell.x, plotScalar * cell.primitives(state));
+		typedef typename Hydro::CellGrid CellGrid;
+		typedef typename Hydro::Cell Cell;
+		typedef typename Hydro::IVector IVector;
+		typedef typename Hydro::Real Real;
+		glEnable(GL_TEXTURE_1D);
+		for (int y = hydro.nghost-1; y < hydro.size(1)-1; ++y) {
+			glBegin(GL_TRIANGLE_STRIP);
+			for (int x = hydro.nghost-1; x < hydro.size(0); ++x) {
+			
+				for (int offset = 0; offset < 2; ++offset) {
+					int index = x + hydro.cells.size(0) * (y + offset);
+					Cell &cell = hydro.cells.v[index].second;
+
+					//color by state value, neglect height or use it for coordinates
+					glTexCoord1f(1.f - cell.state(0));
+					glVertex2d(cell.x(0), cell.x(1));
+				}
+			}
+			glEnd();
 		}
+		glDisable(GL_TEXTURE_1D);
 	}
 };
 
 template<typename Real, int rank, typename EquationOfState>
 void Hydro<Real, rank, EquationOfState>::draw() {
 	PROFILE()
-
 	getPrimitives();
-
-	glBegin(GL_POINTS);
-	std::for_each(cells.begin(), cells.end(), [&](typename CellGrid::value_type &v) {
-		IVector index = v.first;
-		Cell &cell = v.second;
-		bool edge = false;
-		for (int side = 0; side < rank; ++side) {
-			if (index(side) < nghost-1 || index(side) >= size(side) - nghost) {
-				edge = true;
-				break;
-			}
-		}
-		if (!edge) {
-			HydroPlot<rank>::template plot<Cell>(cell);
-		}
-	});
-	glEnd();
+	HydroPlot<rank>::template draw<Hydro>(*this);
 }
 

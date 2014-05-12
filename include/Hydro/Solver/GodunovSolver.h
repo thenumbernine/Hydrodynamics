@@ -16,7 +16,6 @@ public:
 	typedef typename Hydro::IVector IVector;
 	typedef typename Hydro::CellGrid CellGrid;
 	typedef typename Hydro::InterfaceVector InterfaceVector;
-	typedef typename Hydro::InterfaceGrid InterfaceGrid;
 
 	virtual void initStep(IHydro *ihydro);
 	virtual Real calcCFLTimestep(IHydro *ihydro);
@@ -43,9 +42,9 @@ void GodunovSolver<Hydro>::initStep(IHydro *ihydro) {
 
 	{
 		PROFILE()
-		Parallel::For(hydro->interfaces.begin(), hydro->interfaces.end(), [&](typename InterfaceGrid::value_type &v) {
+		Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 			IVector index = v.first;
-			InterfaceVector &interface = v.second;
+			InterfaceVector &interface = v.second.interfaces;
 			bool edge = false;
 			for (int side = 0; side < rank; ++side) {
 				if (index(side) < 1 || index(side) >= hydro->size(side)) {
@@ -98,11 +97,11 @@ typename GodunovSolver<Hydro>::Real GodunovSolver<Hydro>::calcCFLTimestep(IHydro
 				Real maxLambda = Real();
 				Real minLambda = Real();
 				for (int state = 0; state < numberOfStates; ++state) {
-					maxLambda = std::max<Real>(maxLambda, hydro->interfaces(indexL)(side).eigenvalues(state));
-					minLambda = std::min<Real>(minLambda, hydro->interfaces(indexR)(side).eigenvalues(state));
+					maxLambda = std::max<Real>(maxLambda, hydro->cells(indexL).interfaces(side).eigenvalues(state));
+					minLambda = std::min<Real>(minLambda, hydro->cells(indexR).interfaces(side).eigenvalues(state));
 				}
 				
-				Real dx = hydro->interfaces(indexR)(side).x(side) - hydro->interfaces(indexL)(side).x(side);
+				Real dx = hydro->cells(indexR).interfaces(side).x(side) - hydro->cells(indexL).interfaces(side).x(side);
 				
 				Real dum = dx / (maxLambda - minLambda);
 				if (dum < mindum) mindum = dum;
@@ -137,9 +136,9 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 
 	{
 		PROFILE()
-		Parallel::For(hydro->interfaces.begin(), hydro->interfaces.end(), [&](typename InterfaceGrid::value_type &v) {
+		Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 			IVector index = v.first;
-			InterfaceVector &interface = v.second;
+			InterfaceVector &interface = v.second.interfaces;
 			bool edge = false;
 			for (int side = 0; side < rank; ++side) {
 				if (index(side) < 1 || index(side) >= hydro->size(side)) {
@@ -174,9 +173,9 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 
 	{
 		PROFILE()
-		Parallel::For(hydro->interfaces.begin(), hydro->interfaces.end(), [&](typename InterfaceGrid::value_type &v) {
+		Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 			IVector index = v.first;
-			InterfaceVector &interface = v.second;
+			InterfaceVector &interface = v.second.interfaces;
 			bool edge = false;
 			for (int side = 0; side < rank; ++side) {
 				if (index(side) < hydro->nghost || index(side) >= hydro->size(side) - hydro->nghost + 1) {
@@ -199,9 +198,9 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 					++interfaceIndexR(side); 
 					
 					for (int state = 0; state < numberOfStates; ++state) {
-						Real interfaceDeltaStateTildeL = hydro->interfaces(interfaceIndexL)(side).deltaStateTilde(state);
+						Real interfaceDeltaStateTildeL = hydro->cells(interfaceIndexL).interfaces(side).deltaStateTilde(state);
 						Real interfaceDeltaStateTilde = interface(side).deltaStateTilde(state);
-						Real interfaceDeltaStateTildeR = hydro->interfaces(interfaceIndexR)(side).deltaStateTilde(state);
+						Real interfaceDeltaStateTildeR = hydro->cells(interfaceIndexR).interfaces(side).deltaStateTilde(state);
 						
 						if (fabs(interfaceDeltaStateTilde) > Real(0)) {
 							if (interface(side).eigenvalues(state) > Real(0)) {
@@ -225,9 +224,9 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 	//transform cell q's into cell qTilde's (eigenspace)
 	{
 		PROFILE()
-		Parallel::For(hydro->interfaces.begin(), hydro->interfaces.end(), [&](typename InterfaceGrid::value_type &v) {
+		Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 			IVector index = v.first;
-			InterfaceVector &interface = v.second;
+			InterfaceVector &interface = v.second.interfaces;
 			bool edge = false;
 			for (int side = 0; side < rank; ++side) {
 				if (index(side) < hydro->nghost - 1 || index(side) >= hydro->size(side) + hydro->nghost - 2) {
@@ -241,7 +240,7 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 					IVector indexL = index;
 					--indexL(side);
 					
-					Real dx = interface(side).x(side) - hydro->interfaces(indexL)(side).x(side);
+					Real dx = interface(side).x(side) - hydro->cells(indexL).interfaces(side).x(side);
 
 					//simplification: rather than E * L * E^-1 * q, just do A * q for A the original matrix
 					//...and use that on the flux L & R avg (which doesn't get scaled in eigenvector basis space
@@ -308,9 +307,9 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 					IVector indexL = index;
 					IVector indexR = index;
 					++indexR(side);
-					Real dx = hydro->interfaces(indexR)(side).x(side) - hydro->interfaces(indexL)(side).x(side);		
+					Real dx = hydro->cells(indexR).interfaces(side).x(side) - hydro->cells(indexL).interfaces(side).x(side);		
 					for (int state = 0; state < numberOfStates; ++state) {
-						Real df = hydro->interfaces(indexR)(side).flux(state) - hydro->interfaces(indexL)(side).flux(state);
+						Real df = hydro->cells(indexR).interfaces(side).flux(state) - hydro->cells(indexL).interfaces(side).flux(state);
 						(cell.*dq_dt)(state) -= df / dx;
 					}
 				}

@@ -13,7 +13,7 @@ public:
 	typedef typename Hydro::Vector Vector;
 	typedef typename Hydro::IVector IVector;
 	typedef typename Hydro::InterfaceVector InterfaceVector;
-	typedef typename Hydro::InterfaceGrid InterfaceGrid;
+	typedef typename Hydro::CellGrid CellGrid;
 
 	virtual void initStep(IHydro *ihydro);
 };
@@ -33,9 +33,9 @@ void EulerEquationRoeSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 	
 		//I should really use tbb or gcs or something,
 		//but writing my own is too much fun ...
-		Parallel::For(hydro->interfaces.begin(), hydro->interfaces.end(), [&](typename InterfaceGrid::value_type &v) {
+		Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 			IVector index = v.first;
-			InterfaceVector &interface = v.second;
+			InterfaceVector &interface = v.second.interfaces;
 			bool edge = false;
 			for (int side = 0; side < rank; ++side) {
 				if (index(side) < 1 || index(side) >= hydro->size(side)) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "TensorMath/Tensor.h"
+#include "Hydro/Interface.h"
 
 //no info means no vtable means I might as well static-cast it
 struct ICell {
@@ -20,6 +21,7 @@ struct Cell : public ICell {
 	typedef Vector<int, rank> IVector;
 	typedef Tensor<Real, Upper<rank> > Vector;
 	typedef Tensor<Real, Upper<numberOfStates> > StateVector;
+	typedef ::Interface<Real, rank, numberOfStates> Interface;
 
 	Cell() : pressure(Real()) {}
 
@@ -45,5 +47,8 @@ struct Cell : public ICell {
 	StateVector tmpState2;
 	StateVector tmpState3;
 	StateVector tmpState4;
+
+	//merging grids
+	::Vector<Interface, rank> interfaces;
 };
 
