@@ -55,7 +55,10 @@ void GodunovSolver<Hydro>::initStep(IHydro *ihydro) {
 			}
 			if (!edge) {
 				for (int side = 0; side < rank; ++side) {
-					interface(side).stateMid = (interface(side).cellLeft->stateRight(side) + interface(side).cellRight->stateLeft(side)) * Real(.5);
+					IVector indexR = index;
+					IVector indexL = index;
+					--indexL(side);
+					interface(side).stateMid = (hydro->cells(indexL).stateRight(side) + hydro->cells(indexR).stateLeft(side)) * Real(.5);
 				}
 			} else {
 				for (int side = 0; side < rank; ++side) {
@@ -79,7 +82,6 @@ typename GodunovSolver<Hydro>::Real GodunovSolver<Hydro>::calcCFLTimestep(IHydro
 	{
 		Real mindum = HUGE_VAL;
 		IVector index = v.first;
-		Cell &cell = v.second;
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
 			if (index(side) < 1 || index(side) >= hydro->size(side)) {
@@ -89,14 +91,18 @@ typename GodunovSolver<Hydro>::Real GodunovSolver<Hydro>::calcCFLTimestep(IHydro
 		}
 		if (!edge) {
 			for (int side = 0; side < rank; ++side) {
+				IVector indexL = index;
+				IVector indexR = index;
+				++indexR(side);
+				
 				Real maxLambda = Real();
 				Real minLambda = Real();
 				for (int state = 0; state < numberOfStates; ++state) {
-					maxLambda = std::max<Real>(maxLambda, cell.interfaceLeft(side)->eigenvalues(state));
-					minLambda = std::min<Real>(minLambda, cell.interfaceRight(side)->eigenvalues(state));
+					maxLambda = std::max<Real>(maxLambda, hydro->interfaces(indexL)(side).eigenvalues(state));
+					minLambda = std::min<Real>(minLambda, hydro->interfaces(indexR)(side).eigenvalues(state));
 				}
 				
-				Real dx = cell.interfaceRight(side)->x(side) - cell.interfaceLeft(side)->x(side);
+				Real dx = hydro->interfaces(indexR)(side).x(side) - hydro->interfaces(indexL)(side).x(side);
 				
 				Real dum = dx / (maxLambda - minLambda);
 				if (dum < mindum) mindum = dum;
@@ -143,8 +149,11 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 			}
 			if (!edge) {
 				for (int side = 0; side < rank; ++side) {
-					StateVector stateLeft = interface(side).cellLeft->stateRight(side);
-					StateVector stateRight = interface(side).cellRight->stateLeft(side);
+					IVector indexR = index;
+					IVector indexL = index;
+					--indexL(side);
+					StateVector stateLeft = hydro->cells(indexL).stateRight(side);
+					StateVector stateRight = hydro->cells(indexR).stateLeft(side);
 					for (int state = 0; state < numberOfStates; ++state) {
 						Real sum = Real(0);
 						for (int k = 0; k < numberOfStates; ++k) {

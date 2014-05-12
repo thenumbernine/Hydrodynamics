@@ -45,10 +45,5 @@ struct Cell : public ICell {
 	StateVector tmpState2;
 	StateVector tmpState3;
 	StateVector tmpState4;
-
-	//working towards arbitrary geometry
-	typedef ::Interface<Real, rank, numberOfStates> Interface;
-	::Vector<Interface*, rank> interfaceLeft;
-	::Vector<Interface*, rank> interfaceRight;
 };
 

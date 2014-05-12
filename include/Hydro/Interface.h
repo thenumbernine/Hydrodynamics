@@ -23,8 +23,6 @@ struct Interface {
 
 	Interface() 
 	: velocity(Real())
-	, cellLeft(NULL)
-	, cellRight(NULL)
 	{
 		for (int i = 0; i < numberOfStates; ++i) {
 			for (int j = 0; j < numberOfStates; ++j) {
@@ -53,9 +51,6 @@ struct Interface {
 	StateInverseMatrix eigenvectorsInverse;
 	StateVector rTilde;	//r projected into the eigenvector basis
 	StateVector deltaStateTilde;	//dq projected into eigenvector basis
-
-	typedef ::Cell<Real, rank, numberOfStates> Cell;
-	Cell *cellLeft, *cellRight; 
 };
 
 
