@@ -356,6 +356,33 @@ public:
 	virtual void shutdown() {
 		PROFILE_DONE()
 	}
+
+	virtual void sdlEvent(SDL_Event &event) {
+
+		static bool leftButtonDown = false;
+		
+		switch (event.type) {
+		case SDL_MOUSEMOTION:
+			{	
+				int idx = event.motion.xrel;
+				int idy = event.motion.yrel;
+				if (leftButtonDown && (idx || idy)) {
+					ihydro->pan(idx, idy);
+				}
+			}
+			break;
+		case SDL_MOUSEBUTTONDOWN:
+			if (event.button.button == SDL_BUTTON_LEFT) {
+				leftButtonDown = true;
+			}
+			break;
+		case SDL_MOUSEBUTTONUP:
+			if (event.button.button == SDL_BUTTON_LEFT) {
+				leftButtonDown = false;
+			}
+			break;
+		}
+	}
 };
 GLAPP_MAIN(HydroApp)
 
