@@ -17,7 +17,7 @@ public:
 	typedef Tensor<Real, Lower<numberOfStates>, Lower<numberOfStates> > StateMatrix;
 	typedef Tensor<Real, Upper<numberOfStates>, Upper<numberOfStates> > StateInverseMatrix;
 
-	virtual void getPrimitives(ICell *cell);
+	StateVector getPrimitives(StateVector state);
 
 	void buildEigenstate(
 		StateMatrix &jacobian,
@@ -31,16 +31,17 @@ public:
 };
 
 template<typename Real, int rank>
-void EulerEquationOfState<Real, rank>::getPrimitives(ICell *icell) {
-	typedef typename Hydro::Cell Cell;
-	Cell *cell = dynamic_cast<Cell*>(icell);
+typename EulerEquationOfState<Real, rank>::StateVector
+EulerEquationOfState<Real, rank>::getPrimitives(StateVector state) {
+	StateVector primitives;
 	//density
-	cell->primitives(0) = cell->state(0);
+	primitives(0) = state(0);
 	for (int k = 0; k < rank; ++k) {
-		cell->primitives(k+1) = cell->state(k+1) / cell->state(0);
+		primitives(k+1) = state(k+1) / state(0);
 	}
 	//total energy
-	cell->primitives(rank+1) = cell->state(rank+1) / cell->state(0);
+	primitives(rank+1) = state(rank+1) / state(0);
+	return primitives;
 }
 
 template<int rank>
@@ -207,6 +208,66 @@ OutputType inverseGaussJordan(InputType input) {
 	return output;
 }
 
+template<int rank>
+struct EulerEquationOfState_ComputeJacobian {
+	template<typename Hydro>
+	static void go(
+		typename Hydro::StateMatrix &jacobian,
+		const typename Hydro::StateVector eigenvalues, 
+		const typename Hydro::StateMatrix eigenvectors,
+		const typename Hydro::StateInverseMatrix eigenvectorsInverse,
+		const typename Hydro::Vector velocity,
+		typename Hydro::Real enthalpyTotal,
+		typename Hydro::Real gamma)
+	{
+		typedef typename Hydro::Real Real;
+		enum { numberOfStates = Hydro::numberOfStates };
+
+		//Real error = 0;
+		for (int i = 0; i < numberOfStates; ++i) {
+			for (int j = 0; j < numberOfStates; ++j) {
+				Real sum = Real(0);
+				//Real check = Real(0);
+				for (int k = 0; k < numberOfStates; ++k) {
+					sum += eigenvectors(i,k) * eigenvalues(k) * eigenvectorsInverse(k,j);
+					//check += eigenvectors(i,k) * eigenvectorsInverse(k,j);
+				}
+				jacobian(i,j) = sum;
+				//error = std::max<Real>(error, fabs(check - Real(i==j)));
+			}
+		}	
+		//std::cout << error << std::endl;
+	}
+};
+
+template<>
+struct EulerEquationOfState_ComputeJacobian<1> {
+	template<typename Hydro>
+	static void go(
+		typename Hydro::StateMatrix &jacobian,
+		const typename Hydro::StateVector eigenvalues, 
+		const typename Hydro::StateMatrix eigenvectors,
+		const typename Hydro::StateInverseMatrix eigenvectorsInverse,
+		const typename Hydro::Vector velocity,
+		typename Hydro::Real enthalpyTotal,
+		typename Hydro::Real gamma)
+	{
+		enum { numberOfStates = Hydro::numberOfStates };
+	
+		//flux jacobian matrix, listed per column
+		
+		jacobian(0,0) = 0.;
+		jacobian(1,0) = (gamma - 3.) / 2. * velocity(0) * velocity(0);
+		jacobian(2,0) = velocity(0) * ((gamma - 1.) / 2. * velocity(0) * velocity(0) - enthalpyTotal);
+		jacobian(0,1) = 1.;
+		jacobian(1,1) = (3. - gamma) * velocity(0);
+		jacobian(2,1) = enthalpyTotal - (gamma - 1.) * velocity(0) * velocity(0);
+		jacobian(0,2) = 0.;
+		jacobian(1,2) = gamma - 1.;
+		jacobian(2,2) = gamma * velocity(0);
+	}
+};
+
 template<typename Real, int rank>
 void EulerEquationOfState<Real, rank>::buildEigenstate(
 	StateMatrix &jacobian,
@@ -236,26 +297,28 @@ void EulerEquationOfState<Real, rank>::buildEigenstate(
 		}
 	}
 
-
-	//flux jacobian matrix, listed per column
-	/*
-	jacobian(0,0) = 0.;
-	jacobian(1,0) = (gamma - 3.) / 2. * velocity(0) * velocity(0);
-	jacobian(2,0) = velocity(0) * ((gamma - 1.) / 2. * velocity(0) * velocity(0) - enthalpyTotal);
-	jacobian(0,1) = 1.;
-	jacobian(1,1) = (3. - gamma) * velocity(0);
-	jacobian(2,1) = enthalpyTotal - (gamma - 1.) * velocity(0) * velocity(0);
-	jacobian(0,2) = 0.;
-	jacobian(1,2) = gamma - 1.;
-	jacobian(2,2) = gamma * velocity(0);
-	*/
+#if 0	//working on analytically providing flux.  looks like it might take extra variables (like the whole mid state vector).  brings to light question of how to average the mid -- by aux vars (as doing) or by state vector itself?
+	//flux derivative
+	//density
+	flux(0,0) = 0;
+	for (int k = 0; k < rank; ++k) {
+		flux(0,k+1) = normal(k);
+	}
+	flux(0,rank+1) = 0;
+	//momentum
+	//energy
+	flux(rank+1,0) = velocityAlongNormal * (-gamma * energyTotal * density^-1 + (gamma - 1) * velocitySq)
+#endif
 
 	//eigenvalues: min, mid, max
+	
 	eigenvalues(0) = velocityAlongNormal - speedOfSound;
 	for (int k = 0; k < rank; ++k) {
 		eigenvalues(k+1) = velocityAlongNormal;
 	}
 	eigenvalues(rank+1) = velocityAlongNormal + speedOfSound;
+
+	//eigenvectors:
 
 	//min eigenvector
 	eigenvectors(0,0) = 1.;
@@ -287,19 +350,6 @@ void EulerEquationOfState<Real, rank>::buildEigenstate(
 	//calculate eigenvector inverses numerically ... 
 	eigenvectorsInverse = inverseGaussJordan<StateInverseMatrix, StateMatrix>(eigenvectors);
 
-	//Real error = 0;
-	for (int i = 0; i < numberOfStates; ++i) {
-		for (int j = 0; j < numberOfStates; ++j) {
-			Real sum = Real(0);
-			//Real check = Real(0);
-			for (int k = 0; k < numberOfStates; ++k) {
-				sum += eigenvectors(i,k) * eigenvalues(k) * eigenvectorsInverse(k,j);
-				//check += eigenvectors(i,k) * eigenvectorsInverse(k,j);
-			}
-			jacobian(i,j) = sum;
-			//error = std::max<Real>(error, fabs(check - Real(i==j)));
-		}
-	}
-	//std::cout << error << std::endl;
+	EulerEquationOfState_ComputeJacobian<rank>::template go<Hydro>(jacobian, eigenvalues, eigenvectors, eigenvectorsInverse, velocity, enthalpyTotal, gamma);
 }
 

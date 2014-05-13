@@ -44,6 +44,8 @@ public:
 	typedef ::Vector<int, rank> IVector;
 	typedef typename Cell::Vector Vector;
 	typedef typename Cell::StateVector StateVector;
+	typedef typename Interface::StateMatrix StateMatrix;
+	typedef typename Interface::StateInverseMatrix StateInverseMatrix;
 public:	//hydro args
 	IVector size;
 	bool useCFL;
@@ -217,8 +219,8 @@ template<typename Real, int rank, typename EquationOfState>
 void Hydro<Real, rank, EquationOfState>::getPrimitives() {
 	PROFILE()
 	Parallel::For(cells.begin(), cells.end(), [&](typename CellGrid::value_type &v) {
-		ICell *icell = dynamic_cast<ICell*>(&v.second);
-		equationOfState->getPrimitives(icell);
+		Cell &cell = v.second;
+		cell.primitives = equationOfState->getPrimitives(cell.state);
 	});
 }
 
@@ -305,18 +307,23 @@ struct HydroPlot<1> {
 	static void draw(Hydro &hydro) {
 		typedef typename Hydro::CellGrid CellGrid;
 		typedef typename Hydro::Cell Cell;
+		typedef typename Hydro::StateVector StateVector;
 		typedef typename Hydro::IVector IVector;
+		const double plotScalar = .1;
 		for (int state = 0; state < 3; ++state) {
 			::Vector<float,3> color;
 			color(state) = 1;
 			glColor3fv(color.v);
-			glBegin(GL_LINE_STRIP);
-			std::for_each(hydro.cells.begin(), hydro.cells.end(), [&](typename CellGrid::value_type &v) {
-				IVector index = v.first;
-				Cell &cell = v.second;
-				glVertex2d(cell.x(0), .1 * cell.primitives(state));
-			});
-			glEnd();
+			for (int i = 0; i < hydro.size(0); ++i) {
+				Cell &cell = hydro.cells(IVector(i));
+				StateVector leftPrims = hydro.equationOfState->getPrimitives(cell.stateLeft(0));
+				StateVector rightPrims = hydro.equationOfState->getPrimitives(cell.stateRight(0));
+				glBegin(GL_LINE_STRIP);
+				glVertex2d(cell.interfaces(0).x(0), plotScalar * leftPrims(state));
+				glVertex2d(cell.x(0), plotScalar * cell.primitives(state));
+				glVertex2d(hydro.cells(i+1).interfaces(0).x(0), plotScalar * rightPrims(state));
+				glEnd();
+			}
 		}
 	}
 };

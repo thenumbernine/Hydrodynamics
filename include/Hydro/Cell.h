@@ -3,17 +3,12 @@
 #include "TensorMath/Tensor.h"
 #include "Hydro/Interface.h"
 
-//no info means no vtable means I might as well static-cast it
-struct ICell {
-	virtual ~ICell() {}
-};
-
 template<typename Real, int rank, int numberOfStates>
 struct Interface;
 
 //cell-centered values
 template<typename Real_, int rank, int numberOfStates_>
-struct Cell : public ICell {
+struct Cell {
 	enum { numberOfStates = numberOfStates_ };
 	
 	//static values
