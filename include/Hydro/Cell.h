@@ -25,9 +25,6 @@ struct Cell {
 	//dynamic values
 	StateVector state;	//state variables
 
-	//primitives ... only used in getPrimitives ... by draw ... hmm ...
-	StateVector primitives;
-
 	//used for Burgers
 	//aux variables:
 	Real pressure;

@@ -83,7 +83,6 @@ public:
 	void resetCoordinates(Vector xmin_, Vector xmax_);
 	void step(Real dt);
 	void boundary();
-	void getPrimitives();
 public:
 	virtual void update();
 	virtual void draw();
@@ -215,15 +214,6 @@ void Hydro<Real, rank, EquationOfState>::update() {
 	step(dt);
 }
 
-template<typename Real, int rank, typename EquationOfState>
-void Hydro<Real, rank, EquationOfState>::getPrimitives() {
-	PROFILE()
-	Parallel::For(cells.begin(), cells.end(), [&](typename CellGrid::value_type &v) {
-		Cell &cell = v.second;
-		cell.primitives = equationOfState->getPrimitives(cell.state);
-	});
-}
-
 template<int rank>
 struct HydroResize {
 	static void resize(int width, int height) {
@@ -275,6 +265,7 @@ struct HydroPlot {
 	static void draw(Hydro &hydro) {
 		typedef typename Hydro::CellGrid CellGrid;
 		typedef typename Hydro::Cell Cell;
+		typedef typename Hydro::StateVector StateVector;
 		typedef typename Hydro::IVector IVector;
 		typedef typename Hydro::Real Real;
 		glBegin(GL_TRIANGLE_STRIP);
@@ -290,10 +281,11 @@ struct HydroPlot {
 			}
 			if (!edge) {
 				const float plotScalar = .1;
+				StateVector primitives = hydro.equationOfState->getPrimitives(cell.state);
 
 				//color by state value, neglect height or use it for coordinates
 				glColor3f(0, cell.state(0), 0);	//color by density
-				plotVertex<Real, rank>(cell.x, plotScalar * cell.primitives(0));		
+				plotVertex<Real, rank>(cell.x, plotScalar * primitives(0));		
 			}
 		});
 		glEnd();
@@ -316,12 +308,13 @@ struct HydroPlot<1> {
 			glColor3fv(color.v);
 			for (int i = 0; i < hydro.size(0); ++i) {
 				Cell &cell = hydro.cells(IVector(i));
-				StateVector leftPrims = hydro.equationOfState->getPrimitives(cell.stateLeft(0));
-				StateVector rightPrims = hydro.equationOfState->getPrimitives(cell.stateRight(0));
+				StateVector primitivesLeft = hydro.equationOfState->getPrimitives(cell.stateLeft(0));
+				StateVector primitives = hydro.equationOfState->getPrimitives(cell.state);
+				StateVector primitivesRight = hydro.equationOfState->getPrimitives(cell.stateRight(0));
 				glBegin(GL_LINE_STRIP);
-				glVertex2d(cell.interfaces(0).x(0), plotScalar * leftPrims(state));
-				glVertex2d(cell.x(0), plotScalar * cell.primitives(state));
-				glVertex2d(hydro.cells(i+1).interfaces(0).x(0), plotScalar * rightPrims(state));
+				glVertex2d(cell.interfaces(0).x(0), plotScalar * primitivesLeft(state));
+				glVertex2d(cell.x(0), plotScalar * primitives(state));
+				glVertex2d(hydro.cells(i+1).interfaces(0).x(0), plotScalar * primitivesRight(state));
 				glEnd();
 			}
 		}
@@ -392,7 +385,6 @@ struct HydroPlot<2> {
 template<typename Real, int rank, typename EquationOfState>
 void Hydro<Real, rank, EquationOfState>::draw() {
 	PROFILE()
-	getPrimitives();
 	HydroPlot<rank>::template draw<Hydro>(*this);
 }
 

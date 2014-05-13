@@ -297,17 +297,38 @@ void EulerEquationOfState<Real, rank>::buildEigenstate(
 		}
 	}
 
-#if 0	//working on analytically providing flux.  looks like it might take extra variables (like the whole mid state vector).  brings to light question of how to average the mid -- by aux vars (as doing) or by state vector itself?
+#if 0
 	//flux derivative
+	Real d_drho_pressure = (gamma - 1) * velocitySq;
+	Vector grad_pressure = (1 - gamma) * velocity;
+	Real d_de_pressure = gamma - 1;
+	Real d_drho_enthalpyTotal = 
+		(-gamma * energyTotal / density + (gamma - 1) * velocitySq) / density
+	Vector grad_enthalpyTotal = 
+		-(gamma - 1) * velocity / density
+	Real d_de_enthalpyTotal = 
+		gamma / density;
+
 	//density
-	flux(0,0) = 0;
+	jacobian(0,0) = 0;
 	for (int k = 0; k < rank; ++k) {
-		flux(0,k+1) = normal(k);
+		jacobian(0,k+1) = normal(k);
 	}
-	flux(0,rank+1) = 0;
+	jacobian(0,rank+1) = 0;
 	//momentum
+	for (int j = 0; j < rank; ++j) {
+		jacobian(j+1,0) = -velocityAlongNormal * velocity(j) + normal(j) * d_drho_pressure;
+		for (int k = 0; k < rank; ++k) {
+			jacobian(j+1,k+1) = (normal(k) * velocity(j) + (j == k) * velocityAlongNormal) + (j == k) * grad_pressure(k);
+		}
+		jacobian(j+1,rank+1) = normal(j) * d_de_pressure;
+	}
 	//energy
-	flux(rank+1,0) = velocityAlongNormal * (-gamma * energyTotal * density^-1 + (gamma - 1) * velocitySq)
+	jacobian(rank+1,0) = momentumAlongNormal * d_drho_enthalpyTotal;
+	for (int k = 0; k < rank; ++k) {
+		jacobian(rank+1,k+1) = normal(k) * enthalpyTotal + momentumAlongNormal * grad_enthalpyTotal(k);
+	}
+	jacobian(rank+1,rank+1) = momentumAlongNormal * d_de_enthalpyTotal;
 #endif
 
 	//eigenvalues: min, mid, max
