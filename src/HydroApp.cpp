@@ -129,7 +129,7 @@ public:
 
 	template<typename Real, int rank, typename EquationOfState>
 	void initType() {
-		typedef ::Hydro<Real, rank, EquationOfState> Hydro;
+		typedef ::Hydro<EquationOfState> Hydro;
 		typedef ::ISolver<Real> ISolver;
 		typedef ::ExplicitMethod<Hydro> ExplicitMethod;
 		typedef ::FluxMethod<Real> FluxMethod;

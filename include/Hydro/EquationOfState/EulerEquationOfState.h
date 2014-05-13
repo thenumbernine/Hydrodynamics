@@ -23,7 +23,7 @@ struct EulerEquationOfState : public EquationOfState<Real, rank_> {
 	enum { rank = rank_ };
 	typedef ::ISolver<Real> ISolver;
 	typedef ::InitialConditions<Real, rank> InitialConditions;
-	typedef ::Hydro<Real, rank, EulerEquationOfState<Real, rank> > Hydro;
+	typedef ::Hydro<EulerEquationOfState<Real, rank> > Hydro;
 	enum { numberOfStates = rank + 2 };
 	typedef Tensor<Real, Upper<rank> > Vector;
 	typedef Tensor<Real, Upper<numberOfStates> > StateVector;

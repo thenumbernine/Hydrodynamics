@@ -30,8 +30,10 @@ struct ISolver;
 template<typename Real, int rank>
 struct InitialConditions;
 
-template<typename Real, int rank>
+template<typename Real_, int rank_>
 struct EquationOfState {
+	enum { rank = rank_ };
+	typedef Real_ Real;
 	typedef ::ISolver<Real> ISolver;
 	typedef ::InitialConditions<Real, rank> InitialConditions;
 

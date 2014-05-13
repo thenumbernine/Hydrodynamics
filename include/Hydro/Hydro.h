@@ -165,12 +165,13 @@ struct IHydro {
 	virtual void pan(int dx, int dy) = 0;
 };
 
-template<typename Real_, int rank_, typename EquationOfState_>
+template<typename EquationOfState_>
 struct Hydro : public IHydro {
-	typedef Real_ Real;
-	enum { rank = rank_ };
-
 	typedef EquationOfState_ EquationOfState;
+	
+	typedef typename EquationOfState::Real Real;
+	enum { rank = EquationOfState::rank };
+
 	typedef ISolver<Real> ISolver;
 	typedef ExplicitMethod<Hydro> ExplicitMethod;
 	typedef FluxMethod<Real> FluxMethod;
@@ -229,8 +230,8 @@ public:
 	virtual void pan(int dx, int dy);
 };
 
-template<typename Real, int rank, typename EquationOfState>
-Hydro<Real, rank, EquationOfState>::Hydro(IVector size_,
+template<typename EquationOfState>
+Hydro<EquationOfState>::Hydro(IVector size_,
 	bool useCFL_,
 	Real cfl_,
 	Real fixedDT_,
@@ -258,8 +259,8 @@ Hydro<Real, rank, EquationOfState>::Hydro(IVector size_,
 	resetCoordinates(xmin, xmax);
 }
 
-template<typename Real, int rank, typename EquationOfState>
-void Hydro<Real, rank, EquationOfState>::resetCoordinates(Vector xmin_, Vector xmax_) {
+template<typename EquationOfState>
+void Hydro<EquationOfState>::resetCoordinates(Vector xmin_, Vector xmax_) {
 	xmin = xmin_;
 	xmax = xmax_;
 
@@ -319,21 +320,21 @@ void Hydro<Real, rank, EquationOfState>::resetCoordinates(Vector xmin_, Vector x
 	});
 }
 
-template<typename Real, int rank, typename EquationOfState>
-void Hydro<Real, rank, EquationOfState>::boundary() {
+template<typename EquationOfState>
+void Hydro<EquationOfState>::boundary() {
 	PROFILE()
 	(*boundaryMethod)(this);
 }
 
-template<typename Real, int rank, typename EquationOfState>
-void Hydro<Real, rank, EquationOfState>::step(Real dt) {
+template<typename EquationOfState>
+void Hydro<EquationOfState>::step(Real dt) {
 	PROFILE()
 	boundary();
 	solver->step(this, dt);
 }
 
-template<typename Real, int rank, typename EquationOfState>
-void Hydro<Real, rank, EquationOfState>::update() {
+template<typename EquationOfState>
+void Hydro<EquationOfState>::update() {
 	PROFILE()
 	
 	solver->initStep(this);
@@ -345,18 +346,18 @@ void Hydro<Real, rank, EquationOfState>::update() {
 	step(dt);
 }
 
-template<typename Real, int rank, typename EquationOfState>
-void Hydro<Real, rank, EquationOfState>::resize(int width, int height) {
+template<typename EquationOfState>
+void Hydro<EquationOfState>::resize(int width, int height) {
 	plot.resize(width, height);
 }
 
-template<typename Real, int rank, typename EquationOfState>
-void Hydro<Real, rank, EquationOfState>::pan(int dx, int dy) {
+template<typename EquationOfState>
+void Hydro<EquationOfState>::pan(int dx, int dy) {
 	plot.pan(dx, dy);
 }
 
-template<typename Real, int rank, typename EquationOfState>
-void Hydro<Real, rank, EquationOfState>::draw() {
+template<typename EquationOfState>
+void Hydro<EquationOfState>::draw() {
 	PROFILE()
 	plot.template draw<Hydro>(*this);
 }
