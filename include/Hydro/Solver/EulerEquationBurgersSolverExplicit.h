@@ -39,9 +39,9 @@ void EulerEquationBurgersSolverExplicit<Hydro>::step(IHydro *ihydro, Real dt) {
 
 	hydro->boundary();
 	
-//	(*hydro->explicitMethod)(hydro, dt, [&](Hydro *hydro, Real dt, StateVector Cell::*dq_dt){
-//		integrateExternalForces(ihydro, dt, dq_dt);
-//	});
+	(*hydro->explicitMethod)(hydro, dt, [&](Hydro *hydro, Real dt, StateVector Cell::*dq_dt){
+		integrateExternalForces(ihydro, dt, dq_dt);
+	});
 	
 	(*hydro->explicitMethod)(hydro, dt, [&](Hydro *hydro, Real dt, StateVector Cell::*dq_dt){
 		integrateMomentumDiffusion(ihydro, dt, dq_dt);
@@ -212,11 +212,11 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateExternalForces(IHydro *
 		}
 		if (!edge) {
 			Real density = cell.state(0);
-			(cell.*dq_dt)(0) = 0.;
+			(cell.*dq_dt)(0) = Real();
 			for (int side = 0; side < rank; ++side) {
 				(cell.*dq_dt)(side+1) = -density * hydro->externalForce(side);
 			}
-			(cell.*dq_dt)(rank+1) = 0.;
+			(cell.*dq_dt)(rank+1) = Real();
 			for (int side = 0; side < rank; ++side) {
 				(cell.*dq_dt)(rank+1) -= hydro->externalForce(side) * cell.state(side+1);
 			}
@@ -254,9 +254,9 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateMomentumDiffusion(IHydr
 			Real energyTotal = cell.state(rank+1) / density;
 			Real energyKinetic = .5 * velocitySq;
 			Real energyPotential = 0.;
-	//		for (int side = 0; side < rank; ++side) {
-	//			energyPotential += (x(side) - hydro->xmin(side)) * hydro->externalForce(side);
-	//		}
+			for (int side = 0; side < rank; ++side) {
+				energyPotential += (x(side) - hydro->xmin(side)) * hydro->externalForce(side);
+			}
 			Real energyThermal = energyTotal - energyKinetic - energyPotential;
 			cell.pressure = (hydro->gamma - 1.) * density * energyThermal;
 		}
@@ -287,7 +287,6 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateMomentumDiffusion(IHydr
 				Real dPressure = pressureR - pressureL;
 				Real dx = hydro->cells(indexR).x(side) - hydro->cells(indexL).x(side);
 				
-				//accumulate dq_dt from the external force provded in the loop above
 				(cell.*dq_dt)(side+1) = -dPressure / dx;
 			}
 		} else {

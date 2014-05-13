@@ -71,19 +71,19 @@ void EulerEquationGodunovSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 					Real energyTotalR = hydro->cells(indexR).state(rank+1) / densityR;
 				
 					Real energyKineticL = .5 * velocitySqL;
-					Real energyPotentialL = Real(0);
-					//for (int k = 0; k < rank; ++k) {
-					//	energyPotentialL += (xR(side) - hydro->xmin(side)) * hydro->externalForce(side);
-					//}
+					Real energyPotentialL = Real();
+					for (int k = 0; k < rank; ++k) {
+						energyPotentialL += (xR(k) - hydro->xmin(k)) * hydro->externalForce(k);
+					}
 					Real energyThermalL = energyTotalL - energyKineticL - energyPotentialL;
 					Real pressureL = (hydro->gamma - Real(1)) * densityL * energyThermalL;
 					Real enthalpyTotalL = energyTotalL + pressureL / densityL;
 
 					Real energyKineticR = .5 * velocitySqR;
-					Real energyPotentialR = Real(0);
-					//for (int k = 0; k < rank; ++k) {
-					//	energyPotentialR += (xR(side) - hydro->xmin(side)) * hydro->externalForce(side);
-					//}
+					Real energyPotentialR = Real();
+					for (int k = 0; k < rank; ++k) {
+						energyPotentialR += (xR(k) - hydro->xmin(k)) * hydro->externalForce(k);
+					}
 					Real energyThermalR = energyTotalR - energyKineticR - energyPotentialR;
 					Real pressureR = (hydro->gamma - Real(1)) * densityR * energyThermalR;
 					Real enthalpyTotalR = energyTotalR + pressureR / densityR;

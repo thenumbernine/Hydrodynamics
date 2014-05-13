@@ -50,7 +50,11 @@ EulerEquationBurgersSolver<Hydro>::calcCFLTimestep(IHydro *ihydro)
 			Real velocityMag = sqrt(velocitySq);
 			Real energyTotal = cell.state(rank+1) / cell.state(0);
 			Real energyKinematic = .5 * velocitySq;
-			Real energyThermal = energyTotal - energyKinematic;
+			Real energyPotential = Real();
+			for (int k = 0; k < rank; ++k) {
+				energyPotential += (cell.x(k) - hydro->xmin(k)) * hydro->externalForce(k);
+			}
+			Real energyThermal = energyTotal - energyKinematic - energyPotential;
 			Real speedOfSound = sqrt(hydro->gamma * (hydro->gamma - 1.) * energyThermal);
 			for (int k = 0; k < rank; ++k) {
 				IVector nextIndex = index;

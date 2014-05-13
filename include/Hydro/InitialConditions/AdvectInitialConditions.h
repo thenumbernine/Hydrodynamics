@@ -13,11 +13,11 @@ struct AdvectInitialConditions : public InitialConditions {
 	typedef typename Hydro::IVector IVector;
 	typedef typename Hydro::Vector Vector;
 
-	virtual void operator()(IHydro *ihydro); 
+	virtual void operator()(IHydro *ihydro, double noise); 
 };
 
 template<typename Hydro>
-void AdvectInitialConditions<Hydro>::operator()(IHydro *ihydro) {
+void AdvectInitialConditions<Hydro>::operator()(IHydro *ihydro, double noise) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	hydro->resetCoordinates(Vector(-1.), Vector(1.));
 	Vector xmid = (hydro->xmin + hydro->xmax) * .5;
@@ -33,6 +33,9 @@ void AdvectInitialConditions<Hydro>::operator()(IHydro *ihydro) {
 		}
 		Real rho = lhs ? .5 : 1.;
 		Vector velocity(1.);
+		for (int k = 0; k < rank; ++k) {
+			velocity(k) += crand() * noise;
+		}
 		Real velocitySq = Real();
 		for (int k = 0; k < rank; ++k) {
 			velocitySq += velocity(k) * velocity(k);

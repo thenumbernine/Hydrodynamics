@@ -61,7 +61,6 @@ public:	//hydro args
 	ISolver *solver;
 	ExplicitMethod *explicitMethod;
 	FluxMethod *fluxMethod;
-	InitialConditions *initialConditions;
 
 public:	//'til I can work out access
 	int nghost;
@@ -80,8 +79,7 @@ public:
 		EquationOfState *equationOfState_,
 		ISolver *solver_,
 		ExplicitMethod *explicitMethod_,
-		FluxMethod *fluxMethod_,
-		InitialConditions *initialConditions_);
+		FluxMethod *fluxMethod_);
 	
 	void resetCoordinates(Vector xmin_, Vector xmax_);
 	void step(Real dt);
@@ -102,8 +100,7 @@ Hydro<Real, rank, EquationOfState>::Hydro(IVector size_,
 	EquationOfState *equationOfState_,
 	ISolver *solver_,
 	ExplicitMethod *explicitMethod_,
-	FluxMethod *fluxMethod_,
-	InitialConditions *initialConditions_)
+	FluxMethod *fluxMethod_)
 : nghost(2) 
 , cells(size_+1)		
 {
@@ -117,11 +114,8 @@ Hydro<Real, rank, EquationOfState>::Hydro(IVector size_,
 	solver = solver_;
 	explicitMethod = explicitMethod_;
 	fluxMethod = fluxMethod_;
-	initialConditions = initialConditions_;
 
 	resetCoordinates(xmin, xmax);
-
-	(*initialConditions)(this);
 }
 
 template<typename Real, int rank, typename EquationOfState>

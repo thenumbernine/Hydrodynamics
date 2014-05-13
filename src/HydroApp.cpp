@@ -11,7 +11,7 @@
 
 #define numberof(x) (sizeof(x)/sizeof((x)[0]))
 #define endof(x) ((x)+numberof(x))
-
+#define crand()	((double)rand()/(double)RAND_MAX)
 #include "GLApp/GLApp.h" 
 
 #include "Common/Exception.h"
@@ -30,8 +30,8 @@
 #include "Hydro/InitialConditions/RayleighTaylorInitialConditions.h"
 
 #include "Hydro/BoundaryMethod/MirrorBoundaryMethod.h"
+#include "Hydro/BoundaryMethod/PeriodicBoundaryMethod.h"
 //TODO get these working for all dimensions
-//#include "Hydro/BoundaryMethod/PeriodicBoundaryMethod.h"
 //#include "Hydro/BoundaryMethod/ConstantBoundaryMethod.h"
 //#include "Hydro/BoundaryMethod/FreeFlowBoundaryMethod.h"
 
@@ -52,8 +52,10 @@ public:
 	int size;
 	bool useCFL;
 	double cfl;
+	double noise;
 	double fixedDT;
 	double gamma;
+	std::vector<double> externalForce;	//relies on dim ... hmm ... reason to use config file over arguments?
 	std::string precision;
 	std::string boundaryMethodName;
 	std::string equationOfStateName;
@@ -66,6 +68,7 @@ public:
 	, size(256)
 	, useCFL(true)
 	, cfl(.5)
+	, noise(.01)
 	, fixedDT(.1)
 	, gamma(1.4)
 	, precision("double")
@@ -80,12 +83,12 @@ public:
 
 
 class HydroApp : public GLApp {
-	IHydro *hydro;
+	IHydro *ihydro;
 	HydroArgs args;
 
 public:
 	HydroApp()
-	: hydro(NULL)
+	: ihydro(NULL)
 	{}
 
 	virtual int main(int argc, char **argv) {
@@ -109,14 +112,25 @@ public:
 					args.useCFL = !strcmp(argv[++i], "true") ? true : false;
 				} else if (!strcmp(argv[i], "--cfl")) {
 					args.cfl = atof(argv[++i]);
+				} else if (!strcmp(argv[i], "--noise")) {
+					args.noise = atof(argv[++i]);
 				} else if (!strcmp(argv[i], "--fixedDT")) {
 					args.fixedDT = atof(argv[++i]);
 				} else if (!strcmp(argv[i], "--gamma")) {
 					args.gamma = atof(argv[++i]);
 				} else if (!strcmp(argv[i], "--dim")) {
+					if (args.externalForce.size()) throw Exception() << "you must set dim before you set externalForce";
 					args.dim = atoi(argv[++i]);
 				} else if (!strcmp(argv[i], "--precision")) {
 					args.precision = argv[++i];
+				}
+			}
+			if (i < argc-args.dim) {	//dim must be set first
+				if (!strcmp(argv[i], "--externalForce")) {
+					args.externalForce.resize(args.dim);
+					for (int k = 0; k < args.dim; ++k) {
+						args.externalForce[k] = atof(argv[++i]);
+					}
 				}
 			}
 		}
@@ -153,9 +167,9 @@ public:
 		BoundaryMethod *boundaryMethod = NULL;
 		if (args.boundaryMethodName =="Mirror") {
 			boundaryMethod = new MirrorBoundaryMethod<Hydro>();
-#if 0
 		} else if (args.boundaryMethodName == "Periodic") {
 			boundaryMethod = new PeriodicBoundaryMethod<Hydro>();
+#if 0
 		} else if (args.boundaryMethodName =="Constant") {
 			boundaryMethod = new ConstantBoundaryMethod<Hydro>();
 		} else if (args.boundaryMethodName =="FreeFlow") {
@@ -235,7 +249,7 @@ public:
 		}
 
 		typedef ::Vector<int, rank> IVector;
-		hydro = new Hydro(
+		Hydro *hydro = new Hydro(
 			IVector(args.size),
 			args.useCFL,
 			args.cfl,
@@ -245,8 +259,12 @@ public:
 			equationOfState,
 			solver,
 			explicitMethod,
-			fluxMethod,
-			initialConditions);
+			fluxMethod);
+		for (int i = 0; i < rank && i < args.externalForce.size(); ++i) {
+			hydro->externalForce(i) = args.externalForce[i];
+		}
+		ihydro = hydro;
+		(*initialConditions)(ihydro, args.noise);
 	}
 
 	template<typename Real, int rank>
@@ -326,7 +344,7 @@ public:
 
 	virtual void resize(int width, int height) {
 		GLApp::resize(width, height);
-		hydro->resize(width, height);
+		ihydro->resize(width, height);
 	}
 	
 	virtual void update() {
@@ -335,8 +353,8 @@ public:
 			PROFILE()
 
 			GLApp::update();
-			hydro->update();
-			hydro->draw();
+			ihydro->update();
+			ihydro->draw();
 		}	
 		PROFILE_END_FRAME()
 	}

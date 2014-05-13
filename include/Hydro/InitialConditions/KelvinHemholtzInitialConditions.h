@@ -15,11 +15,11 @@ struct KelvinHemholtzInitialConditions : public InitialConditions {
 	typedef typename Hydro::IVector IVector;
 	typedef typename Hydro::Vector Vector;
 
-	virtual void operator()(IHydro *ihydro); 
+	virtual void operator()(IHydro *ihydro, double noise); 
 };
 
 template<typename Hydro>
-void KelvinHemholtzInitialConditions<Hydro>::operator()(IHydro *ihydro) {
+void KelvinHemholtzInitialConditions<Hydro>::operator()(IHydro *ihydro, double noise) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	hydro->resetCoordinates(Vector(-1.), Vector(1.));
 	Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
@@ -29,13 +29,19 @@ void KelvinHemholtzInitialConditions<Hydro>::operator()(IHydro *ihydro) {
 		Real density = inTheMiddle ? 2 : 1;
 		Vector velocity;
 		velocity(0) = inTheMiddle ? .5 : -.5;
+		for (int k = 0; k < rank; ++k) {
+			velocity(k) += crand() * noise;
+		}
 		Real pressure = 2.5;
 		Real energyKinetic = 0.;
 		for (int k = 0; k < rank; ++k) {
 			energyKinetic += velocity(k) * velocity(k);
 		}
 		energyKinetic *= .5;
-		Real energyPotential = 0.;//Vector::dot(x - hydro->xmin, hydro->externalForces);
+		Real energyPotential = 0.;
+		for (int k = 0; k < rank; ++k) {
+			energyPotential += (x(k) - hydro->xmin(k)) * hydro->externalForce(k);
+		}
 		Real energyTotal = pressure / ((hydro->gamma - 1.) * density) + energyKinetic + energyPotential;
 		cell.state(0) = density;
 		for (int k = 0; k < rank; ++k) {

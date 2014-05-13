@@ -13,11 +13,11 @@ struct SodInitialConditions : public InitialConditions {
 	typedef typename Hydro::IVector IVector;
 	typedef typename Hydro::Vector Vector;
 
-	virtual void operator()(IHydro *ihydro); 
+	virtual void operator()(IHydro *ihydro, double noise); 
 };
 
 template<typename Hydro>
-void SodInitialConditions<Hydro>::operator()(IHydro *ihydro) {
+void SodInitialConditions<Hydro>::operator()(IHydro *ihydro, double noise) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	hydro->resetCoordinates(Vector(-1.), Vector(1.));
 	Vector xmid = hydro->xmin * .7 + hydro->xmax * .3;
@@ -31,15 +31,28 @@ void SodInitialConditions<Hydro>::operator()(IHydro *ihydro) {
 				break;
 			}
 		}
-		Real rho = lhs ? 1. : .1;
-		Vector velocity(0.);
-		Real energyTotal = 1.;
-		//TODO some sort of rank-independent specifier
-		cell.state(0) = rho;
+		Real density = lhs ? 1. : .1;
+		Vector velocity;
 		for (int k = 0; k < rank; ++k) {
-			cell.state(k+1) = rho * velocity(k);
+			velocity(k) += crand() * noise;
 		}
-		cell.state(rank+1) = rho * energyTotal;
+		Real energyKinetic = 0.;
+		for (int k = 0; k < rank; ++k) {
+			energyKinetic += velocity(k) * velocity(k);
+		}
+		energyKinetic *= .5;
+		Real energyPotential = 0.;
+		for (int k = 0; k < rank; ++k) {
+			energyPotential += (x(k) - hydro->xmin(k)) * hydro->externalForce(k);
+		}
+		Real energyThermal = 1.;
+		Real energyTotal = energyKinetic + energyThermal + energyPotential;
+		//TODO some sort of rank-independent specifier
+		cell.state(0) = density;
+		for (int k = 0; k < rank; ++k) {
+			cell.state(k+1) = density * velocity(k);
+		}
+		cell.state(rank+1) = density * energyTotal;
 	});
 }
 
