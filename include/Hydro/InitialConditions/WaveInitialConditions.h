@@ -4,7 +4,9 @@
 #include "Hydro/InitialConditions.h"
 
 template<typename Hydro>
-struct WaveInitialConditions : public InitialConditions {
+struct WaveInitialConditions : public InitialConditions<typename Hydro::Real, Hydro::rank> {
+	typedef InitialConditions<typename Hydro::Real, Hydro::rank> Super;
+	
 	enum { rank = Hydro::rank };
 
 	typedef typename Hydro::Real Real;
@@ -13,13 +15,19 @@ struct WaveInitialConditions : public InitialConditions {
 	typedef typename Hydro::IVector IVector;
 	typedef typename Hydro::Vector Vector;
 	
-	virtual void operator()(IHydro *ihydro, double noise); 
+	WaveInitialConditions();
+	virtual void operator()(IHydro *ihydro, Real noise); 
 };
 
 template<typename Hydro>
-void WaveInitialConditions<Hydro>::operator()(IHydro *ihydro, double noise) {
+WaveInitialConditions<Hydro>::WaveInitialConditions() {
+	Super::xmin = Vector(-1.);
+	Super::xmax = Vector(1.);
+}
+
+template<typename Hydro>
+void WaveInitialConditions<Hydro>::operator()(IHydro *ihydro, Real noise) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
-	hydro->resetCoordinates(Vector(-1.), Vector(1.));
 	Vector xmid = (hydro->xmin + hydro->xmax) * .5;
 	Vector dg = (hydro->xmax - hydro->xmin) * .1;
 	Real dgSq = Real();
@@ -44,7 +52,7 @@ void WaveInitialConditions<Hydro>::operator()(IHydro *ihydro, double noise) {
 			energyKinetic += velocity(k) * velocity(k);
 		}
 		energyKinetic *= .5;
-		Real energyPotential = 0.;
+		Real energyPotential = hydro->minPotentialEnergy;
 		for (int k = 0; k < rank; ++k) {
 			energyPotential += (x(k) - hydro->xmin(k)) * hydro->externalForce(k);
 		}

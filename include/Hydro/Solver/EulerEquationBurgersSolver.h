@@ -50,7 +50,7 @@ EulerEquationBurgersSolver<Hydro>::calcCFLTimestep(IHydro *ihydro)
 			Real velocityMag = sqrt(velocitySq);
 			Real energyTotal = cell.state(rank+1) / cell.state(0);
 			Real energyKinematic = .5 * velocitySq;
-			Real energyPotential = Real();
+			Real energyPotential = hydro->minPotentialEnergy;
 			for (int k = 0; k < rank; ++k) {
 				energyPotential += (cell.x(k) - hydro->xmin(k)) * hydro->externalForce(k);
 			}

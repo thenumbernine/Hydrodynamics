@@ -4,7 +4,9 @@
 #include "Hydro/InitialConditions.h"
 
 template<typename Hydro>
-struct SedovInitialConditions : public InitialConditions {
+struct SedovInitialConditions : public InitialConditions<typename Hydro::Real, Hydro::rank> {
+	typedef InitialConditions<typename Hydro::Real, Hydro::rank> Super;
+	
 	enum { rank = Hydro::rank };
 
 	typedef typename Hydro::Real Real;
@@ -12,14 +14,20 @@ struct SedovInitialConditions : public InitialConditions {
 	typedef typename Hydro::Cell Cell;
 	typedef typename Hydro::IVector IVector;
 	typedef typename Hydro::Vector Vector;
-
-	virtual void operator()(IHydro *ihydro, double noise); 
+	
+	SedovInitialConditions();
+	virtual void operator()(IHydro *ihydro, Real noise); 
 };
 
 template<typename Hydro>
-void SedovInitialConditions<Hydro>::operator()(IHydro *ihydro, double noise) {
+SedovInitialConditions<Hydro>::SedovInitialConditions() {
+	Super::xmin = Vector(-1.);
+	Super::xmax = Vector(1.);
+}
+
+template<typename Hydro>
+void SedovInitialConditions<Hydro>::operator()(IHydro *ihydro, Real noise) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
-	hydro->resetCoordinates(Vector(-1.), Vector(1.));
 	Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		Cell &cell = v.second;
 		Real density = 1.;
@@ -32,7 +40,7 @@ void SedovInitialConditions<Hydro>::operator()(IHydro *ihydro, double noise) {
 			energyKinetic += velocity(k) * velocity(k);
 		}
 		energyKinetic *= .5;
-		Real energyPotential = 0.;
+		Real energyPotential = hydro->minPotentialEnergy;
 		for (int k = 0; k < rank; ++k) {
 			energyPotential += (cell.x(k) - hydro->xmin(k)) * hydro->externalForce(k);
 		}

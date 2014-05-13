@@ -23,6 +23,10 @@ struct ParallelCount {
 		}
 	};
 
+	// a shy step away from std::accumulate
+	// in that the values in the iterator are mapped first (via callback)
+	// before they are accumulated.
+	// I could make a new structure for buffering my intermediate values, but I don't really want to.
 	template<
 		typename Iterator, 
 		typename Result, 

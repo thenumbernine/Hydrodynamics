@@ -71,7 +71,7 @@ void EulerEquationGodunovSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 					Real energyTotalR = hydro->cells(indexR).state(rank+1) / densityR;
 				
 					Real energyKineticL = .5 * velocitySqL;
-					Real energyPotentialL = Real();
+					Real energyPotentialL = hydro->minPotentialEnergy;
 					for (int k = 0; k < rank; ++k) {
 						energyPotentialL += (xR(k) - hydro->xmin(k)) * hydro->externalForce(k);
 					}
@@ -80,7 +80,7 @@ void EulerEquationGodunovSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 					Real enthalpyTotalL = energyTotalL + pressureL / densityL;
 
 					Real energyKineticR = .5 * velocitySqR;
-					Real energyPotentialR = Real();
+					Real energyPotentialR = hydro->minPotentialEnergy;
 					for (int k = 0; k < rank; ++k) {
 						energyPotentialR += (xR(k) - hydro->xmin(k)) * hydro->externalForce(k);
 					}

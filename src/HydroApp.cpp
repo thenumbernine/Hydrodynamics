@@ -137,7 +137,7 @@ public:
 		EquationOfState *equationOfState = new EquationOfState();
 
 		//these are eos-specific
-		InitialConditions *initialConditions = equationOfState->initialConditions.create(args.initialConditionsName);
+		InitialConditions<Real, rank> *initialConditions = equationOfState->initialConditions.create(args.initialConditionsName);
 		ISolver *solver = equationOfState->solvers.create(args.solverName);
 
 		BoundaryMethod *boundaryMethod = NULL;
@@ -225,10 +225,39 @@ public:
 			solver,
 			explicitMethod,
 			fluxMethod);
+		
 		for (int i = 0; i < rank && i < args.externalForce.size(); ++i) {
 			hydro->externalForce(i) = args.externalForce[i];
 		}
 		ihydro = hydro;
+
+		hydro->resetCoordinates(initialConditions->xmin, initialConditions->xmax);
+		
+		//after external force is determined, recalibrate potential energy
+		//check the minimum of the potential energy at all corners
+		typedef typename Hydro::IVector IVector;
+		RangeObj<rank> range(IVector(), IVector(2));
+		hydro->minPotentialEnergy = HUGE_VAL;
+		std::for_each(
+			range.begin(), 
+			range.end(),
+			[&](IVector index)
+		{
+			Real energyPotential = 0.; 
+			::Vector<Real, rank> x;
+			for (int k = 0; k < rank; ++k) {
+				x(k) = index(k) ? hydro->xmax(k) : hydro->xmin(k);
+				energyPotential += x(k) * hydro->externalForce(k);
+			}
+			std::cout << " corner " << index << " potential " << energyPotential << " corner " << x << " extrnal force " << hydro->externalForce << std::endl;
+			hydro->minPotentialEnergy = std::min<Real>(hydro->minPotentialEnergy, energyPotential);
+		});
+		//add its negative to all potential energy calculations
+		// to keep potential energy from being a negative value
+	std::cout << " min potential " << hydro->minPotentialEnergy << std::endl;
+		hydro->minPotentialEnergy = -hydro->minPotentialEnergy + 1;
+		
+		//once min potential energy is determined, set up initial conditions
 		(*initialConditions)(ihydro, args.noise);
 	}
 

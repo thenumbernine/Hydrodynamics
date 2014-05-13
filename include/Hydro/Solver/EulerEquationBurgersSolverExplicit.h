@@ -253,7 +253,7 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateMomentumDiffusion(IHydr
 			}
 			Real energyTotal = cell.state(rank+1) / density;
 			Real energyKinetic = .5 * velocitySq;
-			Real energyPotential = 0.;
+			Real energyPotential = hydro->minPotentialEnergy;
 			for (int side = 0; side < rank; ++side) {
 				energyPotential += (x(side) - hydro->xmin(side)) * hydro->externalForce(side);
 			}

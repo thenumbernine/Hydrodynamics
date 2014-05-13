@@ -4,7 +4,9 @@
 #include "Hydro/InitialConditions.h"
 
 template<typename Hydro>
-struct SodInitialConditions : public InitialConditions {
+struct SodInitialConditions : public InitialConditions<typename Hydro::Real, Hydro::rank> {
+	typedef InitialConditions<typename Hydro::Real, Hydro::rank> Super;
+	
 	enum { rank = Hydro::rank };
 
 	typedef typename Hydro::Real Real;
@@ -12,14 +14,20 @@ struct SodInitialConditions : public InitialConditions {
 	typedef typename Hydro::Cell Cell;
 	typedef typename Hydro::IVector IVector;
 	typedef typename Hydro::Vector Vector;
-
-	virtual void operator()(IHydro *ihydro, double noise); 
+	
+	SodInitialConditions();
+	virtual void operator()(IHydro *ihydro, Real noise); 
 };
 
 template<typename Hydro>
-void SodInitialConditions<Hydro>::operator()(IHydro *ihydro, double noise) {
+SodInitialConditions<Hydro>::SodInitialConditions() {
+	Super::xmin = Vector(-1.);
+	Super::xmax = Vector(1.);
+}
+
+template<typename Hydro>
+void SodInitialConditions<Hydro>::operator()(IHydro *ihydro, Real noise) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
-	hydro->resetCoordinates(Vector(-1.), Vector(1.));
 	Vector xmid = hydro->xmin * .7 + hydro->xmax * .3;
 	Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		Cell &cell = v.second;
@@ -41,7 +49,7 @@ void SodInitialConditions<Hydro>::operator()(IHydro *ihydro, double noise) {
 			energyKinetic += velocity(k) * velocity(k);
 		}
 		energyKinetic *= .5;
-		Real energyPotential = 0.;
+		Real energyPotential = hydro->minPotentialEnergy;
 		for (int k = 0; k < rank; ++k) {
 			energyPotential += (x(k) - hydro->xmin(k)) * hydro->externalForce(k);
 		}

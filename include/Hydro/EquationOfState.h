@@ -27,11 +27,13 @@ Type *AllocatorMap<Type>::create(const std::string &name) {
 template<typename Real>
 struct ISolver;
 
+template<typename Real, int rank>
 struct InitialConditions;
 
 template<typename Real, int rank>
 struct EquationOfState {
 	typedef ::ISolver<Real> ISolver;
+	typedef ::InitialConditions<Real, rank> InitialConditions;
 
 	//child classes need to populate these
 	AllocatorMap<ISolver> solvers;

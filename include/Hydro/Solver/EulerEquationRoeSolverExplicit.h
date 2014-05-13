@@ -65,10 +65,10 @@ void EulerEquationRoeSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 					Real roeWeightL = sqrt(densityL);
 
 					Real energyKineticL = .5 * velocitySqL;
-					Real energyPotentialL = Real(0);
-					//for (int k = 0; k < rank; ++k) {
-					//	energyPotentialL += (xL(side) - hydro->xmin(side)) * hydro->externalForce(side);
-					//}
+					Real energyPotentialL = hydro->minPotentialEnergy;
+					for (int k = 0; k < rank; ++k) {
+						energyPotentialL += (xL(side) - hydro->xmin(side)) * hydro->externalForce(side);
+					}
 					Real energyThermalL = energyTotalL - energyKineticL - energyPotentialL;
 					Real pressureL = (hydro->gamma - Real(1)) * densityL * energyThermalL;
 					Real enthalpyTotalL = energyTotalL + pressureL / densityL;
@@ -84,10 +84,10 @@ void EulerEquationRoeSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 					Real roeWeightR = sqrt(densityR);
 				
 					Real energyKineticR = .5 * velocitySqR;
-					Real energyPotentialR = Real(0);
-					//for (int k = 0; k < rank; ++k) {
-					//	energyPotentialR += (xR(side) - hydro->xmin(side)) * hydro->externalForce(side);
-					//}
+					Real energyPotentialR = hydro->minPotentialEnergy;
+					for (int k = 0; k < rank; ++k) {
+						energyPotentialR += (xR(side) - hydro->xmin(side)) * hydro->externalForce(side);
+					}
 					Real energyThermalR = energyTotalR - energyKineticR - energyPotentialR;
 					Real pressureR = (hydro->gamma - Real(1)) * densityR * energyThermalR;
 					Real enthalpyTotalR = energyTotalR + pressureR / densityR;

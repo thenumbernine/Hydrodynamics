@@ -4,7 +4,9 @@
 #include "Hydro/InitialConditions.h"
 
 template<typename Hydro>
-struct AdvectInitialConditions : public InitialConditions {
+struct AdvectInitialConditions : public InitialConditions<typename Hydro::Real, Hydro::rank> {
+	typedef InitialConditions<typename Hydro::Real, Hydro::rank> Super;
+	
 	enum { rank = Hydro::rank };
 
 	typedef typename Hydro::Real Real;
@@ -13,13 +15,19 @@ struct AdvectInitialConditions : public InitialConditions {
 	typedef typename Hydro::IVector IVector;
 	typedef typename Hydro::Vector Vector;
 
-	virtual void operator()(IHydro *ihydro, double noise); 
+	AdvectInitialConditions();
+	virtual void operator()(IHydro *ihydro, Real noise); 
 };
 
 template<typename Hydro>
-void AdvectInitialConditions<Hydro>::operator()(IHydro *ihydro, double noise) {
+AdvectInitialConditions<Hydro>::AdvectInitialConditions() {
+	Super::xmin = Vector(-1.);
+	Super::xmax = Vector(1.);
+}
+
+template<typename Hydro>
+void AdvectInitialConditions<Hydro>::operator()(IHydro *ihydro, Real noise) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
-	hydro->resetCoordinates(Vector(-1.), Vector(1.));
 	Vector xmid = (hydro->xmin + hydro->xmax) * .5;
 	Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		Cell &cell = v.second;

@@ -20,8 +20,9 @@ template<typename Real, int rank_>
 struct EulerEquationOfState : public EquationOfState<Real, rank_> {
 	typedef EquationOfState<Real, rank_> Super;
 	
-	typedef ::ISolver<Real> ISolver;
 	enum { rank = rank_ };
+	typedef ::ISolver<Real> ISolver;
+	typedef ::InitialConditions<Real, rank> InitialConditions;
 	typedef ::Hydro<Real, rank, EulerEquationOfState<Real, rank> > Hydro;
 	enum { numberOfStates = rank + 2 };
 	typedef Tensor<Real, Upper<rank> > Vector;

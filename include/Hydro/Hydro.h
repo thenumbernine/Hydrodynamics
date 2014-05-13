@@ -20,8 +20,6 @@ struct ExplicitMethod;
 template<typename Real>
 struct FluxMethod;
 
-struct InitialConditions;
-
 struct IHydro {
 	virtual void update() = 0;
 	virtual void draw() = 0;
@@ -54,6 +52,7 @@ public:	//hydro args
 	Real fixedDT;
 	Real gamma;
 	Vector externalForce;
+	Real minPotentialEnergy;
 	BoundaryMethod *boundaryMethod;
 	EquationOfState *equationOfState;
 	ISolver *solver;
@@ -99,8 +98,9 @@ Hydro<Real, rank, EquationOfState>::Hydro(IVector size_,
 	ISolver *solver_,
 	ExplicitMethod *explicitMethod_,
 	FluxMethod *fluxMethod_)
-: nghost(2) 
-, cells(size_+1)		
+: minPotentialEnergy(0)
+, nghost(2) 
+, cells(size_+1)
 {
 	size = size_;
 	useCFL = useCFL_;
