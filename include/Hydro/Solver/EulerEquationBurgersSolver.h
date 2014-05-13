@@ -35,7 +35,7 @@ EulerEquationBurgersSolver<Hydro>::calcCFLTimestep(IHydro *ihydro)
 		Cell &cell = v.second;
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
-			if (index(side) >= hydro->size(side)) {
+			if (index(side) < 1 || index(side) >= hydro->size(side)) {
 				edge = true;
 				break;
 			}
