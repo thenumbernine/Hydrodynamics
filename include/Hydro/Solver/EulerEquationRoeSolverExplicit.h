@@ -14,6 +14,7 @@ struct EulerEquationRoeSolverExplicit : public GodunovSolver<Hydro> {
 	typedef typename Hydro::Vector Vector;
 	typedef typename Hydro::IVector IVector;
 	typedef typename Hydro::InterfaceVector InterfaceVector;
+	typedef typename Hydro::Cell Cell;
 	typedef typename Hydro::CellGrid CellGrid;
 
 	virtual void initStep(IHydro *ihydro);
@@ -33,7 +34,8 @@ void EulerEquationRoeSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 		//but writing my own is too much fun ...
 		Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 			IVector index = v.first;
-			InterfaceVector &interface = v.second.interfaces;
+			Cell &cell = v.second;
+			InterfaceVector &interface = cell.interfaces;
 			bool edge = false;
 			for (int side = 0; side < rank; ++side) {
 				if (index(side) < 1 || index(side) >= hydro->size(side)) {
@@ -43,26 +45,23 @@ void EulerEquationRoeSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 			}
 			if (!edge) {
 				for (int side = 0; side < rank; ++side) {
-					IVector indexR = index;
-					IVector indexL = index;
-					--indexL(side);
-
-					Vector xL = interface(side).x;
-					Vector xR = interface(side).x;
-					xL(side) = hydro->cells(indexL).x(side);
-					xR(side) = hydro->cells(indexR).x(side);
+					Cell &cellL = (&v - hydro->cells.step(side))->second;
+					Cell &cellR = cell;
+					
+					Vector xL = cellL.x;
+					Vector xR = cellR.x;
 
 					Vector normal;
 					normal(side) = Real(1);
 
-					Real densityL = hydro->cells(indexL).state(0);
+					Real densityL = cellL.state(0);
 					Vector velocityL;
 					Real velocitySqL = Real(0);
 					for (int k = 0; k < rank; ++k) {
-						velocityL(k) = hydro->cells(indexL).state(k+1) / densityL;
+						velocityL(k) = cellL.state(k+1) / densityL;
 						velocitySqL += velocityL(k) * velocityL(k);
 					}
-					Real energyTotalL = hydro->cells(indexL).state(rank+1) / densityL;
+					Real energyTotalL = cellL.state(rank+1) / densityL;
 					Real roeWeightL = sqrt(densityL);
 
 					Real energyKineticL = .5 * velocitySqL;
@@ -74,14 +73,14 @@ void EulerEquationRoeSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 					Real pressureL = (hydro->gamma - Real(1)) * densityL * energyThermalL;
 					Real enthalpyTotalL = energyTotalL + pressureL / densityL;
 
-					Real densityR = hydro->cells(indexR).state(0);
+					Real densityR = cellR.state(0);
 					Vector velocityR;
 					Real velocitySqR = Real(0);
 					for (int k = 0; k < rank; ++k) {
-						velocityR(k) = hydro->cells(indexR).state(k+1) / densityR;
+						velocityR(k) = cellR.state(k+1) / densityR;
 						velocitySqR += velocityR(k) * velocityR(k);
 					}
-					Real energyTotalR = hydro->cells(indexR).state(rank+1) / densityR;
+					Real energyTotalR = cellR.state(rank+1) / densityR;
 					Real roeWeightR = sqrt(densityR);
 				
 					Real energyKineticR = .5 * velocitySqR;

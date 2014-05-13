@@ -9,6 +9,9 @@
 #include <OpenGL/gl.h>
 #include <SDL/SDL.h>
 
+#define numberof(x) (sizeof(x)/sizeof((x)[0]))
+#define endof(x) ((x)+numberof(x))
+
 #include "GLApp/GLApp.h" 
 
 #include "Common/Exception.h"
@@ -23,6 +26,8 @@
 #include "Hydro/InitialConditions/SedovInitialConditions.h"
 #include "Hydro/InitialConditions/AdvectInitialConditions.h"
 #include "Hydro/InitialConditions/WaveInitialConditions.h"
+#include "Hydro/InitialConditions/KelvinHemholtzInitialConditions.h"
+#include "Hydro/InitialConditions/RayleighTaylorInitialConditions.h"
 
 #include "Hydro/BoundaryMethod/MirrorBoundaryMethod.h"
 //TODO get these working for all dimensions
@@ -130,13 +135,17 @@ public:
 
 		InitialConditions *initialConditions = NULL;
 		if (args.initialConditionsName == "Sod") {
-			initialConditions = new SodInitialConditions<Real, rank, EquationOfState>();
+			initialConditions = new SodInitialConditions<Hydro>();
 		} else if (args.initialConditionsName == "Sedov") {
-			initialConditions = new SedovInitialConditions<Real, rank, EquationOfState>();
+			initialConditions = new SedovInitialConditions<Hydro>();
 		} else if (args.initialConditionsName == "Advect") {
-			initialConditions = new AdvectInitialConditions<Real, rank, EquationOfState>();
+			initialConditions = new AdvectInitialConditions<Hydro>();
 		} else if (args.initialConditionsName == "Wave") {
-			initialConditions = new WaveInitialConditions<Real, rank, EquationOfState>();
+			initialConditions = new WaveInitialConditions<Hydro>();
+		} else if (args.initialConditionsName == "KelvinHemholtz") {
+			initialConditions = new KelvinHemholtzInitialConditions<Hydro>();
+		} else if (args.initialConditionsName == "RayleighTaylor") {
+			initialConditions = new RayleighTaylorInitialConditions<Hydro>();
 		} else {
 			throw Exception() << "unknown initial conditions " << args.initialConditionsName;
 		}
@@ -262,6 +271,44 @@ public:
 
 	virtual void init() {
 		GLApp::init();
+		
+		//not sure where to put this yet:
+		{
+			static GLuint texID = 0;
+
+			glGenTextures(1, &texID);
+			glBindTexture(GL_TEXTURE_1D, texID);
+
+			float colors[][3] = {
+				{0, 0, 0},
+				{0, 0, .5},
+				{1, .5, 0},
+				{1, 0, 0}
+			};
+
+			const int width = 256;
+			unsigned char data[width*3];
+			for (int i = 0; i < width; ++i) {
+				::Vector<float,3> c;
+				float f = (float)i / (float)width * (float)numberof(colors);
+				int ci = (int)f;
+				float s = f - (float)ci;
+				if (ci >= numberof(colors)) {
+					ci = numberof(colors)-1;
+					s = 0;
+				}
+
+				for (int j = 0; j < 3; ++j) {
+					data[3 * i + j] = (unsigned char)(255. * (colors[ci][j] * (1.f - s) + colors[ci+1][j] * s));
+				}
+			}
+
+			glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, width, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		}
+		
 		switch (args.dim) {
 		case 1:
 			initSize<1>();

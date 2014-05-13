@@ -3,10 +3,11 @@
 #include "Hydro/Hydro.h"
 #include "Hydro/InitialConditions.h"
 
-template<typename Real, int rank, typename EquationOfState>
-class AdvectInitialConditions : public InitialConditions {
-public:
-	typedef Hydro<Real, rank, EquationOfState> Hydro;
+template<typename Hydro>
+struct AdvectInitialConditions : public InitialConditions {
+	enum { rank = Hydro::rank };
+
+	typedef typename Hydro::Real Real;
 	typedef typename Hydro::CellGrid CellGrid;
 	typedef typename Hydro::Cell Cell;
 	typedef typename Hydro::IVector IVector;
@@ -15,8 +16,8 @@ public:
 	virtual void operator()(IHydro *ihydro); 
 };
 
-template<typename Real, int rank, typename EquationOfState>
-void AdvectInitialConditions<Real, rank, EquationOfState>::operator()(IHydro *ihydro) {
+template<typename Hydro>
+void AdvectInitialConditions<Hydro>::operator()(IHydro *ihydro) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	hydro->resetCoordinates(Vector(-1.), Vector(1.));
 	Vector xmid = (hydro->xmin + hydro->xmax) * .5;

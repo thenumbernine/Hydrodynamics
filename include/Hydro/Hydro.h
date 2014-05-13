@@ -9,9 +9,6 @@
 
 #include <OpenGL/gl.h>
 
-#define numberof(x) (sizeof(x)/sizeof((x)[0]))
-#define endof(x) ((x)+numberof(x))
-
 class BoundaryMethod;
 
 template<typename Real>
@@ -250,15 +247,6 @@ void Hydro<Real, rank, EquationOfState>::resize(int width, int height) {
 	HydroResize<rank>::resize(width, height);
 }
 
-template<typename Real, int rank> void plotVertex(::Tensor<Real, Upper<rank> > x, Real value);
-
-template<> void plotVertex<float, 1>(::Tensor<float, Upper<1> > x, float value) { glVertex2f(x(0), value); }
-template<> void plotVertex<double, 1>(::Tensor<double, Upper<1> > x, double value) { glVertex2d(x(0), value); }
-template<> void plotVertex<float, 2>(::Tensor<float, Upper<2> > x, float value) { glVertex3f(x(0), x(1), value); }
-template<> void plotVertex<double, 2>(::Tensor<double, Upper<2> > x, double value) { glVertex3d(x(0), x(1), value); }
-template<> void plotVertex<float, 3>(::Tensor<float, Upper<3> > x, float value) { glVertex4f(x(0), x(1), value, x(2)); }
-template<> void plotVertex<double, 3>(::Tensor<double, Upper<3> > x, double value) { glVertex4d(x(0), x(1), value, x(2)); }
-
 template<int rank>
 struct HydroPlot {
 	template<typename Hydro>
@@ -268,7 +256,8 @@ struct HydroPlot {
 		typedef typename Hydro::StateVector StateVector;
 		typedef typename Hydro::IVector IVector;
 		typedef typename Hydro::Real Real;
-		glBegin(GL_TRIANGLE_STRIP);
+		glEnable(GL_TEXTURE_1D);
+		glBegin(GL_POINTS);
 		std::for_each(hydro.cells.begin(), hydro.cells.end(), [&](typename CellGrid::value_type &v) {
 			IVector index = v.first;
 			Cell &cell = v.second;
@@ -280,15 +269,13 @@ struct HydroPlot {
 				}
 			}
 			if (!edge) {
-				const float plotScalar = .1;
-				StateVector primitives = hydro.equationOfState->getPrimitives(cell.state);
-
 				//color by state value, neglect height or use it for coordinates
-				glColor3f(0, cell.state(0), 0);	//color by density
-				plotVertex<Real, rank>(cell.x, plotScalar * primitives(0));		
+				glTexCoord1f(cell.state(0));	//color by density
+				glVertex3d(cell.x(0), cell.x(1), cell.x(2));
 			}
 		});
 		glEnd();
+		glDisable(GL_TEXTURE_1D);
 	}
 };
 
@@ -326,38 +313,6 @@ template<>
 struct HydroPlot<2> {
 	template<typename Hydro>
 	static void draw(Hydro &hydro) {
-		static GLuint texID = 0;
-		static bool init = false;
-		if (!init) {
-			init = true;
-			glGenTextures(1, &texID);
-			glBindTexture(GL_TEXTURE_1D, texID);
-
-			float colors[][3] = {
-				{.5, .5, .5},
-				{1, 1, 0},
-				{1, .5, 0},
-				{1, 0, 0}
-			};
-
-			const int width = 256;
-			float data[width*3];
-			for (int i = 0; i < width; ++i) {
-				::Vector<float,3> c;
-				float f = (float)i / (float)width * (float)numberof(colors);
-				int ci = (int)f;
-				float s = f - (float)ci;
-
-				for (int j = 0; j < 3; ++j) {
-					data[3 * i + j] = colors[ci][j] * (1.f - s) + colors[ci+1][j] * s;
-				}
-			}
-
-			glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, width, 0, GL_RGB, GL_FLOAT, data);
-			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		}
-		
 		typedef typename Hydro::CellGrid CellGrid;
 		typedef typename Hydro::Cell Cell;
 		typedef typename Hydro::IVector IVector;
@@ -372,7 +327,7 @@ struct HydroPlot<2> {
 					Cell &cell = hydro.cells.v[index].second;
 
 					//color by state value, neglect height or use it for coordinates
-					glTexCoord1f(1.f - cell.state(0));
+					glTexCoord1f(cell.state(0));
 					glVertex2d(cell.x(0), cell.x(1));
 				}
 			}

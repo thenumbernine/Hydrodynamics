@@ -1,11 +1,7 @@
 port of my JavaScript hydrodynamics solver to C++, 
 combined with my TensorMath library so I can write every dimension case at once without using runtime-specified loop sizes, for the hopes of unrolling and template inlining for faster results 
 
-bugs:
-- slight antisymmetry of axii visible in the 2D case
-- Burgers on 2D
-
 fixes:
+- analytic flux jacobian and eignevector inverses
 - thread pool in place of spawning & destroying threads
-- cut down on all those dereferences?
-- draw n>1-D with quads and heat colors
+- cut down on all those lookups?
