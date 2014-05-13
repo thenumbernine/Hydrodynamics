@@ -122,7 +122,7 @@ public:
 	template<typename Real, int rank, typename EquationOfState>
 	void initType() {
 		typedef ::Hydro<Real, rank, EquationOfState> Hydro;
-		typedef ::Solver<Real> Solver;
+		typedef ::ISolver<Real> ISolver;
 		typedef ::ExplicitMethod<Hydro> ExplicitMethod;
 		typedef ::FluxMethod<Real> FluxMethod;
 
@@ -156,7 +156,7 @@ public:
 			throw Exception() << "unknown boundary method " << args.boundaryMethodName;
 		}
 
-		Solver *solver = NULL;
+		ISolver *solver = NULL;
 		if (args.solverName == "Burgers") {
 			solver = new EulerEquationBurgersSolverExplicit<Hydro>();
 		} else if (args.solverName == "Godunov") {

@@ -3,8 +3,9 @@
 #include "Hydro/Solver/GodunovSolver.h"
 
 template<typename Hydro>
-class EulerEquationGodunovSolverExplicit : public GodunovSolver<Hydro> {
-public:
+struct EulerEquationGodunovSolverExplicit : public GodunovSolver<Hydro> {
+	typedef GodunovSolver<Hydro> Super;	
+	
 	enum { rank = Hydro::rank };
 	enum { numberOfStates = Hydro::numberOfStates };
 
@@ -21,7 +22,7 @@ template<typename Hydro>
 void EulerEquationGodunovSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 	PROFILE()
 
-	GodunovSolver<Hydro>::initStep(ihydro);
+	Super::initStep(ihydro);
 
 	{
 		PROFILE()
@@ -87,7 +88,11 @@ void EulerEquationGodunovSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 					Real pressureR = (hydro->gamma - Real(1)) * densityR * energyThermalR;
 					Real enthalpyTotalR = energyTotalR + pressureR / densityR;
 
+					Real density = (densityL + densityR) * .5;
 					Vector velocity = (velocityL + velocityR) * .5;
+					Real energyTotal = (energyTotalL + energyTotalR) * .5;
+					Real energyThermal = (energyThermalL + energyThermalR) * .5;
+					Real pressure = (pressureL + pressureR) * .5;
 					Real enthalpyTotal = (enthalpyTotalL + enthalpyTotalR) * .5;
 
 					//compute eigenvectors and values at the interface based on averages
@@ -96,7 +101,14 @@ void EulerEquationGodunovSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 						interface(side).eigenvalues, 
 						interface(side).eigenvectors, 
 						interface(side).eigenvectorsInverse, 
-						velocity, enthalpyTotal, hydro->gamma, normal);
+						density, 
+						velocity, 
+						energyTotal,
+						pressure,
+						energyThermal, 
+						enthalpyTotal, 
+						hydro->gamma, 
+						normal);
 				}
 			} else {
 				for (int side = 0; side < rank; ++side) {

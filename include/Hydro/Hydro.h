@@ -2,14 +2,20 @@
 
 #include "Hydro/Cell.h"
 #include "Hydro/Interface.h"
+#include "Hydro/ISolver.h"
 #include "TensorMath/Grid.h"
 #include "TensorMath/Vector.h"
 #include "Parallel.h"
 
+#include <OpenGL/gl.h>
+
+#define numberof(x) (sizeof(x)/sizeof((x)[0]))
+#define endof(x) ((x)+numberof(x))
+
 class BoundaryMethod;
 
 template<typename Real>
-class Solver;
+struct ISolver;
 
 template<typename Hydro>
 class ExplicitMethod;
@@ -33,7 +39,7 @@ public:
 	enum { rank = rank_ };
 
 	typedef EquationOfState_ EquationOfState;
-	typedef Solver<Real> Solver;
+	typedef ISolver<Real> ISolver;
 	typedef ExplicitMethod<Hydro> ExplicitMethod;
 	typedef FluxMethod<Real> FluxMethod;
 	
@@ -55,7 +61,7 @@ public:	//hydro args
 	Vector externalForce;
 	BoundaryMethod *boundaryMethod;
 	EquationOfState *equationOfState;
-	Solver *solver;
+	ISolver *solver;
 	ExplicitMethod *explicitMethod;
 	FluxMethod *fluxMethod;
 	InitialConditions *initialConditions;
@@ -75,7 +81,7 @@ public:
 		Real gamma_,
 		BoundaryMethod *boundaryMethod_,
 		EquationOfState *equationOfState_,
-		Solver *solver_,
+		ISolver *solver_,
 		ExplicitMethod *explicitMethod_,
 		FluxMethod *fluxMethod_,
 		InitialConditions *initialConditions_);
@@ -89,12 +95,6 @@ public:
 	virtual void resize(int width, int height);
 };
 
-#include "Hydro/Solver.h"
-#include <OpenGL/gl.h>
-
-#define numberof(x) (sizeof(x)/sizeof((x)[0]))
-#define endof(x) ((x)+numberof(x))
-
 template<typename Real, int rank, typename EquationOfState>
 Hydro<Real, rank, EquationOfState>::Hydro(IVector size_,
 	bool useCFL_,
@@ -103,7 +103,7 @@ Hydro<Real, rank, EquationOfState>::Hydro(IVector size_,
 	Real gamma_,
 	BoundaryMethod *boundaryMethod_,
 	EquationOfState *equationOfState_,
-	Solver *solver_,
+	ISolver *solver_,
 	ExplicitMethod *explicitMethod_,
 	FluxMethod *fluxMethod_,
 	InitialConditions *initialConditions_)

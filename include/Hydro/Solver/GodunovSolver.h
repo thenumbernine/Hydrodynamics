@@ -1,11 +1,12 @@
 #pragma once
 
-#include "Hydro/Solver.h"
+#include "Hydro/Solver/Solver.h"
 #include "Parallel.h"
 
 template<typename Hydro>
-class GodunovSolver : public Solver<typename Hydro::Real> {
-public:
+struct GodunovSolver : public Solver<Hydro> {
+	typedef Solver<Hydro> Super;
+
 	enum { rank = Hydro::rank };
 	enum { numberOfStates = Hydro::numberOfStates };
 	
@@ -17,56 +18,10 @@ public:
 	typedef typename Hydro::CellGrid CellGrid;
 	typedef typename Hydro::InterfaceVector InterfaceVector;
 
-	virtual void initStep(IHydro *ihydro);
 	virtual Real calcCFLTimestep(IHydro *ihydro);
 	virtual void step(IHydro *ihydro, Real dt);
 	virtual void integrateFlux(IHydro *ihydro, Real dt, StateVector Cell::*dq_dt);
 };
-
-template<typename Hydro>
-void GodunovSolver<Hydro>::initStep(IHydro *ihydro) {
-	PROFILE()
-
-	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
-
-	//should only be up to < size
-	{
-		PROFILE()
-		Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
-			Cell &cell = v.second;
-			for (int side = 0; side < rank; ++side) {
-				cell.stateLeft(side) = cell.stateRight(side) = cell.state;
-			}
-		});
-	}
-
-	{
-		PROFILE()
-		Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
-			IVector index = v.first;
-			InterfaceVector &interface = v.second.interfaces;
-			bool edge = false;
-			for (int side = 0; side < rank; ++side) {
-				if (index(side) < 1 || index(side) >= hydro->size(side)) {
-					edge = true;
-					break;
-				}
-			}
-			if (!edge) {
-				for (int side = 0; side < rank; ++side) {
-					IVector indexR = index;
-					IVector indexL = index;
-					--indexL(side);
-					interface(side).stateMid = (hydro->cells(indexL).stateRight(side) + hydro->cells(indexR).stateLeft(side)) * Real(.5);
-				}
-			} else {
-				for (int side = 0; side < rank; ++side) {
-					interface(side).stateMid = StateVector();
-				}
-			}
-		});
-	}
-}
 
 template<typename Hydro>
 typename GodunovSolver<Hydro>::Real GodunovSolver<Hydro>::calcCFLTimestep(IHydro *ihydro) {

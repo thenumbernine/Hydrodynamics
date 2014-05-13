@@ -1,11 +1,12 @@
 #pragma once
 
-#include "Hydro/Solver.h"
+#include "Hydro/Solver/Solver.h"
 #include <math.h>
 
 template<typename Hydro>
-class EulerEquationBurgersSolver : public Solver<typename Hydro::Real> {
-public:
+struct EulerEquationBurgersSolver : public Solver<Hydro> {
+	typedef Solver<Hydro> Super;
+
 	enum { rank = Hydro::rank };
 	typedef typename Hydro::Real Real;
 	typedef typename Hydro::Vector Vector;
@@ -15,13 +16,15 @@ public:
 	typedef typename Hydro::Cell Cell;
 	typedef typename Hydro::CellGrid CellGrid;
 
-	virtual void initStep(IHydro *hydro) {};
 	virtual Real calcCFLTimestep(IHydro *hydro);
 };
 
 template<typename Hydro>
-typename EulerEquationBurgersSolver<Hydro>::Real EulerEquationBurgersSolver<Hydro>::calcCFLTimestep(IHydro *ihydro) {
+typename EulerEquationBurgersSolver<Hydro>::Real 
+EulerEquationBurgersSolver<Hydro>::calcCFLTimestep(IHydro *ihydro) 
+{
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
+	
 	Real mindum = Parallel::Reduce(
 		hydro->cells.begin(), 
 		hydro->cells.end(),

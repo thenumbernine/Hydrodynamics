@@ -4,8 +4,9 @@
 #include "Parallel.h"
 
 template<typename Hydro>
-class EulerEquationRoeSolverExplicit : public GodunovSolver<Hydro> {
-public:
+struct EulerEquationRoeSolverExplicit : public GodunovSolver<Hydro> {
+	typedef GodunovSolver<Hydro> Super;
+	
 	enum { rank = Hydro::rank };
 	enum { numberOfStates = Hydro::numberOfStates };
 
@@ -22,10 +23,7 @@ template<typename Hydro>
 void EulerEquationRoeSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 	PROFILE()
 
-	{
-		PROFILE()
-		GodunovSolver<Hydro>::initStep(ihydro);
-	}
+	Super::initStep(ihydro);
 
 	{
 		PROFILE()
@@ -95,9 +93,13 @@ void EulerEquationRoeSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 					Real pressureR = (hydro->gamma - Real(1)) * densityR * energyThermalR;
 					Real enthalpyTotalR = energyTotalR + pressureR / densityR;
 
-					Real denom = roeWeightL + roeWeightR;
-					Vector velocity = (velocityL * roeWeightL + velocityR * roeWeightR) / denom;
-					Real enthalpyTotal = (enthalpyTotalL * roeWeightL + enthalpyTotalR * roeWeightR) / denom;
+					Real invDenom = Real(1) / (roeWeightL + roeWeightR);
+					Real density = (densityL * roeWeightL + densityR * roeWeightR) * invDenom;
+					Vector velocity = (velocityL * roeWeightL + velocityR * roeWeightR) * invDenom;
+					Real energyTotal = (energyTotalL * roeWeightL + energyTotalR * roeWeightR) * invDenom;
+					Real energyThermal = (energyThermalL * roeWeightL + energyThermalR * roeWeightR) * invDenom;
+					Real pressure = (pressureL * roeWeightL + pressureR * roeWeightR) * invDenom;
+					Real enthalpyTotal = (enthalpyTotalL * roeWeightL + enthalpyTotalR * roeWeightR) * invDenom;
 
 					//compute eigenvectors and values at the interface based on averages
 					hydro->equationOfState->buildEigenstate(
@@ -105,7 +107,14 @@ void EulerEquationRoeSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 						interface(side).eigenvalues, 
 						interface(side).eigenvectors, 
 						interface(side).eigenvectorsInverse, 
-						velocity, enthalpyTotal, hydro->gamma, normal);
+						density, 
+						velocity, 
+						energyTotal,
+						pressure,
+						energyThermal, 
+						enthalpyTotal, 
+						hydro->gamma, 
+						normal);
 				}
 			}
 		});

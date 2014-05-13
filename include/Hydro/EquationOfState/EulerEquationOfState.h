@@ -24,7 +24,11 @@ public:
 		StateVector &eigenvalues,
 		StateMatrix &eigenvectors,
 		StateInverseMatrix &eigenvectorsInverse,
+		Real density,
 		Vector velocity,
+		Real energyTotal,
+		Real pressure,
+		Real energyThermal,
 		Real enthalpyTotal,
 		Real gamma,
 		Vector normal);
@@ -274,14 +278,18 @@ void EulerEquationOfState<Real, rank>::buildEigenstate(
 	StateVector &eigenvalues,
 	StateMatrix &eigenvectors,
 	StateInverseMatrix &eigenvectorsInverse,
+	Real density,
 	Vector velocity,
+	Real energyTotal,
+	Real pressure,
+	Real energyThermal,
 	Real enthalpyTotal,
 	Real gamma,
 	Vector normal)
 {
 	static_assert(rank >= 1 && rank <= 3, "only 1D-3D support at the moment");
-	
-	Real speedOfSound = sqrt((gamma - 1.) * (enthalpyTotal - .5 * velocity(0) * velocity(0)));
+
+	Real speedOfSound = sqrt(pressure / density);
 
 	::Vector<Vector, rank-1> tangents;
 	BuildPerpendicularBasis<rank>::template go<Real>(normal, tangents);
@@ -297,17 +305,11 @@ void EulerEquationOfState<Real, rank>::buildEigenstate(
 		}
 	}
 
-#if 0
+/*
 	//flux derivative
-	Real d_drho_pressure = (gamma - 1) * velocitySq;
-	Vector grad_pressure = (1 - gamma) * velocity;
-	Real d_de_pressure = gamma - 1;
-	Real d_drho_enthalpyTotal = 
-		(-gamma * energyTotal / density + (gamma - 1) * velocitySq) / density
-	Vector grad_enthalpyTotal = 
-		-(gamma - 1) * velocity / density
-	Real d_de_enthalpyTotal = 
-		gamma / density;
+	Real d_drho_pressure = gamma * (gamma - 1.) * energyThermal;	// = gamma * pressure / density = (gamma - 1) * gamma * energyThermal;
+	Vector grad_pressure = velocity * (1. - gamma);
+	Real d_drho_enthalpyTotal = (-gamma * energyTotal / density + (gamma - 1.) * velocitySq) / density;
 
 	//density
 	jacobian(0,0) = 0;
@@ -319,17 +321,18 @@ void EulerEquationOfState<Real, rank>::buildEigenstate(
 	for (int j = 0; j < rank; ++j) {
 		jacobian(j+1,0) = -velocityAlongNormal * velocity(j) + normal(j) * d_drho_pressure;
 		for (int k = 0; k < rank; ++k) {
-			jacobian(j+1,k+1) = (normal(k) * velocity(j) + (j == k) * velocityAlongNormal) + (j == k) * grad_pressure(k);
+			jacobian(j+1,k+1) = (normal(k) * velocity(j) + (j == k) * velocityAlongNormal);
+			if (j == k) jacobian(j+1,k+1) += grad_pressure(k); 
 		}
-		jacobian(j+1,rank+1) = normal(j) * d_de_pressure;
+		jacobian(j+1,rank+1) = normal(j) * (gamma - 1.);
 	}
 	//energy
-	jacobian(rank+1,0) = momentumAlongNormal * d_drho_enthalpyTotal;
+	jacobian(rank+1,0) = velocityAlongNormal / density * d_drho_enthalpyTotal;
 	for (int k = 0; k < rank; ++k) {
-		jacobian(rank+1,k+1) = normal(k) * enthalpyTotal + momentumAlongNormal * grad_enthalpyTotal(k);
+		jacobian(rank+1,k+1) = normal(k) * enthalpyTotal + (1. - gamma) * velocityAlongNormal * velocity(k);
 	}
-	jacobian(rank+1,rank+1) = momentumAlongNormal * d_de_enthalpyTotal;
-#endif
+	jacobian(rank+1,rank+1) = velocityAlongNormal * gamma;
+*/
 
 	//eigenvalues: min, mid, max
 	

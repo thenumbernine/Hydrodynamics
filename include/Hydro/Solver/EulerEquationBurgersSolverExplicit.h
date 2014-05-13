@@ -4,8 +4,9 @@
 #include "Parallel.h"
 
 template<typename Hydro>
-class EulerEquationBurgersSolverExplicit : public EulerEquationBurgersSolver<Hydro> {
-public:
+struct EulerEquationBurgersSolverExplicit : public EulerEquationBurgersSolver<Hydro> {
+	typedef EulerEquationBurgersSolver<Hydro> Super; 
+	
 	enum { rank = Hydro::rank };
 	enum { numberOfStates = Hydro::numberOfStates };
 	typedef typename Hydro::Real Real;
