@@ -1,6 +1,6 @@
 #pragma once
 
-class IHydro;
+struct IHydro;
 
 //Solver is constructed and passed to Hydro 
 // so we can't have Hydro a template parameter of Solver

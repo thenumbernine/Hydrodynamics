@@ -4,128 +4,107 @@
 #include <algorithm>
 
 template<typename Real>
-class FluxMethod {
-public:
+struct FluxMethod {
 	virtual Real operator()(Real) = 0;
 };
 
 template<typename Real>
-class DonorCellFluxMethod : public FluxMethod<Real> {
-public:
+struct DonorCellFluxMethod : public FluxMethod<Real> {
 	virtual Real operator()(Real);
 };
 
 template<typename Real>
-class LaxWendroffFluxMethod : public FluxMethod<Real> {
-public:
+struct LaxWendroffFluxMethod : public FluxMethod<Real> {
 	virtual Real operator()(Real);
 };
 
 template<typename Real>
-class BeamWarmingFluxMethod : public FluxMethod<Real> {
-public:
+struct BeamWarmingFluxMethod : public FluxMethod<Real> {
 	virtual Real operator()(Real);
 };
 
 template<typename Real>
-class FrommFluxMethod : public FluxMethod<Real> {
-public:
+struct FrommFluxMethod : public FluxMethod<Real> {
 	virtual Real operator()(Real);
 };
 
 template<typename Real>
-class CHARMFluxMethod : public FluxMethod<Real> {
-public:
+struct CHARMFluxMethod : public FluxMethod<Real> {
 	virtual Real operator()(Real);
 };
 
 template<typename Real>
-class HCUSFluxMethod : public FluxMethod<Real> {
-public:
+struct HCUSFluxMethod : public FluxMethod<Real> {
 	virtual Real operator()(Real);
 };
 
 template<typename Real>
-class HQUICKFluxMethod : public FluxMethod<Real> {
-public:
+struct HQUICKFluxMethod : public FluxMethod<Real> {
 	virtual Real operator()(Real);
 };
 
 template<typename Real>
-class KorenFluxMethod : public FluxMethod<Real> {
-public:
+struct KorenFluxMethod : public FluxMethod<Real> {
 	virtual Real operator()(Real);
 };
 
 template<typename Real>
-class MinModFluxMethod : public FluxMethod<Real> {
-public:
+struct MinModFluxMethod : public FluxMethod<Real> {
 	virtual Real operator()(Real);
 };
 
 template<typename Real>
-class OshkerFluxMethod : public FluxMethod<Real> {
-public:
+struct OshkerFluxMethod : public FluxMethod<Real> {
 	virtual Real operator()(Real);
 };
 
 template<typename Real>
-class OspreFluxMethod : public FluxMethod<Real> {
-public:
+struct OspreFluxMethod : public FluxMethod<Real> {
 	virtual Real operator()(Real);
 };
 
 template<typename Real>
-class SmartFluxMethod : public FluxMethod<Real> {
-public:
+struct SmartFluxMethod : public FluxMethod<Real> {
 	virtual Real operator()(Real);
 };
 
 template<typename Real>
-class SwebyFluxMethod : public FluxMethod<Real> {
-public:
+struct SwebyFluxMethod : public FluxMethod<Real> {
 	virtual Real operator()(Real);
 };
 
 template<typename Real>
-class UMISTFluxMethod : public FluxMethod<Real> {
-public:
+struct UMISTFluxMethod : public FluxMethod<Real> {
 	virtual Real operator()(Real);
 };
 
 template<typename Real>
-class VanAlbada1FluxMethod : public FluxMethod<Real> {
-public:
+struct VanAlbada1FluxMethod : public FluxMethod<Real> {
 	virtual Real operator()(Real);
 };
 
 template<typename Real>
-class VanAlbada2FluxMethod : public FluxMethod<Real> {
-public:
+struct VanAlbada2FluxMethod : public FluxMethod<Real> {
 	virtual Real operator()(Real);
 };
 
 template<typename Real>
-class VanLeerFluxMethod : public FluxMethod<Real> {
-public:
+struct VanLeerFluxMethod : public FluxMethod<Real> {
 	virtual Real operator()(Real);
 };
 
 template<typename Real>
-class MonotonizedCentralFluxMethod : public FluxMethod<Real> {
-public:
+struct MonotonizedCentralFluxMethod : public FluxMethod<Real> {
 	virtual Real operator()(Real);
 };
 
 template<typename Real>
-class SuperbeeFluxMethod : public FluxMethod<Real> {
-public:
+struct SuperbeeFluxMethod : public FluxMethod<Real> {
 	virtual Real operator()(Real);
 };
 
 template<typename Real>
-class BarthJespersenFluxMethod : public FluxMethod<Real> {
-public:
+struct BarthJespersenFluxMethod : public FluxMethod<Real> {
 	virtual Real operator()(Real);
 };
 

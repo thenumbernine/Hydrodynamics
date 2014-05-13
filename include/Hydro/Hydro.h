@@ -9,29 +9,27 @@
 
 #include <OpenGL/gl.h>
 
-class BoundaryMethod;
+struct BoundaryMethod;
 
 template<typename Real>
 struct ISolver;
 
 template<typename Hydro>
-class ExplicitMethod;
+struct ExplicitMethod;
 
 template<typename Real>
-class FluxMethod;
+struct FluxMethod;
 
-class InitialConditions;
+struct InitialConditions;
 
-class IHydro {
-public:
+struct IHydro {
 	virtual void update() = 0;
 	virtual void draw() = 0;
 	virtual void resize(int width, int height) = 0;
 };
 
 template<typename Real_, int rank_, typename EquationOfState_>
-class Hydro : public IHydro {
-public:
+struct Hydro : public IHydro {
 	typedef Real_ Real;
 	enum { rank = rank_ };
 

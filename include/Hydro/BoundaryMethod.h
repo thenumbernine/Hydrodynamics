@@ -1,9 +1,8 @@
 #pragma once
 
-class IHydro;
+struct IHydro;
 
-class BoundaryMethod {
-public:
+struct BoundaryMethod {
 	virtual void operator()(IHydro *ihydro) = 0;
 };
 

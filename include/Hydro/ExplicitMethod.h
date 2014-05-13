@@ -3,18 +3,18 @@
 #include <functional>
 
 template<typename Hydro>
-class ExplicitMethod {
-protected:
+struct ExplicitMethod {
 	enum { numberOfStates = Hydro::numberOfStates };
 	typedef typename Hydro::Real Real;
 	typedef typename Hydro::Cell Cell;
 	typedef typename Hydro::CellGrid CellGrid;
 	typedef typename Cell::StateVector StateVector;
 	
+	virtual void operator()(Hydro *hydro, Real dt, std::function<void(Hydro *hydro, Real dt, StateVector Cell::*dq_dt)> deriv) = 0;
+
+protected:
 	void copyState(Hydro *hydro, StateVector Cell::*dst, StateVector Cell::*src);
 	void addMulState(Hydro *hydro, StateVector Cell::*dst, StateVector Cell::*src, Real dt);
-public:
-	virtual void operator()(Hydro *hydro, Real dt, std::function<void(Hydro *hydro, Real dt, StateVector Cell::*dq_dt)> deriv) = 0;
 };
 
 template<typename Hydro>

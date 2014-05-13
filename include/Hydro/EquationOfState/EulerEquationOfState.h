@@ -3,12 +3,24 @@
 #include "Hydro/EquationOfState.h"
 #include "TensorMath/Inverse.h"
 
+#include "Hydro/Solver/EulerEquationBurgersSolverExplicit.h"
+#include "Hydro/Solver/EulerEquationGodunovSolverExplicit.h"
+#include "Hydro/Solver/EulerEquationRoeSolverExplicit.h"
+
+#include "Hydro/InitialConditions/SodInitialConditions.h"
+#include "Hydro/InitialConditions/SedovInitialConditions.h"
+#include "Hydro/InitialConditions/AdvectInitialConditions.h"
+#include "Hydro/InitialConditions/WaveInitialConditions.h"
+#include "Hydro/InitialConditions/KelvinHemholtzInitialConditions.h"
+#include "Hydro/InitialConditions/RayleighTaylorInitialConditions.h"
+
 #include <math.h>
 
-
 template<typename Real, int rank_>
-class EulerEquationOfState : public EquationOfState<Real, rank_> {
-public:
+struct EulerEquationOfState : public EquationOfState<Real, rank_> {
+	typedef EquationOfState<Real, rank_> Super;
+	
+	typedef ::ISolver<Real> ISolver;
 	enum { rank = rank_ };
 	typedef ::Hydro<Real, rank, EulerEquationOfState<Real, rank> > Hydro;
 	enum { numberOfStates = rank + 2 };
@@ -17,6 +29,8 @@ public:
 	typedef Tensor<Real, Lower<numberOfStates>, Lower<numberOfStates> > StateMatrix;
 	typedef Tensor<Real, Upper<numberOfStates>, Upper<numberOfStates> > StateInverseMatrix;
 
+	EulerEquationOfState();
+	
 	StateVector getPrimitives(StateVector state);
 
 	void buildEigenstate(
@@ -33,6 +47,21 @@ public:
 		Real gamma,
 		Vector normal);
 };
+
+//construct solverAllocator map
+template<typename Real, int rank>
+EulerEquationOfState<Real, rank>::EulerEquationOfState() {
+	Super::solvers.map["Burgers"] = []() -> ISolver* { return new EulerEquationBurgersSolverExplicit<Hydro>(); };
+	Super::solvers.map["Godunov"] = []() -> ISolver* { return new EulerEquationGodunovSolverExplicit<Hydro>(); };
+	Super::solvers.map["Roe"] = []() -> ISolver* { return new EulerEquationRoeSolverExplicit<Hydro>(); };
+
+	Super::initialConditions.map["Sod"] = []() -> InitialConditions* { return new SodInitialConditions<Hydro>(); };
+	Super::initialConditions.map["Sedov"] = []() -> InitialConditions* { return new SedovInitialConditions<Hydro>(); };
+	Super::initialConditions.map["Advect"] = []() -> InitialConditions* { return new AdvectInitialConditions<Hydro>(); };
+	Super::initialConditions.map["Wave"] = []() -> InitialConditions* { return new WaveInitialConditions<Hydro>(); };
+	Super::initialConditions.map["KelvinHemholtz"] = []() -> InitialConditions* { return new KelvinHemholtzInitialConditions<Hydro>(); };
+	Super::initialConditions.map["RayleighTaylor"] = []() -> InitialConditions* { return new RayleighTaylorInitialConditions<Hydro>(); };
+}
 
 template<typename Real, int rank>
 typename EulerEquationOfState<Real, rank>::StateVector

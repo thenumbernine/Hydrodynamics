@@ -22,22 +22,11 @@
 
 #include "Hydro/EquationOfState/EulerEquationOfState.h"
 
-#include "Hydro/InitialConditions/SodInitialConditions.h"
-#include "Hydro/InitialConditions/SedovInitialConditions.h"
-#include "Hydro/InitialConditions/AdvectInitialConditions.h"
-#include "Hydro/InitialConditions/WaveInitialConditions.h"
-#include "Hydro/InitialConditions/KelvinHemholtzInitialConditions.h"
-#include "Hydro/InitialConditions/RayleighTaylorInitialConditions.h"
-
 #include "Hydro/BoundaryMethod/MirrorBoundaryMethod.h"
 #include "Hydro/BoundaryMethod/PeriodicBoundaryMethod.h"
 //TODO get these working for all dimensions
 //#include "Hydro/BoundaryMethod/ConstantBoundaryMethod.h"
 //#include "Hydro/BoundaryMethod/FreeFlowBoundaryMethod.h"
-
-#include "Hydro/Solver/EulerEquationBurgersSolverExplicit.h"
-#include "Hydro/Solver/EulerEquationGodunovSolverExplicit.h"
-#include "Hydro/Solver/EulerEquationRoeSolverExplicit.h"
 
 #include "Hydro/ExplicitMethod/ForwardEulerExplicitMethod.h"
 #include "Hydro/ExplicitMethod/RungeKutta2ExplicitMethod.h"
@@ -147,22 +136,9 @@ public:
 
 		EquationOfState *equationOfState = new EquationOfState();
 
-		InitialConditions *initialConditions = NULL;
-		if (args.initialConditionsName == "Sod") {
-			initialConditions = new SodInitialConditions<Hydro>();
-		} else if (args.initialConditionsName == "Sedov") {
-			initialConditions = new SedovInitialConditions<Hydro>();
-		} else if (args.initialConditionsName == "Advect") {
-			initialConditions = new AdvectInitialConditions<Hydro>();
-		} else if (args.initialConditionsName == "Wave") {
-			initialConditions = new WaveInitialConditions<Hydro>();
-		} else if (args.initialConditionsName == "KelvinHemholtz") {
-			initialConditions = new KelvinHemholtzInitialConditions<Hydro>();
-		} else if (args.initialConditionsName == "RayleighTaylor") {
-			initialConditions = new RayleighTaylorInitialConditions<Hydro>();
-		} else {
-			throw Exception() << "unknown initial conditions " << args.initialConditionsName;
-		}
+		//these are eos-specific
+		InitialConditions *initialConditions = equationOfState->initialConditions.create(args.initialConditionsName);
+		ISolver *solver = equationOfState->solvers.create(args.solverName);
 
 		BoundaryMethod *boundaryMethod = NULL;
 		if (args.boundaryMethodName =="Mirror") {
@@ -177,17 +153,6 @@ public:
 #endif
 		} else {
 			throw Exception() << "unknown boundary method " << args.boundaryMethodName;
-		}
-
-		ISolver *solver = NULL;
-		if (args.solverName == "Burgers") {
-			solver = new EulerEquationBurgersSolverExplicit<Hydro>();
-		} else if (args.solverName == "Godunov") {
-			solver = new EulerEquationGodunovSolverExplicit<Hydro>();
-		} else if (args.solverName == "Roe") {
-			solver = new EulerEquationRoeSolverExplicit<Hydro>();
-		} else {
-			throw Exception() << "unknown solver " << args.solverName;
 		}
 
 		ExplicitMethod *explicitMethod = NULL;

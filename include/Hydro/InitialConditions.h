@@ -1,9 +1,8 @@
 #pragma once
 
-class IHydro;
+struct IHydro;
 
-class InitialConditions {
-public:
+struct InitialConditions {
 	virtual void operator()(IHydro *hydro, double noise) = 0;
 };
 
