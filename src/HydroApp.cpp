@@ -255,7 +255,7 @@ public:
 		//add its negative to all potential energy calculations
 		// to keep potential energy from being a negative value
 	std::cout << " min potential " << hydro->minPotentialEnergy << std::endl;
-		hydro->minPotentialEnergy = -hydro->minPotentialEnergy + 1;
+		hydro->minPotentialEnergy = 0;//-hydro->minPotentialEnergy;
 		
 		//once min potential energy is determined, set up initial conditions
 		(*initialConditions)(ihydro, args.noise);
@@ -284,6 +284,8 @@ public:
 	virtual void init() {
 		GLApp::init();
 		
+		SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, 0);
+
 		//not sure where to put this yet:
 		{
 			static GLuint texID = 0;
@@ -360,14 +362,25 @@ public:
 	virtual void sdlEvent(SDL_Event &event) {
 
 		static bool leftButtonDown = false;
-		
+		static bool leftShiftDown = false;
+		static bool rightShiftDown = false;
+		bool shiftDown = leftShiftDown | rightShiftDown;
+
 		switch (event.type) {
 		case SDL_MOUSEMOTION:
 			{	
 				int idx = event.motion.xrel;
 				int idy = event.motion.yrel;
-				if (leftButtonDown && (idx || idy)) {
-					ihydro->pan(idx, idy);
+				if (leftButtonDown) {
+					if (shiftDown) {
+						if (idy) {
+							ihydro->zoom(idy);
+						} 
+					} else {
+						if (idx || idy) {
+							ihydro->pan(idx, idy);
+						}
+					}
 				}
 			}
 			break;
@@ -379,6 +392,20 @@ public:
 		case SDL_MOUSEBUTTONUP:
 			if (event.button.button == SDL_BUTTON_LEFT) {
 				leftButtonDown = false;
+			}
+			break;
+		case SDL_KEYDOWN:
+			if (event.key.keysym.sym == SDLK_LSHIFT) {
+				leftShiftDown = true;
+			} else if (event.key.keysym.sym == SDLK_RSHIFT) {
+				rightShiftDown = true;
+			}
+			break;
+		case SDL_KEYUP:
+			if (event.key.keysym.sym == SDLK_LSHIFT) {
+				leftShiftDown = false;
+			} else if (event.key.keysym.sym == SDLK_RSHIFT) {
+				rightShiftDown = false;
 			}
 			break;
 		}

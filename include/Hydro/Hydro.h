@@ -14,7 +14,10 @@
 template<int rank>
 struct HydroPlot {
 	Quat viewAngle;
-	
+	float dist;
+
+	HydroPlot() : dist(2.) {}
+
 	template<typename Hydro>
 	void draw(Hydro &hydro) {
 		typedef typename Hydro::CellGrid CellGrid;
@@ -25,7 +28,7 @@ struct HydroPlot {
 		
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
-		glTranslatef(0,0,-2);
+		glTranslatef(0,0,-dist);
 		Quat angleAxis = viewAngle.toAngleAxis();
 		glRotatef(angleAxis(3) * 180. / M_PI, angleAxis(0), angleAxis(1), angleAxis(2));
 		
@@ -46,7 +49,7 @@ struct HydroPlot {
 			}
 			if (!edge) {
 				//color by state value, neglect height or use it for coordinates
-				glTexCoord1f(cell.state(0));	//color by density
+				glTexCoord1f(2. * cell.state(0));	//color by density
 				glVertex3d(cell.x(0), cell.x(1), cell.x(2));
 			}
 		});
@@ -55,8 +58,8 @@ struct HydroPlot {
 	}
 
 	static void resize(int width, int height) {
-		const float zNear = 1;
-		const float zFar = 1000;
+		const float zNear = .01;
+		const float zFar = 10;
 		float aspectRatio = (float)width / (float)height;
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
@@ -71,6 +74,10 @@ struct HydroPlot {
 		viewAngle = rotation * viewAngle;
 		viewAngle /= Quat::length(viewAngle);
 	}
+
+	void zoom(int dz) {
+		dist *= (float)exp((float)dz * -.03f);
+	}
 };
 
 //1D case
@@ -82,7 +89,7 @@ struct HydroPlot<1> {
 		typedef typename Hydro::Cell Cell;
 		typedef typename Hydro::StateVector StateVector;
 		typedef typename Hydro::IVector IVector;
-		const double plotScalar = .1;
+#if 0	//show piecewise step functions - in anticipation of getting PPM method working	
 		for (int state = 0; state < 3; ++state) {
 			::Vector<float,3> color;
 			color(state) = 1;
@@ -93,31 +100,58 @@ struct HydroPlot<1> {
 				StateVector primitives = hydro.equationOfState->getPrimitives(cell.state);
 				StateVector primitivesRight = hydro.equationOfState->getPrimitives(cell.stateRight(0));
 				glBegin(GL_LINE_STRIP);
-				glVertex2d(cell.interfaces(0).x(0), plotScalar * primitivesLeft(state));
-				glVertex2d(cell.x(0), plotScalar * primitives(state));
-				glVertex2d(hydro.cells(i+1).interfaces(0).x(0), plotScalar * primitivesRight(state));
+				glVertex2d(cell.interfaces(0).x(0), primitivesLeft(state));
+				glVertex2d(cell.x(0), primitives(state));
+				glVertex2d(hydro.cells(i+1).interfaces(0).x(0), primitivesRight(state));
 				glEnd();
 			}
 		}
+#endif
+#if 1	//good ol fashioned graph
+		for (int state = 0; state < 3; ++state) {
+			::Vector<float,3> color;
+			color(state) = 1;
+			glColor3fv(color.v);
+			glBegin(GL_LINE_STRIP);
+			std::for_each(hydro.cells.begin(), hydro.cells.end(), [&](typename CellGrid::value_type &v) {
+				Cell &cell = v.second;
+				StateVector primitives = hydro.equationOfState->getPrimitives(cell.state);
+				glVertex2d(cell.x(0), primitives(state));
+			});
+			glEnd();
+		}
+
+#endif
 	}
 
 	static void resize(int width, int height) {
 		float aspectRatio = (float)width / (float)height;
-		glOrtho(-aspectRatio, aspectRatio, -.25, .5, -1., 1.);
+		glOrtho(-aspectRatio, aspectRatio, -1., 3., -1., 1.);
 	}
 
-	void pan(int dx, int dy) {}
+	void pan(int dx, int dy) {
+	}
+	
+	void zoom(int dz) {}
 };
 
 //2D case
 template<>
 struct HydroPlot<2> {
+	::Vector<float, 2> viewPos;
+	float viewZoom;
+
+	HydroPlot() : viewZoom(1.) {}
+
 	template<typename Hydro>
 	void draw(Hydro &hydro) {
 		typedef typename Hydro::CellGrid CellGrid;
 		typedef typename Hydro::Cell Cell;
 		typedef typename Hydro::IVector IVector;
 		typedef typename Hydro::Real Real;
+		glPushMatrix();
+		glTranslatef(-viewPos(0), -viewPos(1), 0);
+		glScalef(viewZoom, viewZoom, viewZoom);
 		glEnable(GL_TEXTURE_1D);
 		for (int y = hydro.nghost-1; y < hydro.size(1)-1; ++y) {
 			glBegin(GL_TRIANGLE_STRIP);
@@ -128,13 +162,14 @@ struct HydroPlot<2> {
 					Cell &cell = hydro.cells.v[index].second;
 
 					//color by state value, neglect height or use it for coordinates
-					glTexCoord1f(cell.state(0));
+					glTexCoord1f(2. * cell.state(0));
 					glVertex2d(cell.x(0), cell.x(1));
 				}
 			}
 			glEnd();
 		}
 		glDisable(GL_TEXTURE_1D);
+		glPopMatrix();
 	}
 
 	static void resize(int width, int height) {
@@ -142,7 +177,14 @@ struct HydroPlot<2> {
 		glOrtho(-aspectRatio, aspectRatio, -1., 1., -1., 1.);
 	}
 
-	void pan(int dx, int dy) {}
+	void pan(int dx, int dy) {
+		viewPos(0) -= (float)dx * 0.01f;
+		viewPos(1) += (float)dy * 0.01f;
+	}
+	
+	void zoom(int dz) {
+		viewZoom *= exp((float)dz * -.03f); 
+	}
 };
 
 
@@ -163,6 +205,7 @@ struct IHydro {
 	virtual void draw() = 0;
 	virtual void resize(int width, int height) = 0;
 	virtual void pan(int dx, int dy) = 0;
+	virtual void zoom(int dz) = 0;
 };
 
 template<typename EquationOfState_>
@@ -228,6 +271,7 @@ public:
 	virtual void draw();
 	virtual void resize(int width, int height);
 	virtual void pan(int dx, int dy);
+	virtual void zoom(int dz);
 };
 
 template<typename EquationOfState>
@@ -354,6 +398,11 @@ void Hydro<EquationOfState>::resize(int width, int height) {
 template<typename EquationOfState>
 void Hydro<EquationOfState>::pan(int dx, int dy) {
 	plot.pan(dx, dy);
+}
+
+template<typename EquationOfState>
+void Hydro<EquationOfState>::zoom(int dz) {
+	plot.zoom(dz);
 }
 
 template<typename EquationOfState>

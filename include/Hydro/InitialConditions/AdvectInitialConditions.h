@@ -21,8 +21,8 @@ struct AdvectInitialConditions : public InitialConditions<typename Hydro::Real, 
 
 template<typename Hydro>
 AdvectInitialConditions<Hydro>::AdvectInitialConditions() {
-	Super::xmin = Vector(-1.);
-	Super::xmax = Vector(1.);
+	Super::xmin = Vector(-.5);
+	Super::xmax = Vector(.5);
 }
 
 template<typename Hydro>

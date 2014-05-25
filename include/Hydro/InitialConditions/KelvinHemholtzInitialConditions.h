@@ -23,8 +23,8 @@ struct KelvinHemholtzInitialConditions : public InitialConditions<typename Hydro
 
 template<typename Hydro>
 KelvinHemholtzInitialConditions<Hydro>::KelvinHemholtzInitialConditions() {
-	Super::xmin = Vector(-1.);
-	Super::xmax = Vector(1.);
+	Super::xmin = Vector(-.5);
+	Super::xmax = Vector(.5);
 }
 
 template<typename Hydro>

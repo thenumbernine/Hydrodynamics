@@ -32,7 +32,7 @@ void EulerEquationRoeSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 	
 		//I should really use tbb or gcs or something,
 		//but writing my own is too much fun ...
-		Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+		ParallelCount<1>::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 			IVector index = v.first;
 			Cell &cell = v.second;
 			InterfaceVector &interface = cell.interfaces;

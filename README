@@ -2,6 +2,7 @@ port of my JavaScript hydrodynamics solver to C++,
 combined with my TensorMath library so I can write every dimension case at once without using runtime-specified loop sizes, for the hopes of unrolling and template inlining for faster results 
 
 fixes:
+- external forces of any kind crash - due to singular matrix - most likely due to negative sqrts, most likely due to total energy inconsistency / negative potential energies computed from the external force
 - analytic flux jacobian and eignevector inverses
 - thread pool in place of spawning & destroying threads
-- cut down on all those lookups?
+- cut down on all those lookups? pointer offsetting, as ugly as it is

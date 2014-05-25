@@ -21,8 +21,8 @@ struct RayleighTaylorInitialConditions : public InitialConditions<typename Hydro
 
 template<typename Hydro>
 RayleighTaylorInitialConditions<Hydro>::RayleighTaylorInitialConditions() {
-	Super::xmin = Vector(-1.);
-	Super::xmax = Vector(1.);
+	Super::xmin = Vector(-.5);
+	Super::xmax = Vector(.5);
 }
 
 template<typename Hydro>
@@ -46,7 +46,7 @@ void RayleighTaylorInitialConditions<Hydro>::operator()(IHydro *ihydro, Real noi
 		for (int k = 0; k < rank; ++k) {
 			energyPotential += (x(k) - hydro->xmin(k)) * hydro->externalForce(k);
 		}
-		Real pressure = (hydro->gamma - 1.) * density * (2.5 - energyPotential);
+		Real pressure = 2.5 - density * energyPotential;//(hydro->gamma - 1.) * density * (2.5 - energyPotential);
 		Real energyTotal = pressure / ((hydro->gamma - 1.) * density) + energyKinetic + energyPotential; 
 		cell.state(0) = density;
 		for (int k = 0; k < rank; ++k) {
