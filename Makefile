@@ -1,6 +1,3 @@
-# PLATFORM: osx
-# BUILD: debug, release
-
 DIST_FILENAME=hydro
 DIST_TYPE=app
 

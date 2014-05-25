@@ -299,6 +299,12 @@ Hydro<EquationOfState>::Hydro(IVector size_,
 	solver = solver_;
 	explicitMethod = explicitMethod_;
 	fluxMethod = fluxMethod_;
+	
+	RangeObj<rank> range(IVector(), cells.size);
+	std::for_each(range.begin(), range.end(), [&](IVector index) {
+		typename CellGrid::Type &v = cells(index);
+		v.first = index;
+	});
 
 	resetCoordinates(xmin, xmax);
 }
@@ -380,7 +386,7 @@ void Hydro<EquationOfState>::step(Real dt) {
 template<typename EquationOfState>
 void Hydro<EquationOfState>::update() {
 	PROFILE()
-	
+
 	solver->initStep(this);
 
 	Real dt = useCFL 

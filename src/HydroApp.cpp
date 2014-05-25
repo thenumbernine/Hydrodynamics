@@ -7,10 +7,9 @@
 #include <string>
 
 #include <OpenGL/gl.h>
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 
 #define numberof(x) (sizeof(x)/sizeof((x)[0]))
-#define endof(x) ((x)+numberof(x))
 #define crand()	((double)rand()/(double)RAND_MAX)
 #include "GLApp/GLApp.h" 
 
@@ -77,7 +76,8 @@ class HydroApp : public GLApp {
 
 public:
 	HydroApp()
-	: ihydro(NULL)
+	: GLApp()
+	, ihydro(NULL)
 	{}
 
 	virtual int main(int argc, char **argv) {
@@ -283,8 +283,6 @@ public:
 
 	virtual void init() {
 		GLApp::init();
-		
-		SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, 0);
 
 		//not sure where to put this yet:
 		{
@@ -347,8 +345,7 @@ public:
 		PROFILE_BEGIN_FRAME()	
 		{
 			PROFILE()
-
-			GLApp::update();
+			GLApp::update();		
 			ihydro->update();
 			ihydro->draw();
 		}	
@@ -360,7 +357,6 @@ public:
 	}
 
 	virtual void sdlEvent(SDL_Event &event) {
-
 		static bool leftButtonDown = false;
 		static bool leftShiftDown = false;
 		static bool rightShiftDown = false;
