@@ -52,6 +52,6 @@ void SedovInitialConditions<Hydro>::operator()(IHydro *ihydro, Real noise) {
 		}
 		cell.state(rank+1) = energyTotal; 
 	});
-	hydro->cells(hydro->size/2).state(rank+1) = 1e+5;
+	hydro->cells(hydro->size/2).second.state(rank+1) = 1e+5;
 }
 

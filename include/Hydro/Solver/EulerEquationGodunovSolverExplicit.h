@@ -46,29 +46,29 @@ void EulerEquationGodunovSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 
 					Vector xL = interface(side).x;
 					Vector xR = interface(side).x;
-					xL(side) = hydro->cells(indexL).x(side);
-					xR(side) = hydro->cells(indexR).x(side);
+					xL(side) = hydro->cells(indexL).second.x(side);
+					xR(side) = hydro->cells(indexR).second.x(side);
 
 					Vector normal;
 					normal(side) = Real(1);
 
-					Real densityL = hydro->cells(indexL).state(0);
+					Real densityL = hydro->cells(indexL).second.state(0);
 					Vector velocityL;
 					Real velocitySqL = Real(0);
 					for (int k = 0; k < rank; ++k) {
-						velocityL(k) = hydro->cells(indexL).state(k+1) / densityL;
+						velocityL(k) = hydro->cells(indexL).second.state(k+1) / densityL;
 						velocitySqL += velocityL(k) * velocityL(k);
 					}
-					Real energyTotalL = hydro->cells(indexL).state(rank+1) / densityL;
+					Real energyTotalL = hydro->cells(indexL).second.state(rank+1) / densityL;
 
-					Real densityR = hydro->cells(indexR).state(0);
+					Real densityR = hydro->cells(indexR).second.state(0);
 					Vector velocityR;
 					Real velocitySqR = Real(0);
 					for (int k = 0; k < rank; ++k) {
-						velocityR(k) = hydro->cells(indexR).state(k+1) / densityR;
+						velocityR(k) = hydro->cells(indexR).second.state(k+1) / densityR;
 						velocitySqR += velocityR(k) * velocityR(k);
 					}
-					Real energyTotalR = hydro->cells(indexR).state(rank+1) / densityR;
+					Real energyTotalR = hydro->cells(indexR).second.state(rank+1) / densityR;
 				
 					Real energyKineticL = .5 * velocitySqL;
 					Real energyPotentialL = hydro->minPotentialEnergy;

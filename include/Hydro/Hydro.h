@@ -102,7 +102,7 @@ struct HydroPlot<1> {
 				glBegin(GL_LINE_STRIP);
 				glVertex2d(cell.interfaces(0).x(0), primitivesLeft(state));
 				glVertex2d(cell.x(0), primitives(state));
-				glVertex2d(hydro.cells(i+1).interfaces(0).x(0), primitivesRight(state));
+				glVertex2d(hydro.cells(i+1).second.interfaces(0).x(0), primitivesRight(state));
 				glEnd();
 			}
 		}
@@ -246,7 +246,7 @@ public:	//'til I can work out access
 	int nghost;
 	Vector xmin, xmax;
 
-	typedef ::Grid<Cell, rank> CellGrid;
+	typedef ::Grid<std::pair<IVector, Cell>, rank> CellGrid;
 	typedef ::Vector<Interface, rank> InterfaceVector;
 	CellGrid cells;
 
@@ -332,7 +332,7 @@ void Hydro<EquationOfState>::resetCoordinates(Vector xmin_, Vector xmax_) {
 				IVector indexL = index;
 				--indexL(side);
 				for (int k = 0; k < rank; ++k) {
-					interface(side).x(k) = (cells(indexR).x(k) + cells(indexL).x(k)) * Real(.5);
+					interface(side).x(k) = (cells(indexR).second.x(k) + cells(indexL).second.x(k)) * Real(.5);
 				}
 			}
 		}
@@ -349,7 +349,7 @@ void Hydro<EquationOfState>::resetCoordinates(Vector xmin_, Vector xmax_) {
 				IVector indexL2 = indexL;
 				--indexL2(k);
 				for (int j = 0; j < 3; ++j) {
-					interface(k).x(j) = 2. * cells(indexL).interfaces(k).x(j) - cells(indexL2).interfaces(k).x(j);
+					interface(k).x(j) = 2. * cells(indexL).second.interfaces(k).x(j) - cells(indexL2).second.interfaces(k).x(j);
 				}
 			} else if (index(k) == 0) {
 				IVector indexR = index;
@@ -357,7 +357,7 @@ void Hydro<EquationOfState>::resetCoordinates(Vector xmin_, Vector xmax_) {
 				IVector indexR2 = indexR;
 				++indexR2(k);			
 				for (int j = 0; j < 3; ++j) {
-					interface(k).x(j) = 2. * cells(indexR).interfaces(k).x(j) - cells(indexR2).interfaces(k).x(j);
+					interface(k).x(j) = 2. * cells(indexR).second.interfaces(k).x(j) - cells(indexR2).second.interfaces(k).x(j);
 				}
 			}
 		}

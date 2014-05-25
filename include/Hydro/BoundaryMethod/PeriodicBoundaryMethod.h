@@ -51,12 +51,12 @@ void PeriodicBoundaryMethod<Hydro>::operator()(IHydro *ihydro) {
 			rightIndex(side) = hydro->size(side)-1;
 			
 			//lhs
-			hydro->cells(leftIndex).state = hydro->cells(rightIndex - di*3).state;
-			hydro->cells(leftIndex + di).state = hydro->cells(rightIndex - di*2).state;
+			hydro->cells(leftIndex).second.state = hydro->cells(rightIndex - di*3).second.state;
+			hydro->cells(leftIndex + di).second.state = hydro->cells(rightIndex - di*2).second.state;
 
 			//rhs
-			hydro->cells(rightIndex).state = hydro->cells(leftIndex + di*3).state;
-			hydro->cells(rightIndex - di).state = hydro->cells(leftIndex + di*2).state;
+			hydro->cells(rightIndex).second.state = hydro->cells(leftIndex + di*3).second.state;
+			hydro->cells(rightIndex - di).second.state = hydro->cells(leftIndex + di*2).second.state;
 		};
 
 //if rank is one then our range object is zero, even though we want to run the lambda once ...

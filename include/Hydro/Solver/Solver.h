@@ -52,7 +52,7 @@ void Solver<Hydro>::initStep(IHydro *ihydro) {
 					IVector indexR = index;
 					IVector indexL = index;
 					--indexL(side);
-					interface(side).stateMid = (hydro->cells(indexL).stateRight(side) + hydro->cells(indexR).stateLeft(side)) * Real(.5);
+					interface(side).stateMid = (hydro->cells(indexL).second.stateRight(side) + hydro->cells(indexR).second.stateLeft(side)) * Real(.5);
 				}
 			} else {
 				for (int side = 0; side < rank; ++side) {

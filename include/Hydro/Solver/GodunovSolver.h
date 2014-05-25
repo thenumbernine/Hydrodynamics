@@ -52,11 +52,11 @@ typename GodunovSolver<Hydro>::Real GodunovSolver<Hydro>::calcCFLTimestep(IHydro
 				Real maxLambda = Real();
 				Real minLambda = Real();
 				for (int state = 0; state < numberOfStates; ++state) {
-					maxLambda = std::max<Real>(maxLambda, hydro->cells(indexL).interfaces(side).eigenvalues(state));
-					minLambda = std::min<Real>(minLambda, hydro->cells(indexR).interfaces(side).eigenvalues(state));
+					maxLambda = std::max<Real>(maxLambda, hydro->cells(indexL).second.interfaces(side).eigenvalues(state));
+					minLambda = std::min<Real>(minLambda, hydro->cells(indexR).second.interfaces(side).eigenvalues(state));
 				}
 				
-				Real dx = hydro->cells(indexR).interfaces(side).x(side) - hydro->cells(indexL).interfaces(side).x(side);
+				Real dx = hydro->cells(indexR).second.interfaces(side).x(side) - hydro->cells(indexL).second.interfaces(side).x(side);
 				
 				Real dum = dx / (maxLambda - minLambda);
 				if (dum < mindum) mindum = dum;
@@ -106,8 +106,8 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 					IVector indexR = index;
 					IVector indexL = index;
 					--indexL(side);
-					StateVector stateLeft = hydro->cells(indexL).stateRight(side);
-					StateVector stateRight = hydro->cells(indexR).stateLeft(side);
+					StateVector stateLeft = hydro->cells(indexL).second.stateRight(side);
+					StateVector stateRight = hydro->cells(indexR).second.stateLeft(side);
 					for (int state = 0; state < numberOfStates; ++state) {
 						Real sum = Real(0);
 						for (int k = 0; k < numberOfStates; ++k) {
@@ -153,9 +153,9 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 					++interfaceIndexR(side); 
 					
 					for (int state = 0; state < numberOfStates; ++state) {
-						Real interfaceDeltaStateTildeL = hydro->cells(interfaceIndexL).interfaces(side).deltaStateTilde(state);
+						Real interfaceDeltaStateTildeL = hydro->cells(interfaceIndexL).second.interfaces(side).deltaStateTilde(state);
 						Real interfaceDeltaStateTilde = interface(side).deltaStateTilde(state);
-						Real interfaceDeltaStateTildeR = hydro->cells(interfaceIndexR).interfaces(side).deltaStateTilde(state);
+						Real interfaceDeltaStateTildeR = hydro->cells(interfaceIndexR).second.interfaces(side).deltaStateTilde(state);
 						
 						if (fabs(interfaceDeltaStateTilde) > Real(0)) {
 							if (interface(side).eigenvalues(state) > Real(0)) {
@@ -195,7 +195,7 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 					IVector indexL = index;
 					--indexL(side);
 					
-					Real dx = interface(side).x(side) - hydro->cells(indexL).interfaces(side).x(side);
+					Real dx = interface(side).x(side) - hydro->cells(indexL).second.interfaces(side).x(side);
 
 					//simplification: rather than E * L * E^-1 * q, just do A * q for A the original matrix
 					//...and use that on the flux L & R avg (which doesn't get scaled in eigenvector basis space
@@ -262,9 +262,9 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 					IVector indexL = index;
 					IVector indexR = index;
 					++indexR(side);
-					Real dx = hydro->cells(indexR).interfaces(side).x(side) - hydro->cells(indexL).interfaces(side).x(side);		
+					Real dx = hydro->cells(indexR).second.interfaces(side).x(side) - hydro->cells(indexL).second.interfaces(side).x(side);		
 					for (int state = 0; state < numberOfStates; ++state) {
-						Real df = hydro->cells(indexR).interfaces(side).flux(state) - hydro->cells(indexL).interfaces(side).flux(state);
+						Real df = hydro->cells(indexR).second.interfaces(side).flux(state) - hydro->cells(indexL).second.interfaces(side).flux(state);
 						(cell.*dq_dt)(state) -= df / dx;
 					}
 				}

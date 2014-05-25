@@ -59,7 +59,7 @@ EulerEquationBurgersSolver<Hydro>::calcCFLTimestep(IHydro *ihydro)
 			for (int k = 0; k < rank; ++k) {
 				IVector nextIndex = index;
 				++nextIndex(k);
-				Real dx = hydro->cells(nextIndex).interfaces(k).x(k) - hydro->cells(index).interfaces(k).x(k);
+				Real dx = hydro->cells(nextIndex).second.interfaces(k).x(k) - hydro->cells(index).second.interfaces(k).x(k);
 				Real dum = dx / (speedOfSound + velocityMag);
 				if (dum < mindum) mindum = dum;
 			}

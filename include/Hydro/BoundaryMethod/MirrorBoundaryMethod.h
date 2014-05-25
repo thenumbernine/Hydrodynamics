@@ -46,25 +46,25 @@ void MirrorBoundaryMethod<Hydro>::operator()(IHydro *ihydro) {
 
 			//lhs
 			index(side) = 0;
-			hydro->cells(index).state(0) = hydro->cells(index + di*3).state(0);
-			hydro->cells(index + di).state(0) = hydro->cells(index + di*2).state(0);
+			hydro->cells(index).second.state(0) = hydro->cells(index + di*3).second.state(0);
+			hydro->cells(index + di).second.state(0) = hydro->cells(index + di*2).second.state(0);
 			for (int k = 0; k < rank; ++k) {
-				hydro->cells(index).state(k+1) = -hydro->cells(index + di*3).state(k+1);
-				hydro->cells(index + di).state(k+1) = -hydro->cells(index + di*2).state(k+1);
+				hydro->cells(index).second.state(k+1) = -hydro->cells(index + di*3).second.state(k+1);
+				hydro->cells(index + di).second.state(k+1) = -hydro->cells(index + di*2).second.state(k+1);
 			}
-			hydro->cells(index).state(rank+1) = hydro->cells(index + di*3).state(rank+1);
-			hydro->cells(index + di).state(rank+1) = hydro->cells(index + di*2).state(rank+1);
+			hydro->cells(index).second.state(rank+1) = hydro->cells(index + di*3).second.state(rank+1);
+			hydro->cells(index + di).second.state(rank+1) = hydro->cells(index + di*2).second.state(rank+1);
 
 			//rhs
 			index(side) = hydro->size(side)-1;
-			hydro->cells(index).state(0) = hydro->cells(index - di*3).state(0);
-			hydro->cells(index - di).state(0) = hydro->cells(index - di*2).state(0);
+			hydro->cells(index).second.state(0) = hydro->cells(index - di*3).second.state(0);
+			hydro->cells(index - di).second.state(0) = hydro->cells(index - di*2).second.state(0);
 			for (int k = 0; k < rank; ++k) {
-				hydro->cells(index).state(k+1) = -hydro->cells(index - di*3).state(k+1);
-				hydro->cells(index - di).state(k+1) = -hydro->cells(index - di*2).state(k+1);
+				hydro->cells(index).second.state(k+1) = -hydro->cells(index - di*3).second.state(k+1);
+				hydro->cells(index - di).second.state(k+1) = -hydro->cells(index - di*2).second.state(k+1);
 			}
-			hydro->cells(index).state(rank+1) = hydro->cells(index - di*3).state(rank+1);
-			hydro->cells(index - di).state(rank+1) = hydro->cells(index - di*2).state(rank+1);
+			hydro->cells(index).second.state(rank+1) = hydro->cells(index - di*3).second.state(rank+1);
+			hydro->cells(index - di).second.state(rank+1) = hydro->cells(index - di*2).second.state(rank+1);
 		};
 
 //if rank is one then our range object is zero, even though we want to run the lambda once ...

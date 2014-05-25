@@ -71,8 +71,8 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateFlux(IHydro *ihydro, Re
 				IVector indexR = index;
 				IVector indexL = index;
 				--indexL(side);
-				Real uL = hydro->cells(indexL).state(side+1) / hydro->cells(indexL).state(0);
-				Real uR = hydro->cells(indexR).state(side+1) / hydro->cells(indexR).state(0);
+				Real uL = hydro->cells(indexL).second.state(side+1) / hydro->cells(indexL).second.state(0);
+				Real uR = hydro->cells(indexR).second.state(side+1) / hydro->cells(indexR).second.state(0);
 				interface(side).velocity = .5 * (uL + uR);
 			}
 		} else {
@@ -101,10 +101,10 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateFlux(IHydro *ihydro, Re
 					IVector indexR1 = index;
 					IVector indexR2 = index; ++indexR2(side);
 					
-					Real qL2 = hydro->cells(indexL2).state(state);
-					Real qL1 = hydro->cells(indexL1).state(state);
-					Real qR1 = hydro->cells(indexR1).state(state);
-					Real qR2 = hydro->cells(indexR2).state(state);
+					Real qL2 = hydro->cells(indexL2).second.state(state);
+					Real qL1 = hydro->cells(indexL1).second.state(state);
+					Real qR1 = hydro->cells(indexR1).second.state(state);
+					Real qR2 = hydro->cells(indexR2).second.state(state);
 					
 					Real dq = qR1 - qL1;
 					if (fabs(dq) > 0.) {
@@ -144,12 +144,12 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateFlux(IHydro *ihydro, Re
 				IVector indexR = index;
 				IVector indexL = index;
 				--indexL(side);
-				Real dx = hydro->cells(index).x(side) - hydro->cells(indexL).x(side);			
+				Real dx = hydro->cells(index).second.x(side) - hydro->cells(indexL).second.x(side);			
 				for (int state = 0; state < numberOfStates; ++state) {
 					Real phi = (*hydro->fluxMethod)(interface(side).r(state));
 					Real velocity = interface(side).velocity;
-					Real qL = hydro->cells(indexL).state(state);
-					Real qR = hydro->cells(indexR).state(state);
+					Real qL = hydro->cells(indexL).second.state(state);
+					Real qR = hydro->cells(indexR).second.state(state);
 					if (velocity >= 0.) {
 						interface(side).flux(state) = velocity * qL;
 					} else {
@@ -186,9 +186,9 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateFlux(IHydro *ihydro, Re
 				IVector indexL = index;
 				IVector indexR = index;
 				++indexR(side);
-				Real dx = hydro->cells(indexR).interfaces(side).x(side) - hydro->cells(indexL).interfaces(side).x(side);
+				Real dx = hydro->cells(indexR).second.interfaces(side).x(side) - hydro->cells(indexL).second.interfaces(side).x(side);
 				for (int state = 0; state < numberOfStates; ++state) {
-					Real df = hydro->cells(indexR).interfaces(side).flux(state) - hydro->cells(indexL).interfaces(side).flux(state);
+					Real df = hydro->cells(indexR).second.interfaces(side).flux(state) - hydro->cells(indexL).second.interfaces(side).flux(state);
 					(cell.*dq_dt)(state) -= df / dx;
 				}
 			}
@@ -282,10 +282,10 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateMomentumDiffusion(IHydr
 				IVector indexR = index;
 				++indexR(side);
 		
-				Real pressureL = hydro->cells(indexL).pressure;
-				Real pressureR = hydro->cells(indexR).pressure;
+				Real pressureL = hydro->cells(indexL).second.pressure;
+				Real pressureR = hydro->cells(indexR).second.pressure;
 				Real dPressure = pressureR - pressureL;
-				Real dx = hydro->cells(indexR).x(side) - hydro->cells(indexL).x(side);
+				Real dx = hydro->cells(indexR).second.x(side) - hydro->cells(indexL).second.x(side);
 				
 				(cell.*dq_dt)(side+1) = -dPressure / dx;
 			}
@@ -319,12 +319,12 @@ void EulerEquationBurgersSolverExplicit<Hydro>::integrateWorkDiffusion(IHydro *i
 				IVector indexR = index;
 				++indexR(side);
 
-				Real uR = hydro->cells(indexR).state(side+1) / hydro->cells(indexR).state(0);
-				Real uL = hydro->cells(indexL).state(side+1) / hydro->cells(indexL).state(0);
+				Real uR = hydro->cells(indexR).second.state(side+1) / hydro->cells(indexR).second.state(0);
+				Real uL = hydro->cells(indexL).second.state(side+1) / hydro->cells(indexL).second.state(0);
 			
-				Real pressureL = hydro->cells(indexL).pressure;
-				Real pressureR = hydro->cells(indexR).pressure;
-				Real dx = hydro->cells(indexR).x(side) - hydro->cells(indexL).x(side);	
+				Real pressureL = hydro->cells(indexL).second.pressure;
+				Real pressureR = hydro->cells(indexR).second.pressure;
+				Real dx = hydro->cells(indexR).second.x(side) - hydro->cells(indexL).second.x(side);	
 			
 				(cell.*dq_dt)(rank+1) -= (pressureR * uR - pressureL * uL) / dx;
 			}
