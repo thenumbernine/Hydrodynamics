@@ -43,6 +43,7 @@ public:
 	double noise;
 	double fixedDT;
 	double gamma;
+	
 	std::vector<double> externalForce;	//relies on dim ... hmm ... reason to use config file over arguments?
 	std::string precision;
 	std::string boundaryMethodName;
@@ -51,6 +52,7 @@ public:
 	std::string explicitMethodName;
 	std::string fluxMethodName;
 	std::string initialConditionsName;
+	
 	HydroArgs() 
 	: dim(2)
 	, size(256)
@@ -82,6 +84,39 @@ public:
 
 	virtual int main(int argc, char **argv) {
 		for (int i = 0; i < argc; ++i) {
+			if (!strcmp(argv[i], "--help")) {
+				std::cout << "usage: hydro <args>" << std::endl;
+				std::cout << "args:" << std::endl;
+				std::cout << "  --equationOfState <equationOfState>" << std::endl;
+				std::cout << "    can be one of the following: (Euler)" << std::endl;
+				std::cout << "  --initialConditions <initialConditions>" << std::endl;
+				std::cout << "    can be one of the following:" << std::endl;
+				std::cout << "      for Euler equation of state:" << std::endl;
+				std::cout << "        (Sod) Sedov Advect Wave KelvinHemholtz RayleighTaylor" << std::endl;
+				std::cout << "  --boundaryMethod <boundaryMethod>" << std::endl;
+				std::cout << "    can be one of the following: (Mirror) Peroiod" << std::endl;
+				std::cout << "  --solver <solver>" << std::endl;
+				std::cout << "    can be one of the following:" << std::endl;
+				std::cout << "    for Euler equation of state: Burgers Godunov (Roe)" << std::endl;
+				std::cout << "  --explicitMethod <explicitMethod>" << std::endl;
+				std::cout << "    can be one of the following:" << std::endl;
+				std::cout << "      ForwardEuler RungeKutta2 (RungeKutta4) IterativeCrankNicolson3" << std::endl;
+				std::cout << "  --fluxMethod <fluxMethod>" << std::endl;
+				std::cout << "    can be one of the following:" << std::endl;
+				std::cout << "      DonorCell LaxWendroff BeamWarming Fromm CHARM HCUS HQUICK Koren MinMod" << std::endl;
+				std::cout << "      Oshker Ospre Smart Sweby UMIST VanAlbada1 VanAlbada2 VanLeer" << std::endl;
+				std::cout << "      MonotonizedCentral (Superbee) BarthJespersen" << std::endl;
+				std::cout << "  --dim <dim>" << std::endl;
+				std::cout << "    the dimension, can be 1, 2, or 3.  default " << args.dim << std::endl;
+				std::cout << "  --size <size1> <size2> ... <sizeN>" << std::endl;
+				std::cout << "    the grid size, for N = the dimension of the grid.  default " << args.size << std::endl;
+				std::cout << "  --useCFL <true|false> = whether to use CFL or a fixed timestep.  default " << args.useCFL << std::endl;
+				std::cout << "  --cfl <CFL> = the CFL number.  default" << args.cfl << std::endl;
+				std::cout << "  --fixedDT <dt> = the fixed timestep. default " << args.fixedDT << std::endl;
+				std::cout << "  --noise <noise> = noise amplitude to apply to initial velocity.  default " << args.noise << std::endl;
+				std::cout << "  --precision <precision> = precision: single double.  default: " << args.precision << std::endl;
+				return 1;
+			}
 			if (i < argc-1) {
 				if (!strcmp(argv[i], "--initialConditions")) {
 					args.initialConditionsName = argv[++i];
