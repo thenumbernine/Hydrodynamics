@@ -301,7 +301,6 @@ public:
 			const int width = 256;
 			unsigned char data[width*3];
 			for (int i = 0; i < width; ++i) {
-				::Vector<float,3> c;
 				float f = (float)i / (float)width * (float)numberof(colors);
 				int ci = (int)f;
 				float s = f - (float)ci;

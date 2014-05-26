@@ -126,7 +126,10 @@ struct HydroPlot<1> {
 
 	static void resize(int width, int height) {
 		float aspectRatio = (float)width / (float)height;
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
 		glOrtho(-aspectRatio, aspectRatio, -1., 3., -1., 1.);
+		glMatrixMode(GL_MODELVIEW);
 	}
 
 	void pan(int dx, int dy) {
@@ -174,7 +177,10 @@ struct HydroPlot<2> {
 
 	static void resize(int width, int height) {
 		float aspectRatio = (float)width / (float)height;
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
 		glOrtho(-aspectRatio, aspectRatio, -1., 1., -1., 1.);
+		glMatrixMode(GL_MODELVIEW);
 	}
 
 	void pan(int dx, int dy) {
