@@ -15,7 +15,7 @@
 
 #include "Common/Exception.h"
 
-#include "Profile.h"
+#include "Profiler/Profiler.h"
 
 #include "Hydro/Hydro.h"
 

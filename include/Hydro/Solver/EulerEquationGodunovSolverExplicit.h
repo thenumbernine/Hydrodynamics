@@ -97,7 +97,6 @@ void EulerEquationGodunovSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 
 					//compute eigenvectors and values at the interface based on averages
 					hydro->equationOfState->buildEigenstate(
-						interface(side).jacobian,
 						interface(side).eigenvalues, 
 						interface(side).eigenvectors, 
 						interface(side).eigenvectorsInverse, 
@@ -115,7 +114,6 @@ void EulerEquationGodunovSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 					for (int i = 0; i < numberOfStates; ++i) {
 						interface(side).eigenvalues(i) = Real(0);
 						for (int j = 0; j < numberOfStates; ++j) {
-							interface(side).jacobian(i,j) = Real(0);
 							interface(side).eigenvectors(i,j) = Real(i == j);
 							interface(side).eigenvectorsInverse(i,j) = Real(i == j);
 						}

@@ -102,7 +102,6 @@ void EulerEquationRoeSolverExplicit<Hydro>::initStep(IHydro *ihydro) {
 
 					//compute eigenvectors and values at the interface based on averages
 					hydro->equationOfState->buildEigenstate(
-						interface(side).jacobian,
 						interface(side).eigenvalues, 
 						interface(side).eigenvectors, 
 						interface(side).eigenvectorsInverse, 

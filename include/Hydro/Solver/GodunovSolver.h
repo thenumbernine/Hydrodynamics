@@ -197,15 +197,13 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 					
 					Real dx = interface(side).x(side) - hydro->cells(indexL).second.interfaces(side).x(side);
 
-					//simplification: rather than E * L * E^-1 * q, just do A * q for A the original matrix
-					//...and use that on the flux L & R avg (which doesn't get scaled in eigenvector basis space
-					StateVector fluxAvg;
+					StateVector fluxTildeAvg;
 					for (int state = 0; state < numberOfStates; ++state) {
-						Real sum = Real(0);
+						Real sum = Real();
 						for (int k = 0; k < numberOfStates; ++k) {
-							sum += interface(side).jacobian(state, k) * interface(side).stateMid(k);
+							sum += interface(side).eigenvectorsInverse(state, k) * interface(side).stateMid(k);
 						}
-						fluxAvg(state) = sum;
+						fluxTildeAvg(state) = sum * interface(side).eigenvalues(state);
 					}
 
 					//calculate flux
@@ -222,12 +220,12 @@ void GodunovSolver<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Ce
 						Real phi = (*hydro->fluxMethod)(interface(side).rTilde(state));
 						Real epsilon = eigenvalue * dt / dx;
 						Real deltaFluxTilde = eigenvalue * interface(side).deltaStateTilde(state);
-						fluxTilde(state) = -.5 * deltaFluxTilde * (theta + phi * (epsilon - theta));
+						fluxTilde(state) = fluxTildeAvg(state) - .5 * deltaFluxTilde * (theta + phi * (epsilon - theta));
 					}
 				
 					//reproject fluxTilde back into q
 					for (int state = 0; state < numberOfStates; ++state) {
-						Real sum = fluxAvg(state);
+						Real sum = Real(0);
 						for (int k = 0; k < numberOfStates; ++k) {
 							sum += interface(side).eigenvectors(state, k) * fluxTilde(k);
 						}

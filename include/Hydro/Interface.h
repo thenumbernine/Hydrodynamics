@@ -26,7 +26,6 @@ struct Interface {
 	{
 		for (int i = 0; i < numberOfStates; ++i) {
 			for (int j = 0; j < numberOfStates; ++j) {
-				jacobian(i,j) = i == j;
 				eigenvectors(i,j) = i == j;
 				eigenvectorsInverse(i,j) = i == j;
 			}
@@ -45,7 +44,6 @@ struct Interface {
 
 	//used for Godunov
 	StateVector stateMid;
-	StateMatrix jacobian;
 	StateVector eigenvalues;
 	StateMatrix eigenvectors;
 	StateInverseMatrix eigenvectorsInverse;

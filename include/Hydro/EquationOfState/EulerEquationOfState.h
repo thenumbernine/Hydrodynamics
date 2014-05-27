@@ -35,7 +35,6 @@ struct EulerEquationOfState : public EquationOfState<Real, rank_> {
 	StateVector getPrimitives(StateVector state);
 
 	void buildEigenstate(
-		StateMatrix &jacobian,
 		StateVector &eigenvalues,
 		StateMatrix &eigenvectors,
 		StateInverseMatrix &eigenvectorsInverse,
@@ -252,7 +251,6 @@ struct InverseGaussJordan {
 
 template<typename Real, int rank>
 void EulerEquationOfState<Real, rank>::buildEigenstate(
-	StateMatrix &jacobian,
 	StateVector &eigenvalues,
 	StateMatrix &eigenvectors,
 	StateInverseMatrix &eigenvectorsInverse,
@@ -327,46 +325,6 @@ void EulerEquationOfState<Real, rank>::buildEigenstate(
 		//eigenvectorsInverse = If<rank == 1, InverseCramer<StateInverseMatrix, StateMatrix>, InverseGaussJordan<StateInverseMatrix, StateMatrix> >::Type::go(eigenvectors);
 		eigenvectorsInverse = InverseGaussJordan<StateInverseMatrix, StateMatrix>::go(eigenvectors);
 
-#if 0
-		//reconstruct jacobian
-		// is it me or does it look smoother when I reconstruct the jacobian from the inverse?
-		for (int i = 0; i < numberOfStates; ++i) {
-			for (int j = 0; j < numberOfStates; ++j) {
-				Real sum = Real(0);
-				for (int k = 0; k < numberOfStates; ++k) {
-					sum += eigenvectors(i,k) * eigenvalues(k) * eigenvectorsInverse(k,j);
-				}
-				jacobian(i,j) = sum;
-			}
-		}
-#endif
-#if 1	//analytically compute flux
-		//flux derivative
-		Real d_drho_pressure = .5 * (gamma - 1.) * velocitySq;
-		Vector grad_pressure = velocity * (1. - gamma);
-
-		//gradient of density
-		jacobian(0,0) = 0;
-		for (int k = 0; k < rank; ++k) {
-			jacobian(0,k+1) = normal(k);
-		}
-		jacobian(0,rank+1) = 0;
-		//gradient of momentum
-		for (int j = 0; j < rank; ++j) {
-			jacobian(j+1,0) = -velocityAlongNormal * velocity(j) + normal(j) * d_drho_pressure;
-			for (int k = 0; k < rank; ++k) {
-				jacobian(j+1,k+1) = (normal(k) * velocity(j) + (j == k) * velocityAlongNormal);
-				if (j == k) jacobian(j+1,k+1) += grad_pressure(k); 
-			}
-			jacobian(j+1,rank+1) = normal(j) * (gamma - 1.);
-		}
-		//gradient of energy total
-		jacobian(rank+1,0) = -velocityAlongNormal * (gamma * energyTotal + (1. - gamma) * velocitySq);
-		for (int k = 0; k < rank; ++k) {
-			jacobian(rank+1,k+1) = normal(k) * enthalpyTotal - (gamma - 1.) * velocityAlongNormal * velocity(k);
-		}
-		jacobian(rank+1,rank+1) = velocityAlongNormal * gamma;
-#endif
 	} else 
 #endif
 	if (rank == 2) {
@@ -417,43 +375,7 @@ void EulerEquationOfState<Real, rank>::buildEigenstate(
 		eigenvectorsInverse = If<rank == 1, InverseCramer<StateInverseMatrix, StateMatrix>, InverseGaussJordan<StateInverseMatrix, StateMatrix> >::Type::go(eigenvectors);
 #endif
 
-		//reconstruct jacobian
-		for (int i = 0; i < numberOfStates; ++i) {
-			for (int j = 0; j < numberOfStates; ++j) {
-				Real sum = Real(0);
-				for (int k = 0; k < numberOfStates; ++k) {
-					sum += eigenvectors(i,k) * eigenvalues(k) * eigenvectorsInverse(k,j);
-				}
-				jacobian(i,j) = sum;
-			}
-		}
 	} else {
-		//flux derivative
-		Real d_drho_pressure = .5 * (gamma - 1.) * velocitySq;
-		Vector grad_pressure = velocity * (1. - gamma);
-
-		//gradient of density
-		jacobian(0,0) = 0;
-		for (int k = 0; k < rank; ++k) {
-			jacobian(0,k+1) = normal(k);
-		}
-		jacobian(0,rank+1) = 0;
-		//gradient of momentum
-		for (int j = 0; j < rank; ++j) {
-			jacobian(j+1,0) = -velocityAlongNormal * velocity(j) + normal(j) * d_drho_pressure;
-			for (int k = 0; k < rank; ++k) {
-				jacobian(j+1,k+1) = (normal(k) * velocity(j) + (j == k) * velocityAlongNormal);
-				if (j == k) jacobian(j+1,k+1) += grad_pressure(k); 
-			}
-			jacobian(j+1,rank+1) = normal(j) * (gamma - 1.);
-		}
-		//gradient of energy total
-		jacobian(rank+1,0) = -velocityAlongNormal * (gamma * energyTotal + (1. - gamma) * velocitySq);
-		for (int k = 0; k < rank; ++k) {
-			jacobian(rank+1,k+1) = normal(k) * enthalpyTotal - (gamma - 1.) * velocityAlongNormal * velocity(k);
-		}
-		jacobian(rank+1,rank+1) = velocityAlongNormal * gamma;
-
 		//eigenvalues: min, mid, max
 		
 		eigenvalues(0) = velocityAlongNormal - speedOfSound;
@@ -494,17 +416,6 @@ void EulerEquationOfState<Real, rank>::buildEigenstate(
 		
 		//calculate eigenvector inverses numerically ... 
 		eigenvectorsInverse = If<rank == 1, InverseCramer<StateInverseMatrix, StateMatrix>, InverseGaussJordan<StateInverseMatrix, StateMatrix> >::Type::go(eigenvectors);
-		
-		//reconstruct jacobian
-		for (int i = 0; i < numberOfStates; ++i) {
-			for (int j = 0; j < numberOfStates; ++j) {
-				Real sum = Real(0);
-				for (int k = 0; k < numberOfStates; ++k) {
-					sum += eigenvectors(i,k) * eigenvalues(k) * eigenvectorsInverse(k,j);
-				}
-				jacobian(i,j) = sum;
-			}
-		}
 	}
 }
 
