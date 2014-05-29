@@ -22,6 +22,7 @@
 #include <math.h>
 #include <iostream>
 #include <string>
+#include <vector>
 
 class HydroArgs {
 public:
@@ -373,10 +374,6 @@ public:
 			ihydro->draw();
 		}	
 		PROFILE_END_FRAME()
-	}
-
-	virtual void shutdown() {
-		PROFILE_DONE()
 	}
 
 	virtual void sdlEvent(SDL_Event &event) {
