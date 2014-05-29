@@ -3,9 +3,6 @@
 #include "TensorMath/Tensor.h"
 #include "Hydro/Interface.h"
 
-template<typename Real, int rank, int numberOfStates>
-struct Interface;
-
 //cell-centered values
 template<typename Real_, int rank, int numberOfStates_>
 struct Cell {

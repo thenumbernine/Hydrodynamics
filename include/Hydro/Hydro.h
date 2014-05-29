@@ -1,231 +1,29 @@
 #pragma once
 
+#include "Hydro/IHydro.h"
+#include "Hydro/Plot.h"
 #include "Hydro/Cell.h"
 #include "Hydro/Interface.h"
-#include "Hydro/ISolver.h"
+#include "Hydro/Solver/ISolver.h"
+#include "Hydro/Explicit/Explicit.h"
+#include "Hydro/Boundary/Boundary.h"
+#include "Hydro/Limiter.h"
 #include "TensorMath/Grid.h"
 #include "TensorMath/Vector.h"
-#include "Quat.h"
 #include "Parallel.h"
 
-#include <OpenGL/gl.h>
-
-
-template<int rank>
-struct HydroPlot {
-	Quat viewAngle;
-	float dist;
-
-	HydroPlot() : dist(2.) {}
-
-	template<typename Hydro>
-	void draw(Hydro &hydro) {
-		typedef typename Hydro::CellGrid CellGrid;
-		typedef typename Hydro::Cell Cell;
-		typedef typename Hydro::StateVector StateVector;
-		typedef typename Hydro::IVector IVector;
-		typedef typename Hydro::Real Real;
-		
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		glTranslatef(0,0,-dist);
-		Quat angleAxis = viewAngle.toAngleAxis();
-		glRotatef(angleAxis(3) * 180. / M_PI, angleAxis(0), angleAxis(1), angleAxis(2));
-		
-		glEnable(GL_TEXTURE_1D);
-		glDisable(GL_DEPTH_TEST);
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_ONE, GL_ONE);
-		glBegin(GL_POINTS);
-		std::for_each(hydro.cells.begin(), hydro.cells.end(), [&](typename CellGrid::value_type &v) {
-			IVector index = v.first;
-			Cell &cell = v.second;
-			bool edge = false;
-			for (int side = 0; side < rank; ++side) {
-				if (index(side) < hydro.nghost-1 || index(side) >= hydro.size(side) - hydro.nghost) {
-					edge = true;
-					break;
-				}
-			}
-			if (!edge) {
-				//color by state value, neglect height or use it for coordinates
-				glTexCoord1f(2. * cell.state(0));	//color by density
-				glVertex3d(cell.x(0), cell.x(1), cell.x(2));
-			}
-		});
-		glEnd();
-		glDisable(GL_TEXTURE_1D);
-	}
-
-	static void resize(int width, int height) {
-		const float zNear = .01;
-		const float zFar = 10;
-		float aspectRatio = (float)width / (float)height;
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glFrustum(-aspectRatio * zNear, aspectRatio * zNear, -zNear, zNear, zNear, zFar);
-	}
-
-	void pan(int dx, int dy) {
-		float magn = sqrt(dx * dx + dy * dy);
-		float fdx = (float)dx / magn;
-		float fdy = (float)dy / magn;
-		Quat rotation = Quat(fdy, fdx, 0, magn * M_PI / 180.).fromAngleAxis();
-		viewAngle = rotation * viewAngle;
-		viewAngle /= Quat::length(viewAngle);
-	}
-
-	void zoom(int dz) {
-		dist *= (float)exp((float)dz * -.03f);
-	}
-};
-
-//1D case
-template<>
-struct HydroPlot<1> {
-	template<typename Hydro>
-	void draw(Hydro &hydro) {
-		typedef typename Hydro::CellGrid CellGrid;
-		typedef typename Hydro::Cell Cell;
-		typedef typename Hydro::StateVector StateVector;
-		typedef typename Hydro::IVector IVector;
-#if 0	//show piecewise step functions - in anticipation of getting PPM method working	
-		for (int state = 0; state < 3; ++state) {
-			::Vector<float,3> color;
-			color(state) = 1;
-			glColor3fv(color.v);
-			for (int i = 0; i < hydro.size(0); ++i) {
-				Cell &cell = hydro.cells(IVector(i));
-				StateVector primitivesLeft = hydro.equationOfState->getPrimitives(cell.stateLeft(0));
-				StateVector primitives = hydro.equationOfState->getPrimitives(cell.state);
-				StateVector primitivesRight = hydro.equationOfState->getPrimitives(cell.stateRight(0));
-				glBegin(GL_LINE_STRIP);
-				glVertex2d(cell.interfaces(0).x(0), primitivesLeft(state));
-				glVertex2d(cell.x(0), primitives(state));
-				glVertex2d(hydro.cells(i+1).second.interfaces(0).x(0), primitivesRight(state));
-				glEnd();
-			}
-		}
-#endif
-#if 1	//good ol fashioned graph
-		for (int state = 0; state < 3; ++state) {
-			::Vector<float,3> color;
-			color(state) = 1;
-			glColor3fv(color.v);
-			glBegin(GL_LINE_STRIP);
-			std::for_each(hydro.cells.begin(), hydro.cells.end(), [&](typename CellGrid::value_type &v) {
-				Cell &cell = v.second;
-				StateVector primitives = hydro.equationOfState->getPrimitives(cell.state);
-				glVertex2d(cell.x(0), primitives(state));
-			});
-			glEnd();
-		}
-
-#endif
-	}
-
-	static void resize(int width, int height) {
-		float aspectRatio = (float)width / (float)height;
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glOrtho(-aspectRatio, aspectRatio, -1., 3., -1., 1.);
-		glMatrixMode(GL_MODELVIEW);
-	}
-
-	void pan(int dx, int dy) {
-	}
-	
-	void zoom(int dz) {}
-};
-
-//2D case
-template<>
-struct HydroPlot<2> {
-	::Vector<float, 2> viewPos;
-	float viewZoom;
-
-	HydroPlot() : viewZoom(1.) {}
-
-	template<typename Hydro>
-	void draw(Hydro &hydro) {
-		typedef typename Hydro::CellGrid CellGrid;
-		typedef typename Hydro::Cell Cell;
-		typedef typename Hydro::IVector IVector;
-		typedef typename Hydro::Real Real;
-		glPushMatrix();
-		glTranslatef(-viewPos(0), -viewPos(1), 0);
-		glScalef(viewZoom, viewZoom, viewZoom);
-		glEnable(GL_TEXTURE_1D);
-		for (int y = hydro.nghost-1; y < hydro.size(1)-1; ++y) {
-			glBegin(GL_TRIANGLE_STRIP);
-			for (int x = hydro.nghost-1; x < hydro.size(0); ++x) {
-			
-				for (int offset = 0; offset < 2; ++offset) {
-					int index = x + hydro.cells.size(0) * (y + offset);
-					Cell &cell = hydro.cells.v[index].second;
-
-					//color by state value, neglect height or use it for coordinates
-					glTexCoord1f(2. * cell.state(0));
-					glVertex2d(cell.x(0), cell.x(1));
-				}
-			}
-			glEnd();
-		}
-		glDisable(GL_TEXTURE_1D);
-		glPopMatrix();
-	}
-
-	static void resize(int width, int height) {
-		float aspectRatio = (float)width / (float)height;
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glOrtho(-aspectRatio, aspectRatio, -1., 1., -1., 1.);
-		glMatrixMode(GL_MODELVIEW);
-	}
-
-	void pan(int dx, int dy) {
-		viewPos(0) -= (float)dx * 0.01f;
-		viewPos(1) += (float)dy * 0.01f;
-	}
-	
-	void zoom(int dz) {
-		viewZoom *= exp((float)dz * -.03f); 
-	}
-};
-
-
-
-struct BoundaryMethod;
-
-template<typename Real>
-struct ISolver;
-
-template<typename Hydro>
-struct ExplicitMethod;
-
-template<typename Real>
-struct FluxMethod;
-
-struct IHydro {
-	virtual void update() = 0;
-	virtual void draw() = 0;
-	virtual void resize(int width, int height) = 0;
-	virtual void pan(int dx, int dy) = 0;
-	virtual void zoom(int dz) = 0;
-};
-
-template<typename EquationOfState_>
+template<typename EOS_>
 struct Hydro : public IHydro {
-	typedef EquationOfState_ EquationOfState;
+	typedef EOS_ EOS;
 	
-	typedef typename EquationOfState::Real Real;
-	enum { rank = EquationOfState::rank };
+	typedef typename EOS::Real Real;
+	enum { rank = EOS::rank };
 
-	typedef ISolver<Real> ISolver;
-	typedef ExplicitMethod<Hydro> ExplicitMethod;
-	typedef FluxMethod<Real> FluxMethod;
+	typedef ::Solver::ISolver<Real> ISolver;
+	typedef ::Explicit::Explicit<Hydro> Explicit;
+	typedef ::Limiter::Limiter<Real> Limiter;
 	
-	enum { numberOfStates = EquationOfState::numberOfStates };
+	enum { numberOfStates = EOS::numberOfStates };
 	typedef ::Cell<Real, rank, numberOfStates> Cell;
 	typedef ::Interface<Real, rank, numberOfStates> Interface;
 	
@@ -242,11 +40,11 @@ public:	//hydro args
 	Real gamma;
 	Vector externalForce;
 	Real minPotentialEnergy;
-	BoundaryMethod *boundaryMethod;
-	EquationOfState *equationOfState;
+	::Boundary::Boundary *boundaryMethod;
+	EOS *equationOfState;
 	ISolver *solver;
-	ExplicitMethod *explicitMethod;
-	FluxMethod *fluxMethod;
+	Explicit *explicitMethod;
+	Limiter *limiter;
 
 public:	//'til I can work out access
 	int nghost;
@@ -256,18 +54,18 @@ public:	//'til I can work out access
 	typedef ::Vector<Interface, rank> InterfaceVector;
 	CellGrid cells;
 
-	HydroPlot<rank> plot;
+	Plot<rank> plot;
 public:
 	Hydro(IVector size_,
 		bool useCFL_,
 		Real cfl_,
 		Real fixedDT_,
 		Real gamma_,
-		BoundaryMethod *boundaryMethod_,
-		EquationOfState *equationOfState_,
+		::Boundary::Boundary *boundaryMethod_,
+		EOS *equationOfState_,
 		ISolver *solver_,
-		ExplicitMethod *explicitMethod_,
-		FluxMethod *fluxMethod_);
+		Explicit *explicitMethod_,
+		Limiter *limiter_);
 	
 	void resetCoordinates(Vector xmin_, Vector xmax_);
 	void step(Real dt);
@@ -280,17 +78,17 @@ public:
 	virtual void zoom(int dz);
 };
 
-template<typename EquationOfState>
-Hydro<EquationOfState>::Hydro(IVector size_,
+template<typename EOS>
+Hydro<EOS>::Hydro(IVector size_,
 	bool useCFL_,
 	Real cfl_,
 	Real fixedDT_,
 	Real gamma_,
-	BoundaryMethod *boundaryMethod_,
-	EquationOfState *equationOfState_,
+	::Boundary::Boundary *boundaryMethod_,
+	EOS *equationOfState_,
 	ISolver *solver_,
-	ExplicitMethod *explicitMethod_,
-	FluxMethod *fluxMethod_)
+	Explicit *explicitMethod_,
+	Limiter *limiter_)
 : minPotentialEnergy(0)
 , nghost(2) 
 , cells(size_+1)
@@ -304,7 +102,7 @@ Hydro<EquationOfState>::Hydro(IVector size_,
 	equationOfState = equationOfState_;
 	solver = solver_;
 	explicitMethod = explicitMethod_;
-	fluxMethod = fluxMethod_;
+	limiter = limiter_;
 	
 	RangeObj<rank> range(IVector(), cells.size);
 	std::for_each(range.begin(), range.end(), [&](IVector index) {
@@ -315,8 +113,8 @@ Hydro<EquationOfState>::Hydro(IVector size_,
 	resetCoordinates(xmin, xmax);
 }
 
-template<typename EquationOfState>
-void Hydro<EquationOfState>::resetCoordinates(Vector xmin_, Vector xmax_) {
+template<typename EOS>
+void Hydro<EOS>::resetCoordinates(Vector xmin_, Vector xmax_) {
 	xmin = xmin_;
 	xmax = xmax_;
 
@@ -376,21 +174,21 @@ void Hydro<EquationOfState>::resetCoordinates(Vector xmin_, Vector xmax_) {
 	});
 }
 
-template<typename EquationOfState>
-void Hydro<EquationOfState>::boundary() {
+template<typename EOS>
+void Hydro<EOS>::boundary() {
 	PROFILE()
 	(*boundaryMethod)(this);
 }
 
-template<typename EquationOfState>
-void Hydro<EquationOfState>::step(Real dt) {
+template<typename EOS>
+void Hydro<EOS>::step(Real dt) {
 	PROFILE()
 	boundary();
 	solver->step(this, dt);
 }
 
-template<typename EquationOfState>
-void Hydro<EquationOfState>::update() {
+template<typename EOS>
+void Hydro<EOS>::update() {
 	PROFILE()
 
 	solver->initStep(this);
@@ -402,23 +200,23 @@ void Hydro<EquationOfState>::update() {
 	step(dt);
 }
 
-template<typename EquationOfState>
-void Hydro<EquationOfState>::resize(int width, int height) {
+template<typename EOS>
+void Hydro<EOS>::resize(int width, int height) {
 	plot.resize(width, height);
 }
 
-template<typename EquationOfState>
-void Hydro<EquationOfState>::pan(int dx, int dy) {
+template<typename EOS>
+void Hydro<EOS>::pan(int dx, int dy) {
 	plot.pan(dx, dy);
 }
 
-template<typename EquationOfState>
-void Hydro<EquationOfState>::zoom(int dz) {
+template<typename EOS>
+void Hydro<EOS>::zoom(int dz) {
 	plot.zoom(dz);
 }
 
-template<typename EquationOfState>
-void Hydro<EquationOfState>::draw() {
+template<typename EOS>
+void Hydro<EOS>::draw() {
 	PROFILE()
 	plot.template draw<Hydro>(*this);
 }

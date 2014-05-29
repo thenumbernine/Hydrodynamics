@@ -2,9 +2,6 @@
 
 #include "TensorMath/Tensor.h"
 
-template<typename Real, int rank, int numberOfStates>
-struct Cell;
-
 //cell interface values
 template<typename Real_, int rank, int numberOfStates>
 struct Interface {

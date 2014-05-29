@@ -1,11 +1,13 @@
 #pragma once
 
-#include "Hydro/ISolver.h"
+#include "Hydro/Solver/ISolver.h"
 #include "Hydro/Hydro.h"
+
+namespace Solver {
 
 //to provide common functionality to children:
 template<typename Hydro>
-struct Solver : public ISolver<typename Hydro::Real> {
+struct Solver : public ::Solver::ISolver<typename Hydro::Real> {
 	enum { rank = Hydro::rank };
 
 	typedef typename Hydro::Real Real;
@@ -63,4 +65,5 @@ void Solver<Hydro>::initStep(IHydro *ihydro) {
 	}
 }
 
+};
 
