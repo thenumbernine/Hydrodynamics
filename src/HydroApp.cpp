@@ -1,38 +1,27 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
-
-#include <iostream>
-#include <string>
-
-#include <OpenGL/gl.h>
-#include <SDL2/SDL.h>
-
-#define numberof(x) (sizeof(x)/sizeof((x)[0]))
-#define crand()	((double)rand()/(double)RAND_MAX)
-#include "GLApp/GLApp.h" 
-
-#include "Common/Exception.h"
-
-#include "Profiler/Profiler.h"
-
+#include "Profiler/Profiler.h"	//placed at the top so everyone can use it without including it because I am lazy like that
+#include "Common/Macros.h"		//similar laziness
 #include "Hydro/Hydro.h"
-
 #include "Hydro/EquationOfState/EulerEquationOfState.h"
-
 #include "Hydro/BoundaryMethod/MirrorBoundaryMethod.h"
 #include "Hydro/BoundaryMethod/PeriodicBoundaryMethod.h"
 //TODO get these working for all dimensions
 //#include "Hydro/BoundaryMethod/ConstantBoundaryMethod.h"
 //#include "Hydro/BoundaryMethod/FreeFlowBoundaryMethod.h"
-
 #include "Hydro/ExplicitMethod/ForwardEulerExplicitMethod.h"
 #include "Hydro/ExplicitMethod/RungeKutta2ExplicitMethod.h"
 #include "Hydro/ExplicitMethod/RungeKutta4ExplicitMethod.h"
 #include "Hydro/ExplicitMethod/IterativeCrankNicolson3ExplicitMethod.h"
-
 #include "Hydro/FluxMethod.h"
+#include "GLApp/GLApp.h" 
+#include "Common/Exception.h"
+#include <OpenGL/gl.h>
+#include <SDL2/SDL.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+#include <iostream>
+#include <string>
 
 class HydroArgs {
 public:
