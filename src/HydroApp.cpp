@@ -64,11 +64,11 @@ public:
 
 struct HydroApp : public GLApp {
 	IHydro *ihydro;
-	HydroArgs args;
+	HydroArgs hydroArgs;
 
 	HydroApp();
 	
-	virtual int main(int argc, char **argv);
+	virtual int main(std::vector<std::string> args);
 
 	template<typename Real, int rank, typename EOS>
 	void initType();
@@ -91,11 +91,11 @@ HydroApp::HydroApp()
 , ihydro(NULL)
 {}
 
-int HydroApp::main(int argc, char **argv) {
+int HydroApp::main(std::vector<std::string> args) {
 	bool setSize = false;
 	bool setExternalForce = false;
-	for (int i = 0; i < argc; ++i) {
-		if (!strcmp(argv[i], "--help")) {
+	for (int i = 0; i < args.size(); ++i) {
+		if (args[i] ==  "--help") {
 			std::cout << "usage: hydro <args>" << std::endl;
 			std::cout << "args:" << std::endl;
 			std::cout << "  --equationOfState <equationOfState>" << std::endl;
@@ -118,68 +118,68 @@ int HydroApp::main(int argc, char **argv) {
 			std::cout << "      Oshker Ospre Smart Sweby UMIST VanAlbada1 VanAlbada2 VanLeer" << std::endl;
 			std::cout << "      MonotonizedCentral (Superbee) BarthJespersen" << std::endl;
 			std::cout << "  --dim <dim>" << std::endl;
-			std::cout << "    the dimension, can be 1, 2, or 3.  default " << args.dim << std::endl;
+			std::cout << "    the dimension, can be 1, 2, or 3.  default " << hydroArgs.dim << std::endl;
 			std::cout << "  --size <size1> <size2> ... <sizeN>" << std::endl;
 			std::cout << "    the grid size, for N = the dimension of the grid.  default ";
 			const char *comma = "";
-			std::for_each(args.size.begin(), args.size.end(), [&](int i) { std::cout << comma << i; comma = ", "; }); 
+			std::for_each(hydroArgs.size.begin(), hydroArgs.size.end(), [&](int i) { std::cout << comma << i; comma = ", "; }); 
 			std::cout << std::endl;
-			std::cout << "  --useCFL <true|false> = whether to use CFL or a fixed timestep.  default " << args.useCFL << std::endl;
-			std::cout << "  --cfl <CFL> = the CFL number.  default" << args.cfl << std::endl;
-			std::cout << "  --fixedDT <dt> = the fixed timestep. default " << args.fixedDT << std::endl;
-			std::cout << "  --noise <noise> = noise amplitude to apply to initial velocity.  default " << args.noise << std::endl;
-			std::cout << "  --precision <precision> = precision: single double.  default: " << args.precision << std::endl;
+			std::cout << "  --useCFL <true|false> = whether to use CFL or a fixed timestep.  default " << hydroArgs.useCFL << std::endl;
+			std::cout << "  --cfl <CFL> = the CFL number.  default" << hydroArgs.cfl << std::endl;
+			std::cout << "  --fixedDT <dt> = the fixed timestep. default " << hydroArgs.fixedDT << std::endl;
+			std::cout << "  --noise <noise> = noise amplitude to apply to initial velocity.  default " << hydroArgs.noise << std::endl;
+			std::cout << "  --precision <precision> = precision: single double.  default: " << hydroArgs.precision << std::endl;
 			return 1;
 		}
-		if (i < argc-1) {
-			if (!strcmp(argv[i], "--initialConditions")) {
-				args.initialConditionsName = argv[++i];
-			} else if (!strcmp(argv[i], "--boundary")) {
-				args.boundaryName = argv[++i];
-			} else if (!strcmp(argv[i], "--equationOfState")) {
-				args.equationOfStateName = argv[++i];
-			} else if (!strcmp(argv[i], "--solver")) {
-				args.solverName = argv[++i];
-			} else if (!strcmp(argv[i], "--explicit")) {
-				args.explicitName = argv[++i];
-			} else if (!strcmp(argv[i], "--limiter")) {
-				args.limiterName = argv[++i];
-			} else if (!strcmp(argv[i], "--size")) {
+		if (i < args.size()-1) {
+			if (args[i] == "--initialConditions") {
+				hydroArgs.initialConditionsName = args[++i];
+			} else if (args[i] == "--boundary") {
+				hydroArgs.boundaryName = args[++i];
+			} else if (args[i] == "--equationOfState") {
+				hydroArgs.equationOfStateName = args[++i];
+			} else if (args[i] == "--solver") {
+				hydroArgs.solverName = args[++i];
+			} else if (args[i] == "--explicit") {
+				hydroArgs.explicitName = args[++i];
+			} else if (args[i] == "--limiter") {
+				hydroArgs.limiterName = args[++i];
+			} else if (args[i] == "--size") {
 				setSize = true;
-				args.size.resize(args.dim);
-				for (int k = 0; k < args.dim; ++k) {
-					args.size[k] = atoi(argv[++i]);
+				hydroArgs.size.resize(hydroArgs.dim);
+				for (int k = 0; k < hydroArgs.dim; ++k) {
+					hydroArgs.size[k] = std::stoi(args[++i]);
 				}
-			} else if (!strcmp(argv[i], "--useCFL")) {
-				args.useCFL = !strcmp(argv[++i], "true") ? true : false;
-			} else if (!strcmp(argv[i], "--cfl")) {
-				args.cfl = atof(argv[++i]);
-			} else if (!strcmp(argv[i], "--noise")) {
-				args.noise = atof(argv[++i]);
-			} else if (!strcmp(argv[i], "--fixedDT")) {
-				args.fixedDT = atof(argv[++i]);
-			} else if (!strcmp(argv[i], "--gamma")) {
-				args.gamma = atof(argv[++i]);
-			} else if (!strcmp(argv[i], "--dim")) {
+			} else if (args[i] == "--useCFL") {
+				hydroArgs.useCFL = args[++i] == "true" ? true : false;
+			} else if (args[i] == "--cfl") {
+				hydroArgs.cfl = std::stof(args[++i]);
+			} else if (args[i] == "--noise") {
+				hydroArgs.noise = std::stof(args[++i]);
+			} else if (args[i] == "--fixedDT") {
+				hydroArgs.fixedDT = std::stof(args[++i]);
+			} else if (args[i] == "--gamma") {
+				hydroArgs.gamma = std::stof(args[++i]);
+			} else if (args[i] == "--dim") {
 				if (setSize) throw Exception() << "you must set dim before you set size";
 				if (setExternalForce) throw Exception() << "you must set dim before you set externalForce";
-				args.dim = atoi(argv[++i]);
-			} else if (!strcmp(argv[i], "--precision")) {
-				args.precision = argv[++i];
+				hydroArgs.dim = std::stoi(args[++i]);
+			} else if (args[i] == "--precision") {
+				hydroArgs.precision = args[++i];
 			}
 		}
-		if (i < argc-args.dim) {	//dim must be set first
-			if (!strcmp(argv[i], "--externalForce")) {
+		if (i < args.size()-hydroArgs.dim) {	//dim must be set first
+			if (args[i] == "--externalForce") {
 				setExternalForce = true;
-				args.externalForce.resize(args.dim);
-				for (int k = 0; k < args.dim; ++k) {
-					args.externalForce[k] = atof(argv[++i]);
+				hydroArgs.externalForce.resize(hydroArgs.dim);
+				for (int k = 0; k < hydroArgs.dim; ++k) {
+					hydroArgs.externalForce[k] = std::stof(args[++i]);
 				}
 			}
 		}
 	}
 
-	return GLApp::main(argc, argv);
+	return GLApp::main(args);
 }
 
 template<typename Real, int rank, typename EOS>
@@ -192,102 +192,102 @@ void HydroApp::initType() {
 	EOS *equationOfState = new EOS();
 
 	//these are eos-specific
-	::InitialConditions::InitialConditions<Real, rank> *initialConditions = equationOfState->initialConditions.create(args.initialConditionsName);
-	ISolver *solver = equationOfState->solvers.create(args.solverName);
+	::InitialConditions::InitialConditions<Real, rank> *initialConditions = equationOfState->initialConditions.create(hydroArgs.initialConditionsName);
+	ISolver *solver = equationOfState->solvers.create(hydroArgs.solverName);
 
 	::Boundary::Boundary *boundary = NULL;
-	if (args.boundaryName =="Mirror") {
+	if (hydroArgs.boundaryName =="Mirror") {
 		boundary = new ::Boundary::Mirror<Hydro>();
-	} else if (args.boundaryName == "Periodic") {
+	} else if (hydroArgs.boundaryName == "Periodic") {
 		boundary = new ::Boundary::Periodic<Hydro>();
 #if 0
-	} else if (args.boundaryName =="Constant") {
+	} else if (hydroArgs.boundaryName =="Constant") {
 		boundary = new ::Boundary::Constant<Hydro>();
-	} else if (args.boundaryName =="FreeFlow") {
+	} else if (hydroArgs.boundaryName =="FreeFlow") {
 		boundary = new ::Boundary::FreeFlow<Hydro>();
 #endif
 	} else {
-		throw Exception() << "unknown boundary method " << args.boundaryName;
+		throw Exception() << "unknown boundary method " << hydroArgs.boundaryName;
 	}
 
 	Explicit *explicitMethod = NULL;
-	if (args.explicitName == "ForwardEuler") {
+	if (hydroArgs.explicitName == "ForwardEuler") {
 		explicitMethod = new ::Explicit::ForwardEuler<Hydro>();
-	} else if (args.explicitName == "RungeKutta2") {
+	} else if (hydroArgs.explicitName == "RungeKutta2") {
 		explicitMethod = new ::Explicit::RungeKutta2<Hydro>();
-	} else if (args.explicitName == "RungeKutta4") {
+	} else if (hydroArgs.explicitName == "RungeKutta4") {
 		explicitMethod = new ::Explicit::RungeKutta4<Hydro>();
-	} else if (args.explicitName == "IterativeCrankNicolson3") {
+	} else if (hydroArgs.explicitName == "IterativeCrankNicolson3") {
 		explicitMethod = new ::Explicit::IterativeCrankNicolson3<Hydro>();
 	} else {
-		throw Exception() << "unknown explicit method " << args.explicitName;
+		throw Exception() << "unknown explicit method " << hydroArgs.explicitName;
 	}
 
 	Limiter *limiter = NULL;
-	if (args.limiterName == "DonorCell") {
+	if (hydroArgs.limiterName == "DonorCell") {
 		limiter = new ::Limiter::DonorCell<Real>();
-	} else if (args.limiterName == "LaxWendroff") {
+	} else if (hydroArgs.limiterName == "LaxWendroff") {
 		limiter = new ::Limiter::LaxWendroff<Real>();
-	} else if (args.limiterName == "BeamWarming") {
+	} else if (hydroArgs.limiterName == "BeamWarming") {
 		limiter = new ::Limiter::BeamWarming<Real>();
-	} else if (args.limiterName == "Fromm") {
+	} else if (hydroArgs.limiterName == "Fromm") {
 		limiter = new ::Limiter::Fromm<Real>();
-	} else if (args.limiterName == "CHARM") {
+	} else if (hydroArgs.limiterName == "CHARM") {
 		limiter = new ::Limiter::CHARM<Real>();
-	} else if (args.limiterName == "HCUS") {
+	} else if (hydroArgs.limiterName == "HCUS") {
 		limiter = new ::Limiter::HCUS<Real>();
-	} else if (args.limiterName == "HQUICK") {
+	} else if (hydroArgs.limiterName == "HQUICK") {
 		limiter = new ::Limiter::HQUICK<Real>();
-	} else if (args.limiterName == "Koren") {
+	} else if (hydroArgs.limiterName == "Koren") {
 		limiter = new ::Limiter::Koren<Real>();
-	} else if (args.limiterName == "MinMod") {
+	} else if (hydroArgs.limiterName == "MinMod") {
 		limiter = new ::Limiter::MinMod<Real>();
-	} else if (args.limiterName == "Oshker") {
+	} else if (hydroArgs.limiterName == "Oshker") {
 		limiter = new ::Limiter::Oshker<Real>();
-	} else if (args.limiterName == "Ospre") {
+	} else if (hydroArgs.limiterName == "Ospre") {
 		limiter = new ::Limiter::Ospre<Real>();
-	} else if (args.limiterName == "Smart") {
+	} else if (hydroArgs.limiterName == "Smart") {
 		limiter = new ::Limiter::Smart<Real>();
-	} else if (args.limiterName == "Sweby") {
+	} else if (hydroArgs.limiterName == "Sweby") {
 		limiter = new ::Limiter::Sweby<Real>();
-	} else if (args.limiterName == "UMIST") {
+	} else if (hydroArgs.limiterName == "UMIST") {
 		limiter = new ::Limiter::UMIST<Real>();
-	} else if (args.limiterName == "VanAlbada1") {
+	} else if (hydroArgs.limiterName == "VanAlbada1") {
 		limiter = new ::Limiter::VanAlbada1<Real>();
-	} else if (args.limiterName == "VanAlbada2") {
+	} else if (hydroArgs.limiterName == "VanAlbada2") {
 		limiter = new ::Limiter::VanAlbada2<Real>();
-	} else if (args.limiterName == "VanLeer") {
+	} else if (hydroArgs.limiterName == "VanLeer") {
 		limiter = new ::Limiter::VanLeer<Real>();
-	} else if (args.limiterName == "MonotonizedCentral") {
+	} else if (hydroArgs.limiterName == "MonotonizedCentral") {
 		limiter = new ::Limiter::MonotonizedCentral<Real>();
-	} else if (args.limiterName == "Superbee") {
+	} else if (hydroArgs.limiterName == "Superbee") {
 		limiter = new ::Limiter::Superbee<Real>();
-	} else if (args.limiterName == "BarthJespersen") {
+	} else if (hydroArgs.limiterName == "BarthJespersen") {
 		limiter = new ::Limiter::BarthJespersen<Real>();
 	} else {
-		throw Exception() << "unknown limiter " << args.limiterName;
+		throw Exception() << "unknown limiter " << hydroArgs.limiterName;
 	}
 
 	typedef typename Hydro::IVector IVector;
 	IVector sizev;
 	for (int i = 0; i < rank; ++i) {
-		sizev(i) = args.size[i];
+		sizev(i) = hydroArgs.size[i];
 	}
 
 	Hydro *hydro = new Hydro(
 		sizev,
-		args.useCFL,
-		args.cfl,
-		args.fixedDT,
-		args.gamma,
+		hydroArgs.useCFL,
+		hydroArgs.cfl,
+		hydroArgs.fixedDT,
+		hydroArgs.gamma,
 		boundary,
 		equationOfState,
 		solver,
 		explicitMethod,
 		limiter);
 	
-	for (int i = 0; i < rank && i < args.externalForce.size(); ++i) {
-		hydro->externalForce(i) = args.externalForce[i];
+	for (int i = 0; i < rank && i < hydroArgs.externalForce.size(); ++i) {
+		hydro->externalForce(i) = hydroArgs.externalForce[i];
 	}
 	ihydro = hydro;
 
@@ -317,26 +317,26 @@ std::cout << " min potential " << hydro->minPotentialEnergy << std::endl;
 	hydro->minPotentialEnergy = 0;//-hydro->minPotentialEnergy;
 	
 	//once min potential energy is determined, set up initial conditions
-	(*initialConditions)(ihydro, args.noise);
+	(*initialConditions)(ihydro, hydroArgs.noise);
 }
 
 template<typename Real, int rank>
 void HydroApp::initPrecision() {
-	if (args.equationOfStateName == "Euler") {
+	if (hydroArgs.equationOfStateName == "Euler") {
 		initType<Real, rank, ::EOS::Euler<Real, rank> >();
 	} else {
-		throw Exception() << "unknown equation of state " << args.equationOfStateName;
+		throw Exception() << "unknown equation of state " << hydroArgs.equationOfStateName;
 	}
 }
 
 template<int rank>
 void HydroApp::initSize() {
-	if (args.precision == "single") {
+	if (hydroArgs.precision == "single") {
 		initPrecision<float,rank>();
-	} else if (args.precision == "double") {
+	} else if (hydroArgs.precision == "double") {
 		initPrecision<double,rank>();
 	} else {
-		throw Exception() << "unknown precision " << args.precision;
+		throw Exception() << "unknown precision " << hydroArgs.precision;
 	}
 }
 
@@ -379,7 +379,7 @@ void HydroApp::init() {
 		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	}
 	
-	switch (args.dim) {
+	switch (hydroArgs.dim) {
 	case 1:
 		initSize<1>();
 		break;
@@ -390,7 +390,7 @@ void HydroApp::init() {
 		initSize<3>();
 		break;
 	default:
-		throw Exception() << "unknown dim " << args.dim;
+		throw Exception() << "unknown dim " << hydroArgs.dim;
 	}
 }
 
