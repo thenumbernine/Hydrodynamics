@@ -4,13 +4,14 @@ DIST_TYPE=app
 include ../GLApp/Makefile.mk
 
 # me trying to figure out if numerical inaccuracy compared to javascript version (which uses doubles) is due to build options
-#CFLAGS_BASE+= -I../GLApp/include -I../TensorMath/include -m32 -mfpmath=387 -mno-sse
-#LDFLAGS_BASE+= -m32
+#CFLAGS+= -I../GLApp/include -I../TensorMath/include -m32 -mfpmath=387 -mno-sse
+#LDFLAGS+= -m32
 # default:
-INCLUDE_BASE+=../GLApp/include
-INCLUDE_BASE+=../TensorMath/include
-INCLUDE_BASE+=../Profiler/include
-LDFLAGS_BASE+= -L../Profiler/dist/$(PLATFORM)/$(BUILD) -lProfiler
+INCLUDE+=../GLApp/include
+INCLUDE+=../TensorMath/include
+INCLUDE+=../Profiler/include
+LIBPATHS+=../Profiler/dist/$(PLATFORM)/$(BUILD)
+LIBS+=Profiler
 
 $(DIST):: $(OBJPATHS)
 	install_name_tool -change dist/$(PLATFORM)/$(BUILD)/libGLApp.dylib ../GLApp/dist/$(PLATFORM)/$(BUILD)/libGLApp.dylib $@
