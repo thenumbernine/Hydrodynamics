@@ -7,9 +7,9 @@ include ../GLApp/Makefile.mk
 #CFLAGS_BASE+= -I../GLApp/include -I../TensorMath/include -m32 -mfpmath=387 -mno-sse
 #LDFLAGS_BASE+= -m32
 # default:
-CFLAGS_BASE+= -I../GLApp/include
-CFLAGS_BASE+= -I../TensorMath/include
-CFLAGS_BASE+= -I../Profiler/include
+INCLUDE_BASE+=../GLApp/include
+INCLUDE_BASE+=../TensorMath/include
+INCLUDE_BASE+=../Profiler/include
 LDFLAGS_BASE+= -L../Profiler/dist/$(PLATFORM)/$(BUILD) -lProfiler
 
 $(DIST):: $(OBJPATHS)
