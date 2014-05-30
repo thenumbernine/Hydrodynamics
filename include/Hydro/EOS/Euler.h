@@ -267,11 +267,9 @@ void Euler<Real, rank>::buildEigenstate(
 {
 	static_assert(rank >= 1 && rank <= 3, "only 1D-3D support at the moment");
 
-	Real speedOfSound = sqrt(pressure / density);
-
+	//common with Euler EOS
 	::Vector<Vector, rank-1> tangents;
 	BuildPerpendicularBasis<rank>::template go<Real>(normal, tangents);
-	
 	Real velocityAlongNormal = Real(0);
 	::Vector<Real, rank-1> velocityAlongTangents;
 	Real velocitySq = Real(0);
@@ -283,6 +281,8 @@ void Euler<Real, rank>::buildEigenstate(
 		}
 	}
 
+	Real speedOfSound = sqrt(pressure / density);
+	
 	eigenvalues(0) = velocityAlongNormal - speedOfSound;
 	for (int k = 0; k < rank; ++k) {
 		eigenvalues(k+1) = velocityAlongNormal;

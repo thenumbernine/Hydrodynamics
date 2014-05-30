@@ -37,7 +37,7 @@ void Wave<Hydro>::operator()(IHydro *ihydro, Real noise) {
 	for (int k = 0; k < rank; ++k) {
 		dgSq += dg(k) * dg(k);
 	}
-	Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+	parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		Cell &cell = v.second;
 		Vector x = cell.x;
 		Vector dx = x - xmid;
@@ -50,11 +50,11 @@ void Wave<Hydro>::operator()(IHydro *ihydro, Real noise) {
 		for (int k = 0; k < rank; ++k) {
 			velocity(k) += crand() * noise;
 		}
-		Real kineticSpecificEnergy = 0.;
+		Real velocitySq = Real();
 		for (int k = 0; k < rank; ++k) {
-			kineticSpecificEnergy += velocity(k) * velocity(k);
+			velocitySq += velocity(k) * velocity(k);
 		}
-		kineticSpecificEnergy *= .5;
+		Real kineticSpecificEnergy = .5 * velocitySq;
 		Real potentialSpecificEnergy = hydro->minPotentialEnergy;
 		for (int k = 0; k < rank; ++k) {
 			potentialSpecificEnergy += (x(k) - hydro->xmin(k)) * hydro->externalForce(k);

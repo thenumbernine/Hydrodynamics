@@ -35,7 +35,7 @@ void BrioWu<Hydro>::operator()(IHydro *ihydro, Real noise) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	hydro->gamma = 2.;
 	Vector xmid = hydro->xmin * .5 + hydro->xmax * .5;
-	Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+	parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		Cell &cell = v.second;
 		Vector x = cell.x;
 		bool lhs = true;
@@ -56,11 +56,19 @@ void BrioWu<Hydro>::operator()(IHydro *ihydro, Real noise) {
 		magnetism(1) = lhs ? -1. : -1.;
 
 		Real pressure = lhs ? 1. : .1;
-	
-		Real specificEnergyKinetic = .5 * Vector::dot(velocity, velocity);
+
+		Real velocitySq = Real();
+		for (int k = 0; k < rank; ++k) {
+			velocitySq += velocity(k) * velocity(k);
+		}
+		Real specificEnergyKinetic = .5 * velocitySq;
 		Real energyKinetic = specificEnergyKinetic * density;
 
-		Real energyMagnetic = .5 * Vector::dot(magnetism, magnetism);
+		Real magnetismSq = Real();
+		for (int k = 0; k < rank; ++k) {
+			magnetismSq += magnetism(k) * magnetism(k);
+		}
+		Real energyMagnetic = .5 * magnetismSq; 
 
 		Real pressureStar = pressure + energyMagnetic;
 

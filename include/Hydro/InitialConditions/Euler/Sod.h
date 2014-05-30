@@ -33,7 +33,7 @@ void Sod<Hydro>::operator()(IHydro *ihydro, Real noise) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	hydro->gamma = 1.4;
 	Vector xmid = hydro->xmin * .7 + hydro->xmax * .3;
-	Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+	parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		Cell &cell = v.second;
 		Vector x = cell.x;
 		bool lhs = true;
@@ -48,17 +48,17 @@ void Sod<Hydro>::operator()(IHydro *ihydro, Real noise) {
 		for (int k = 0; k < rank; ++k) {
 			velocity(k) += crand() * noise;
 		}
-		Real kineticSpecificEnergy = 0.;
+		Real velocitySq = Real();
 		for (int k = 0; k < rank; ++k) {
-			kineticSpecificEnergy += velocity(k) * velocity(k);
+			velocitySq += velocity(k) * velocity(k);
 		}
-		kineticSpecificEnergy *= .5;
-		Real energyPotential = hydro->minPotentialEnergy;
+		Real kineticSpecificEnergy = .5 * velocitySq;
+		Real potentialSpecificEnergy = hydro->minPotentialEnergy;
 		for (int k = 0; k < rank; ++k) {
-			energyPotential += (x(k) - hydro->xmin(k)) * hydro->externalForce(k);
+			potentialSpecificEnergy += (x(k) - hydro->xmin(k)) * hydro->externalForce(k);
 		}
 		Real internalSpecificEnergy = 1.;
-		Real totalSpecificEnergy = kineticSpecificEnergy + internalSpecificEnergy + energyPotential;
+		Real totalSpecificEnergy = kineticSpecificEnergy + internalSpecificEnergy + potentialSpecificEnergy;
 		//TODO some sort of rank-independent specifier
 		cell.state(0) = density;
 		for (int k = 0; k < rank; ++k) {

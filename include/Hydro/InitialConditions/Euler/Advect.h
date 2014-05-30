@@ -32,7 +32,7 @@ template<typename Hydro>
 void Advect<Hydro>::operator()(IHydro *ihydro, Real noise) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	Vector xmid = (hydro->xmin + hydro->xmax) * .5;
-	Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+	parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		Cell &cell = v.second;
 		Vector x = cell.x;
 		bool lhs = true;
@@ -51,7 +51,7 @@ void Advect<Hydro>::operator()(IHydro *ihydro, Real noise) {
 		for (int k = 0; k < rank; ++k) {
 			velocitySq += velocity(k) * velocity(k);
 		}
-		Real kineticSpecificEnergy = .5 * velocitySq; 
+		Real kineticSpecificEnergy = .5 * velocitySq;
 		Real pressure = 1.;
 		Real totalSpecificEnergy = pressure / (density * (hydro->gamma - 1.)) + kineticSpecificEnergy;
 		cell.state(0) = density;

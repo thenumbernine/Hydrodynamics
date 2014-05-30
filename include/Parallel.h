@@ -1,20 +1,19 @@
 #pragma once
 
-#include "TensorMath/Vector.h"
-
 #include <thread>
+#include <functional>
+#include <algorithm>
 
 template<int numThreads = 4>
 struct ParallelCount {
-
 	template<typename Iterator, typename Callback>
-	static void For(Iterator begin, Iterator end, Callback callback) {
+	void foreach(Iterator begin, Iterator end, Callback callback) {
 		int totalRange = end - begin;
 		std::thread threads[numThreads];
 		for (int i = 0; i < numThreads; ++i) {
 			int beginIndex = i * totalRange / numThreads;
 			int endIndex = (i + 1) * totalRange / numThreads;
-			threads[i] = std::thread([&,beginIndex,endIndex](){
+			threads[i] = std::thread([&,beginIndex,endIndex]() {
 				std::for_each(begin + beginIndex, begin + endIndex, callback);
 			});
 		}
@@ -33,7 +32,7 @@ struct ParallelCount {
 		typename Callback = std::function<Result (typename std::iterator_traits<Iterator>::value_type &)>,
 		typename Combiner = std::function<Result (Result, Result)>
 	>
-	static Result Reduce(
+	Result reduce(
 		Iterator begin, 
 		Iterator end, 
 		Callback callback,
@@ -63,4 +62,7 @@ struct ParallelCount {
 };
 
 typedef ParallelCount<4> Parallel;
+
+#include "Common/Singleton.h"
+extern Singleton<Parallel> parallel;
 

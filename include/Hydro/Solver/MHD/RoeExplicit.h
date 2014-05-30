@@ -33,9 +33,7 @@ void RoeExplicit<Hydro>::initStep(IHydro *ihydro) {
 		PROFILE()
 		Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	
-		//I should really use tbb or gcs or something,
-		//but writing my own is too much fun ...
-		ParallelCount<1>::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+		parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 			IVector index = v.first;
 			Cell &cell = v.second;
 			InterfaceVector &interface = cell.interfaces;

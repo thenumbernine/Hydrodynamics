@@ -33,7 +33,7 @@ KelvinHemholtz<Hydro>::KelvinHemholtz() {
 template<typename Hydro>
 void KelvinHemholtz<Hydro>::operator()(IHydro *ihydro, Real noise) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
-	Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+	parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		Cell &cell = v.second;
 		Vector x = cell.x;
 		bool inTheMiddle = x(rank-1) > (.75 * hydro->xmin(rank-1) + .25 * hydro->xmax(rank-1)) && x(rank-1) < (.25 * hydro->xmin(rank-1) + .75 * hydro->xmax(rank-1));
@@ -44,11 +44,11 @@ void KelvinHemholtz<Hydro>::operator()(IHydro *ihydro, Real noise) {
 			velocity(k) += crand() * noise;
 		}
 		Real pressure = 2.5;
-		Real kineticSpecificEnergy = 0.;
+		Real velocitySq = Real();
 		for (int k = 0; k < rank; ++k) {
-			kineticSpecificEnergy += velocity(k) * velocity(k);
+			velocitySq += velocity(k) * velocity(k);
 		}
-		kineticSpecificEnergy *= .5;
+		Real kineticSpecificEnergy = .5 * velocitySq;
 		Real potentialSpecificEnergy = hydro->minPotentialEnergy;
 		for (int k = 0; k < rank; ++k) {
 			potentialSpecificEnergy += (x(k) - hydro->xmin(k)) * hydro->externalForce(k);
