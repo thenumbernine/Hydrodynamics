@@ -50,22 +50,22 @@ void Wave<Hydro>::operator()(IHydro *ihydro, Real noise) {
 		for (int k = 0; k < rank; ++k) {
 			velocity(k) += crand() * noise;
 		}
-		Real energyKinetic = 0.;
+		Real kineticSpecificEnergy = 0.;
 		for (int k = 0; k < rank; ++k) {
-			energyKinetic += velocity(k) * velocity(k);
+			kineticSpecificEnergy += velocity(k) * velocity(k);
 		}
-		energyKinetic *= .5;
-		Real energyPotential = hydro->minPotentialEnergy;
+		kineticSpecificEnergy *= .5;
+		Real potentialSpecificEnergy = hydro->minPotentialEnergy;
 		for (int k = 0; k < rank; ++k) {
-			energyPotential += (x(k) - hydro->xmin(k)) * hydro->externalForce(k);
+			potentialSpecificEnergy += (x(k) - hydro->xmin(k)) * hydro->externalForce(k);
 		}
-		Real energyThermal = 1.;
-		Real energyTotal = energyKinetic + energyThermal + energyPotential;
+		Real internalSpecificEnergy = 1.;
+		Real totalSpecificEnergy = kineticSpecificEnergy + internalSpecificEnergy + potentialSpecificEnergy;
 		cell.state(0) = density;
 		for (int k = 0; k < rank; ++k) {
 			cell.state(k+1) = density * velocity(k);
 		}
-		cell.state(rank+1) = density * energyTotal;
+		cell.state(rank+1) = density * totalSpecificEnergy;
 	});
 }
 

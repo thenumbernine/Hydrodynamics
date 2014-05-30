@@ -254,14 +254,14 @@ void BurgersExplicit<Hydro>::integrateMomentumDiffusion(IHydro *ihydro, Real dt,
 				velocity(side) = cell.state(side+1) / density;
 				velocitySq += velocity(side) * velocity(side);
 			}
-			Real energyTotal = cell.state(rank+1) / density;
-			Real energyKinetic = .5 * velocitySq;
-			Real energyPotential = hydro->minPotentialEnergy;
+			Real totalSpecificEnergy = cell.state(rank+1) / density;
+			Real kineticSpecificEnergy = .5 * velocitySq;
+			Real potentialSpecificEnergy = hydro->minPotentialEnergy;
 			for (int side = 0; side < rank; ++side) {
-				energyPotential += (x(side) - hydro->xmin(side)) * hydro->externalForce(side);
+				potentialSpecificEnergy += (x(side) - hydro->xmin(side)) * hydro->externalForce(side);
 			}
-			Real energyThermal = energyTotal - energyKinetic - energyPotential;
-			cell.pressure = (hydro->gamma - 1.) * density * energyThermal;
+			Real internalSpecificEnergy = totalSpecificEnergy - kineticSpecificEnergy - potentialSpecificEnergy;
+			cell.pressure = (hydro->gamma - 1.) * density * internalSpecificEnergy;
 		}
 	});
 

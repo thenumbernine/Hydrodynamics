@@ -64,17 +64,17 @@ void RoeExplicit<Hydro>::initStep(IHydro *ihydro) {
 						velocityL(k) = cellL.state(k+1) / densityL;
 						velocitySqL += velocityL(k) * velocityL(k);
 					}
-					Real energyTotalL = cellL.state(rank+1) / densityL;
+					Real totalSpecificEnergyL = cellL.state(rank+1) / densityL;
 					Real roeWeightL = sqrt(densityL);
 
-					Real energyKineticL = .5 * velocitySqL;
-					Real energyPotentialL = hydro->minPotentialEnergy;
+					Real kineticSpecificEnergyL = .5 * velocitySqL;
+					Real potentialSpecificEnergyL = hydro->minPotentialEnergy;
 					for (int k = 0; k < rank; ++k) {
-						energyPotentialL += (xL(side) - hydro->xmin(side)) * hydro->externalForce(side);
+						potentialSpecificEnergyL += (xL(side) - hydro->xmin(side)) * hydro->externalForce(side);
 					}
-					Real energyThermalL = energyTotalL - energyKineticL - energyPotentialL;
-					Real pressureL = (hydro->gamma - Real(1)) * densityL * energyThermalL;
-					Real enthalpyTotalL = energyTotalL + pressureL / densityL;
+					Real internalSpecificEnergyL = totalSpecificEnergyL - kineticSpecificEnergyL - potentialSpecificEnergyL;
+					Real pressureL = (hydro->gamma - Real(1)) * densityL * internalSpecificEnergyL;
+					Real totalSpecificEnthalpyL = totalSpecificEnergyL + pressureL / densityL;
 
 					Real densityR = cellR.state(0);
 					Vector velocityR;
@@ -83,25 +83,25 @@ void RoeExplicit<Hydro>::initStep(IHydro *ihydro) {
 						velocityR(k) = cellR.state(k+1) / densityR;
 						velocitySqR += velocityR(k) * velocityR(k);
 					}
-					Real energyTotalR = cellR.state(rank+1) / densityR;
+					Real totalSpecificEnergyR = cellR.state(rank+1) / densityR;
 					Real roeWeightR = sqrt(densityR);
 				
-					Real energyKineticR = .5 * velocitySqR;
-					Real energyPotentialR = hydro->minPotentialEnergy;
+					Real kineticSpecificEnergyR = .5 * velocitySqR;
+					Real potentialSpecificEnergyR = hydro->minPotentialEnergy;
 					for (int k = 0; k < rank; ++k) {
-						energyPotentialR += (xR(side) - hydro->xmin(side)) * hydro->externalForce(side);
+						potentialSpecificEnergyR += (xR(side) - hydro->xmin(side)) * hydro->externalForce(side);
 					}
-					Real energyThermalR = energyTotalR - energyKineticR - energyPotentialR;
-					Real pressureR = (hydro->gamma - Real(1)) * densityR * energyThermalR;
-					Real enthalpyTotalR = energyTotalR + pressureR / densityR;
+					Real internalSpecificEnergyR = totalSpecificEnergyR - kineticSpecificEnergyR - potentialSpecificEnergyR;
+					Real pressureR = (hydro->gamma - Real(1)) * densityR * internalSpecificEnergyR;
+					Real totalSpecificEnthalpyR = totalSpecificEnergyR + pressureR / densityR;
 
 					Real invDenom = Real(1) / (roeWeightL + roeWeightR);
 					Real density = (densityL * roeWeightL + densityR * roeWeightR) * invDenom;
 					Vector velocity = (velocityL * roeWeightL + velocityR * roeWeightR) * invDenom;
-					Real energyTotal = (energyTotalL * roeWeightL + energyTotalR * roeWeightR) * invDenom;
-					Real energyThermal = (energyThermalL * roeWeightL + energyThermalR * roeWeightR) * invDenom;
+					Real totalSpecificEnergy = (totalSpecificEnergyL * roeWeightL + totalSpecificEnergyR * roeWeightR) * invDenom;
+					Real internalSpecificEnergy = (internalSpecificEnergyL * roeWeightL + internalSpecificEnergyR * roeWeightR) * invDenom;
 					Real pressure = (pressureL * roeWeightL + pressureR * roeWeightR) * invDenom;
-					Real enthalpyTotal = (enthalpyTotalL * roeWeightL + enthalpyTotalR * roeWeightR) * invDenom;
+					Real totalSpecificEnthalpy = (totalSpecificEnthalpyL * roeWeightL + totalSpecificEnthalpyR * roeWeightR) * invDenom;
 
 					//compute eigenvectors and values at the interface based on averages
 					hydro->equationOfState->buildEigenstate(
@@ -110,10 +110,10 @@ void RoeExplicit<Hydro>::initStep(IHydro *ihydro) {
 						interface(side).eigenvectorsInverse, 
 						density, 
 						velocity, 
-						energyTotal,
+						totalSpecificEnergy,
 						pressure,
-						energyThermal, 
-						enthalpyTotal, 
+						internalSpecificEnergy, 
+						totalSpecificEnthalpy, 
 						hydro->gamma, 
 						normal);
 				}

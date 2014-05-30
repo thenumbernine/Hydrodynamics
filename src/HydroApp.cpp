@@ -302,14 +302,14 @@ void HydroApp::initType() {
 		range.end(),
 		[&](IVector index)
 	{
-		Real energyPotential = 0.; 
+		Real potentialSpecificEnergy = 0.; 
 		::Vector<Real, rank> x;
 		for (int k = 0; k < rank; ++k) {
 			x(k) = index(k) ? hydro->xmax(k) : hydro->xmin(k);
-			energyPotential += x(k) * hydro->externalForce(k);
+			potentialSpecificEnergy += x(k) * hydro->externalForce(k);
 		}
-		std::cout << " corner " << index << " potential " << energyPotential << " corner " << x << " extrnal force " << hydro->externalForce << std::endl;
-		hydro->minPotentialEnergy = std::min<Real>(hydro->minPotentialEnergy, energyPotential);
+		std::cout << " corner " << index << " potential " << potentialSpecificEnergy << " corner " << x << " extrnal force " << hydro->externalForce << std::endl;
+		hydro->minPotentialEnergy = std::min<Real>(hydro->minPotentialEnergy, potentialSpecificEnergy);
 	});
 	//add its negative to all potential energy calculations
 	// to keep potential energy from being a negative value

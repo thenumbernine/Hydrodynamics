@@ -38,22 +38,22 @@ void Sedov<Hydro>::operator()(IHydro *ihydro, Real noise) {
 		for (int k = 0; k < rank; ++k) {
 			velocity(k) += crand() * noise;
 		}
-		Real energyKinetic = 0.;
+		Real kineticSpecificEnergy = 0.;
 		for (int k = 0; k < rank; ++k) {
-			energyKinetic += velocity(k) * velocity(k);
+			kineticSpecificEnergy += velocity(k) * velocity(k);
 		}
-		energyKinetic *= .5;
-		Real energyPotential = hydro->minPotentialEnergy;
+		kineticSpecificEnergy *= .5;
+		Real potentialSpecificEnergy = hydro->minPotentialEnergy;
 		for (int k = 0; k < rank; ++k) {
-			energyPotential += (cell.x(k) - hydro->xmin(k)) * hydro->externalForce(k);
+			potentialSpecificEnergy += (cell.x(k) - hydro->xmin(k)) * hydro->externalForce(k);
 		}
 		Real pressure = 1e-5;
-		Real energyTotal = pressure / ((hydro->gamma - 1.) * density) + energyKinetic + energyPotential; 
+		Real totalSpecificEnergy = pressure / ((hydro->gamma - 1.) * density) + kineticSpecificEnergy + potentialSpecificEnergy; 
 		cell.state(0) = density;
 		for (int k = 0; k < rank; ++k) {
 			cell.state(k+1) = velocity(k) * density;
 		}
-		cell.state(rank+1) = energyTotal; 
+		cell.state(rank+1) = totalSpecificEnergy; 
 	});
 	hydro->cells(hydro->size/2).second.state(rank+1) = 1e+5;
 }

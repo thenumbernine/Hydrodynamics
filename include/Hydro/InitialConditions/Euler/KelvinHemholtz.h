@@ -44,21 +44,21 @@ void KelvinHemholtz<Hydro>::operator()(IHydro *ihydro, Real noise) {
 			velocity(k) += crand() * noise;
 		}
 		Real pressure = 2.5;
-		Real energyKinetic = 0.;
+		Real kineticSpecificEnergy = 0.;
 		for (int k = 0; k < rank; ++k) {
-			energyKinetic += velocity(k) * velocity(k);
+			kineticSpecificEnergy += velocity(k) * velocity(k);
 		}
-		energyKinetic *= .5;
-		Real energyPotential = hydro->minPotentialEnergy;
+		kineticSpecificEnergy *= .5;
+		Real potentialSpecificEnergy = hydro->minPotentialEnergy;
 		for (int k = 0; k < rank; ++k) {
-			energyPotential += (x(k) - hydro->xmin(k)) * hydro->externalForce(k);
+			potentialSpecificEnergy += (x(k) - hydro->xmin(k)) * hydro->externalForce(k);
 		}
-		Real energyTotal = pressure / ((hydro->gamma - 1.) * density) + energyKinetic + energyPotential;
+		Real totalSpecificEnergy = pressure / ((hydro->gamma - 1.) * density) + kineticSpecificEnergy + potentialSpecificEnergy;
 		cell.state(0) = density;
 		for (int k = 0; k < rank; ++k) {
 			cell.state(k+1) = density * velocity(k);
 		}
-		cell.state(rank+1) = density * energyTotal;
+		cell.state(rank+1) = density * totalSpecificEnergy;
 	});
 }
 

@@ -33,9 +33,9 @@ struct MHD : public ::EquationOfState<Real, rank_> {
 		StateInverseMatrix &eigenvectorsInverse,
 		Real density,
 		Vector velocity,
-		Real energyTotal,
+		Real totalSpecificEnergy,
 		Real pressure,
-		Real energyThermal,
+		Real internalSpecificEnergy,
 		Real enthalpyTotal,
 		Real gamma,
 		Vector normal);

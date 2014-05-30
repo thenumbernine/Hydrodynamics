@@ -62,7 +62,7 @@ void GodunovExplicit<Hydro>::initStep(IHydro *ihydro) {
 						velocityL(k) = hydro->cells(indexL).second.state(k+1) / densityL;
 						velocitySqL += velocityL(k) * velocityL(k);
 					}
-					Real energyTotalL = hydro->cells(indexL).second.state(rank+1) / densityL;
+					Real totalSpecificEnergyL = hydro->cells(indexL).second.state(rank+1) / densityL;
 
 					Real densityR = hydro->cells(indexR).second.state(0);
 					Vector velocityR;
@@ -71,32 +71,32 @@ void GodunovExplicit<Hydro>::initStep(IHydro *ihydro) {
 						velocityR(k) = hydro->cells(indexR).second.state(k+1) / densityR;
 						velocitySqR += velocityR(k) * velocityR(k);
 					}
-					Real energyTotalR = hydro->cells(indexR).second.state(rank+1) / densityR;
+					Real totalSpecificEnergyR = hydro->cells(indexR).second.state(rank+1) / densityR;
 				
-					Real energyKineticL = .5 * velocitySqL;
-					Real energyPotentialL = hydro->minPotentialEnergy;
+					Real kineticSpecificEnergyL = .5 * velocitySqL;
+					Real potentialSpecificEnergyL = hydro->minPotentialEnergy;
 					for (int k = 0; k < rank; ++k) {
-						energyPotentialL += (xR(k) - hydro->xmin(k)) * hydro->externalForce(k);
+						potentialSpecificEnergyL += (xR(k) - hydro->xmin(k)) * hydro->externalForce(k);
 					}
-					Real energyThermalL = energyTotalL - energyKineticL - energyPotentialL;
-					Real pressureL = (hydro->gamma - Real(1)) * densityL * energyThermalL;
-					Real enthalpyTotalL = energyTotalL + pressureL / densityL;
+					Real internalSpecificEnergyL = totalSpecificEnergyL - kineticSpecificEnergyL - potentialSpecificEnergyL;
+					Real pressureL = (hydro->gamma - Real(1)) * densityL * internalSpecificEnergyL;
+					Real totalSpecificEnthalpyL = totalSpecificEnergyL + pressureL / densityL;
 
-					Real energyKineticR = .5 * velocitySqR;
-					Real energyPotentialR = hydro->minPotentialEnergy;
+					Real kineticSpecificEnergyR = .5 * velocitySqR;
+					Real potentialSpecificEnergyR = hydro->minPotentialEnergy;
 					for (int k = 0; k < rank; ++k) {
-						energyPotentialR += (xR(k) - hydro->xmin(k)) * hydro->externalForce(k);
+						potentialSpecificEnergyR += (xR(k) - hydro->xmin(k)) * hydro->externalForce(k);
 					}
-					Real energyThermalR = energyTotalR - energyKineticR - energyPotentialR;
-					Real pressureR = (hydro->gamma - Real(1)) * densityR * energyThermalR;
-					Real enthalpyTotalR = energyTotalR + pressureR / densityR;
+					Real internalSpecificEnergyR = totalSpecificEnergyR - kineticSpecificEnergyR - potentialSpecificEnergyR;
+					Real pressureR = (hydro->gamma - Real(1)) * densityR * internalSpecificEnergyR;
+					Real totalSpecificEnthalpyR = totalSpecificEnergyR + pressureR / densityR;
 
 					Real density = (densityL + densityR) * .5;
 					Vector velocity = (velocityL + velocityR) * .5;
-					Real energyTotal = (energyTotalL + energyTotalR) * .5;
-					Real energyThermal = (energyThermalL + energyThermalR) * .5;
+					Real totalSpecificEnergy = (totalSpecificEnergyL + totalSpecificEnergyR) * .5;
+					Real internalSpecificEnergy = (internalSpecificEnergyL + internalSpecificEnergyR) * .5;
 					Real pressure = (pressureL + pressureR) * .5;
-					Real enthalpyTotal = (enthalpyTotalL + enthalpyTotalR) * .5;
+					Real totalSpecificEnthalpy = (totalSpecificEnthalpyL + totalSpecificEnthalpyR) * .5;
 
 					//compute eigenvectors and values at the interface based on averages
 					hydro->equationOfState->buildEigenstate(
@@ -105,10 +105,10 @@ void GodunovExplicit<Hydro>::initStep(IHydro *ihydro) {
 						interface(side).eigenvectorsInverse, 
 						density, 
 						velocity, 
-						energyTotal,
+						totalSpecificEnergy,
 						pressure,
-						energyThermal, 
-						enthalpyTotal, 
+						internalSpecificEnergy, 
+						totalSpecificEnthalpy, 
 						hydro->gamma, 
 						normal);
 				}

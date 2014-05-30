@@ -42,7 +42,7 @@ void Advect<Hydro>::operator()(IHydro *ihydro, Real noise) {
 				break;
 			}
 		}
-		Real rho = lhs ? .5 : 1.;
+		Real density = lhs ? .5 : 1.;
 		Vector velocity(1.);
 		for (int k = 0; k < rank; ++k) {
 			velocity(k) += crand() * noise;
@@ -51,14 +51,14 @@ void Advect<Hydro>::operator()(IHydro *ihydro, Real noise) {
 		for (int k = 0; k < rank; ++k) {
 			velocitySq += velocity(k) * velocity(k);
 		}
-		Real energyKinetic = .5 * velocitySq; 
+		Real kineticSpecificEnergy = .5 * velocitySq; 
 		Real pressure = 1.;
-		Real energyTotal = pressure / (rho * (hydro->gamma - 1.)) + energyKinetic;
-		cell.state(0) = rho;
+		Real totalSpecificEnergy = pressure / (density * (hydro->gamma - 1.)) + kineticSpecificEnergy;
+		cell.state(0) = density;
 		for (int k = 0; k < rank; ++k) {
-			cell.state(k+1) = rho * velocity(k);
+			cell.state(k+1) = density * velocity(k);
 		}
-		cell.state(rank+1) = rho * energyTotal;
+		cell.state(rank+1) = density * totalSpecificEnergy;
 	});
 }
 

@@ -40,22 +40,22 @@ void RayleighTaylor<Hydro>::operator()(IHydro *ihydro, Real noise) {
 		for (int k = 0; k < rank; ++k) {
 			velocity(k) += crand() * noise;
 		}
-		Real energyKinetic = 0.;
+		Real kineticSpecificEnergy = 0.;
 		for (int k = 0; k < rank; ++k) {
-			energyKinetic += velocity(k) * velocity(k);
+			kineticSpecificEnergy += velocity(k) * velocity(k);
 		}
-		energyKinetic *= .5;
-		Real energyPotential = hydro->minPotentialEnergy;
+		kineticSpecificEnergy *= .5;
+		Real potentialSpecificEnergy = hydro->minPotentialEnergy;
 		for (int k = 0; k < rank; ++k) {
-			energyPotential += (x(k) - hydro->xmin(k)) * hydro->externalForce(k);
+			potentialSpecificEnergy += (x(k) - hydro->xmin(k)) * hydro->externalForce(k);
 		}
-		Real pressure = 2.5 - density * energyPotential;//(hydro->gamma - 1.) * density * (2.5 - energyPotential);
-		Real energyTotal = pressure / ((hydro->gamma - 1.) * density) + energyKinetic + energyPotential; 
+		Real pressure = 2.5 - density * potentialSpecificEnergy;//(hydro->gamma - 1.) * density * (2.5 - potentialSpecificEnergy);
+		Real totalSpecificEnergy = pressure / ((hydro->gamma - 1.) * density) + kineticSpecificEnergy + potentialSpecificEnergy; 
 		cell.state(0) = density;
 		for (int k = 0; k < rank; ++k) {
 			cell.state(k+1) = density * velocity(k);
 		}
-		cell.state(rank+1) = density * energyTotal;
+		cell.state(rank+1) = density * totalSpecificEnergy;
 	});
 }
 

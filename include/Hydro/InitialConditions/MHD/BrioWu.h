@@ -1,15 +1,17 @@
 #pragma once
 
+//http://www.csun.edu/~jb715473/examples/mhd1d.htm
+
 #include "Hydro/IHydro.h"
 #include "Hydro/InitialConditions/InitialConditions.h"
 
 namespace InitialConditions {
-namespace Euler {
+namespace MHD {
 
 template<typename Hydro>
-struct Sod : public InitialConditions<typename Hydro::Real, Hydro::rank> {
+struct BrioWu : public InitialConditions<typename Hydro::Real, Hydro::rank> {
 	typedef InitialConditions<typename Hydro::Real, Hydro::rank> Super;
-	
+
 	enum { rank = Hydro::rank };
 
 	typedef typename Hydro::Real Real;
@@ -18,21 +20,21 @@ struct Sod : public InitialConditions<typename Hydro::Real, Hydro::rank> {
 	typedef typename Hydro::IVector IVector;
 	typedef typename Hydro::Vector Vector;
 	
-	Sod();
+	BrioWu();
 	virtual void operator()(IHydro *ihydro, Real noise); 
 };
 
 template<typename Hydro>
-Sod<Hydro>::Sod() {
+BrioWu<Hydro>::BrioWu() {
 	Super::xmin = Vector(-.5);
 	Super::xmax = Vector(.5);
 }
 
 template<typename Hydro>
-void Sod<Hydro>::operator()(IHydro *ihydro, Real noise) {
+void BrioWu<Hydro>::operator()(IHydro *ihydro, Real noise) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
-	hydro->gamma = 1.4;
-	Vector xmid = hydro->xmin * .7 + hydro->xmax * .3;
+	hydro->gamma = 2.;
+	Vector xmid = hydro->xmin * .5 + hydro->xmax * .5;
 	Parallel::For(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		Cell &cell = v.second;
 		Vector x = cell.x;
@@ -43,29 +45,47 @@ void Sod<Hydro>::operator()(IHydro *ihydro, Real noise) {
 				break;
 			}
 		}
-		Real density = lhs ? 1. : .1;
+		Real density = lhs ? 1. : .125;
+		
 		Vector velocity;
 		for (int k = 0; k < rank; ++k) {
 			velocity(k) += crand() * noise;
 		}
-		Real kineticSpecificEnergy = 0.;
-		for (int k = 0; k < rank; ++k) {
-			kineticSpecificEnergy += velocity(k) * velocity(k);
-		}
-		kineticSpecificEnergy *= .5;
+		
+		Vector magnetism;
+		magnetism(1) = lhs ? -1. : -1.;
+
+		Real pressure = lhs ? 1. : .1;
+	
+		Real specificEnergyKinetic = .5 * Vector::dot(velocity, velocity);
+		Real energyKinetic = specificEnergyKinetic * density;
+
+		Real energyMagnetic = .5 * Vector::dot(magnetism, magnetism);
+
+		Real pressureStar = pressure + energyMagnetic;
+
+		Real energyTotal = pressure / (hydro->gamma - 1) + energyKinetic + energyMagnetic;
+
 		Real energyPotential = hydro->minPotentialEnergy;
 		for (int k = 0; k < rank; ++k) {
 			energyPotential += (x(k) - hydro->xmin(k)) * hydro->externalForce(k);
 		}
-		Real internalSpecificEnergy = 1.;
-		Real totalSpecificEnergy = kineticSpecificEnergy + internalSpecificEnergy + energyPotential;
+		
+		Real energyThermal = 1.;
+		
+		Real energyTotal = energyKinetic + energyThermal + energyPotential;
+		
 		//TODO some sort of rank-independent specifier
 		cell.state(0) = density;
-		for (int k = 0; k < rank; ++k) {
+		for (int k = 0; k < 3; ++k) {
 			cell.state(k+1) = density * velocity(k);
 		}
-		cell.state(rank+1) = density * totalSpecificEnergy;
+		for (int k = 0; k < 3; ++k) {
+			cell.state(k+4) = magnetism(k);
+		}
+		cell.state(7) = energyTotal;
 	});
+
 }
 
 };

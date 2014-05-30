@@ -42,9 +42,9 @@ struct Euler : public ::EOS::EOS<Real, rank_> {
 		StateInverseMatrix &eigenvectorsInverse,
 		Real density,
 		Vector velocity,
-		Real energyTotal,
+		Real totalSpecificEnergy,
 		Real pressure,
-		Real energyThermal,
+		Real internalSpecificEnergy,
 		Real enthalpyTotal,
 		Real gamma,
 		Vector normal);
@@ -74,7 +74,7 @@ Euler<Real, rank>::getPrimitives(StateVector state) {
 	for (int k = 0; k < rank; ++k) {
 		primitives(k+1) = state(k+1) / state(0);
 	}
-	//total energy
+	//total specific energy
 	primitives(rank+1) = state(rank+1) / state(0);
 	return primitives;
 }
@@ -258,9 +258,9 @@ void Euler<Real, rank>::buildEigenstate(
 	StateInverseMatrix &eigenvectorsInverse,
 	Real density,
 	Vector velocity,
-	Real energyTotal,
+	Real totalSpecificEnergy,
 	Real pressure,
-	Real energyThermal,
+	Real internalSpecificEnergy,
 	Real enthalpyTotal,
 	Real gamma,
 	Vector normal)
