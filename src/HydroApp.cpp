@@ -2,6 +2,7 @@
 #include "Common/Macros.h"		//similar laziness
 #include "Hydro/Hydro.h"
 #include "Hydro/EOS/Euler.h"
+//#include "Hydro/EOS/MHD.h"
 #include "Hydro/Boundary/Mirror.h"
 #include "Hydro/Boundary/Periodic.h"
 //TODO get these working for all dimensions
@@ -48,7 +49,7 @@ public:
 	, size({256,256})
 	, useCFL(true)
 	, cfl(.5)
-	, noise(.01)
+	, noise(0.)
 	, fixedDT(.1)
 	, gamma(1.4)
 	, precision("double")
@@ -62,7 +63,9 @@ public:
 };
 
 
-struct HydroApp : public GLApp {
+struct HydroApp : public GLApp::GLApp {
+	typedef ::GLApp::GLApp Super;
+
 	IHydro *ihydro;
 	HydroArgs hydroArgs;
 
@@ -87,7 +90,7 @@ struct HydroApp : public GLApp {
 GLAPP_MAIN(HydroApp)
 
 HydroApp::HydroApp()
-: GLApp()
+: Super()
 , ihydro(NULL)
 {}
 
@@ -122,7 +125,7 @@ int HydroApp::main(std::vector<std::string> args) {
 			std::cout << "  --size <size1> <size2> ... <sizeN>" << std::endl;
 			std::cout << "    the grid size, for N = the dimension of the grid.  default ";
 			const char *comma = "";
-			std::for_each(hydroArgs.size.begin(), hydroArgs.size.end(), [&](int i) { std::cout << comma << i; comma = ", "; }); 
+			for (int i : hydroArgs.size) { std::cout << comma << i; comma = ", "; }
 			std::cout << std::endl;
 			std::cout << "  --useCFL <true|false> = whether to use CFL or a fixed timestep.  default " << hydroArgs.useCFL << std::endl;
 			std::cout << "  --cfl <CFL> = the CFL number.  default" << hydroArgs.cfl << std::endl;
@@ -161,8 +164,8 @@ int HydroApp::main(std::vector<std::string> args) {
 			} else if (args[i] == "--gamma") {
 				hydroArgs.gamma = std::stof(args[++i]);
 			} else if (args[i] == "--dim") {
-				if (setSize) throw Exception() << "you must set dim before you set size";
-				if (setExternalForce) throw Exception() << "you must set dim before you set externalForce";
+				if (setSize) throw Common::Exception() << "you must set dim before you set size";
+				if (setExternalForce) throw Common::Exception() << "you must set dim before you set externalForce";
 				hydroArgs.dim = std::stoi(args[++i]);
 			} else if (args[i] == "--precision") {
 				hydroArgs.precision = args[++i];
@@ -207,7 +210,7 @@ void HydroApp::initType() {
 		boundary = new ::Boundary::FreeFlow<Hydro>();
 #endif
 	} else {
-		throw Exception() << "unknown boundary method " << hydroArgs.boundaryName;
+		throw Common::Exception() << "unknown boundary method " << hydroArgs.boundaryName;
 	}
 
 	Explicit *explicitMethod = NULL;
@@ -220,7 +223,7 @@ void HydroApp::initType() {
 	} else if (hydroArgs.explicitName == "IterativeCrankNicolson3") {
 		explicitMethod = new ::Explicit::IterativeCrankNicolson3<Hydro>();
 	} else {
-		throw Exception() << "unknown explicit method " << hydroArgs.explicitName;
+		throw Common::Exception() << "unknown explicit method " << hydroArgs.explicitName;
 	}
 
 	Limiter *limiter = NULL;
@@ -265,7 +268,7 @@ void HydroApp::initType() {
 	} else if (hydroArgs.limiterName == "BarthJespersen") {
 		limiter = new ::Limiter::BarthJespersen<Real>();
 	} else {
-		throw Exception() << "unknown limiter " << hydroArgs.limiterName;
+		throw Common::Exception() << "unknown limiter " << hydroArgs.limiterName;
 	}
 
 	typedef typename Hydro::IVector IVector;
@@ -297,11 +300,7 @@ void HydroApp::initType() {
 	//check the minimum of the potential energy at all corners
 	RangeObj<rank> range(IVector(), IVector(2));
 	hydro->minPotentialEnergy = HUGE_VAL;
-	std::for_each(
-		range.begin(), 
-		range.end(),
-		[&](IVector index)
-	{
+	for (IVector index : range) {
 		Real potentialSpecificEnergy = 0.; 
 		::Vector<Real, rank> x;
 		for (int k = 0; k < rank; ++k) {
@@ -310,7 +309,7 @@ void HydroApp::initType() {
 		}
 		std::cout << " corner " << index << " potential " << potentialSpecificEnergy << " corner " << x << " extrnal force " << hydro->externalForce << std::endl;
 		hydro->minPotentialEnergy = std::min<Real>(hydro->minPotentialEnergy, potentialSpecificEnergy);
-	});
+	}
 	//add its negative to all potential energy calculations
 	// to keep potential energy from being a negative value
 std::cout << " min potential " << hydro->minPotentialEnergy << std::endl;
@@ -323,9 +322,11 @@ std::cout << " min potential " << hydro->minPotentialEnergy << std::endl;
 template<typename Real, int rank>
 void HydroApp::initPrecision() {
 	if (hydroArgs.equationOfStateName == "Euler") {
-		initType<Real, rank, ::EOS::Euler<Real, rank> >();
+		initType<Real, rank, ::EOS::Euler<Real, rank>>();
+	//} else if (hydroArgs.equationOfStateName == "MHD") {
+	//	initType<Real, rank, ::EOS::MHD<Real, rank>>();
 	} else {
-		throw Exception() << "unknown equation of state " << hydroArgs.equationOfStateName;
+		throw Common::Exception() << "unknown equation of state " << hydroArgs.equationOfStateName;
 	}
 }
 
@@ -336,7 +337,7 @@ void HydroApp::initSize() {
 	} else if (hydroArgs.precision == "double") {
 		initPrecision<double,rank>();
 	} else {
-		throw Exception() << "unknown precision " << hydroArgs.precision;
+		throw Common::Exception() << "unknown precision " << hydroArgs.precision;
 	}
 }
 
@@ -390,7 +391,7 @@ void HydroApp::init() {
 		initSize<3>();
 		break;
 	default:
-		throw Exception() << "unknown dim " << hydroArgs.dim;
+		throw Common::Exception() << "unknown dim " << hydroArgs.dim;
 	}
 }
 

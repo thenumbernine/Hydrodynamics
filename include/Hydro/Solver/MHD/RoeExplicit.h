@@ -1,14 +1,14 @@
 #pragma once
 
-#include "Hydro/Solver/GodunovSolver.h"
+#include "Hydro/Solver/Godunov.h"
 #include "Parallel/Parallel.h"
 
 namespace Solver {
 namespace MHD {
 
 template<typename Hydro>
-struct RoeExplicit : public GodunovSolver<Hydro> {
-	typedef GodunovSolver<Hydro> Super;
+struct RoeExplicit : public ::Solver::Godunov<Hydro> {
+	typedef ::Solver::Godunov<Hydro> Super;
 	
 	enum { rank = Hydro::rank };
 	enum { numberOfStates = Hydro::numberOfStates };
@@ -19,6 +19,7 @@ struct RoeExplicit : public GodunovSolver<Hydro> {
 	typedef typename Hydro::InterfaceVector InterfaceVector;
 	typedef typename Hydro::Cell Cell;
 	typedef typename Hydro::CellGrid CellGrid;
+	typedef typename Hydro::EOS::Vector3 Vector3;
 
 	virtual void initStep(IHydro *ihydro);
 };
@@ -52,22 +53,23 @@ void RoeExplicit<Hydro>::initStep(IHydro *ihydro) {
 					Vector xL = cellL.x;
 					Vector xR = cellR.x;
 
-					Vector normal;
+					Vector3 normal;
 					normal(side) = Real(1);
 
 					Real densityL = cellL.state(0);
-					Vector velocityL;
+					Vector3 velocityL;
 					Real velocitySqL = Real(0);
-					for (int k = 0; k < rank; ++k) {
+					for (int k = 0; k < 3; ++k) {
 						velocityL(k) = cellL.state(k+1) / densityL;
 						velocitySqL += velocityL(k) * velocityL(k);
 					}
-					Real totalSpecificEnergyL = cellL.state(rank+1) / densityL;
+					Real totalSpecificEnergyL = cellL.state(7) / densityL;
+					Vector3 magnetismL = Vector3(cellL.q[4], cellL.q[5], cellL.q[6]);
 					Real roeWeightL = sqrt(densityL);
 
 					Real kineticSpecificEnergyL = .5 * velocitySqL;
 					Real potentialSpecificEnergyL = hydro->minPotentialEnergy;
-					for (int k = 0; k < rank; ++k) {
+					for (int k = 0; k < 3; ++k) {
 						potentialSpecificEnergyL += (xL(side) - hydro->xmin(side)) * hydro->externalForce(side);
 					}
 					Real internalSpecificEnergyL = totalSpecificEnergyL - kineticSpecificEnergyL - potentialSpecificEnergyL;
@@ -75,44 +77,44 @@ void RoeExplicit<Hydro>::initStep(IHydro *ihydro) {
 					Real totalSpecificEnthalpyL = totalSpecificEnergyL + pressureL / densityL;
 
 					Real densityR = cellR.state(0);
-					Vector velocityR;
+					Vector3 velocityR;
 					Real velocitySqR = Real(0);
-					for (int k = 0; k < rank; ++k) {
+					for (int k = 0; k < 3; ++k) {
 						velocityR(k) = cellR.state(k+1) / densityR;
 						velocitySqR += velocityR(k) * velocityR(k);
 					}
-					Real totalSpecificEnergyR = cellR.state(rank+1) / densityR;
+					Real totalSpecificEnergyR = cellR.state(7) / densityR;
+					Vector3 magnetismR = Vector3(cellR.q[4], cellR.q[5], cellR.q[6]);
 					Real roeWeightR = sqrt(densityR);
 				
-					Real internalSpecificEnergyR = .5 * velocitySqR;
+					Real kineticSpecificEnergyR = .5 * velocitySqR;
 					Real potentialSpecificEnergyR = hydro->minPotentialEnergy;
-					for (int k = 0; k < rank; ++k) {
+					for (int k = 0; k < 3; ++k) {
 						potentialSpecificEnergyR += (xR(side) - hydro->xmin(side)) * hydro->externalForce(side);
 					}
-					Real internalSpecificEnergyR = totalSpecificEnergyR - internalSpecificEnergyR - potentialSpecificEnergyR;
+					Real internalSpecificEnergyR = totalSpecificEnergyR - kineticSpecificEnergyR - potentialSpecificEnergyR;
 					Real pressureR = (hydro->gamma - Real(1)) * densityR * internalSpecificEnergyR;
 					Real totalSpecificEnthalpyR = totalSpecificEnergyR + pressureR / densityR;
 
 					Real invDenom = Real(1) / (roeWeightL + roeWeightR);
 					Real density = (densityL * roeWeightL + densityR * roeWeightR) * invDenom;
-					Vector velocity = (velocityL * roeWeightL + velocityR * roeWeightR) * invDenom;
+					Vector3 velocity = (velocityL * roeWeightL + velocityR * roeWeightR) * invDenom;
 					Real totalSpecificEnergy = (totalSpecificEnergyL * roeWeightL + totalSpecificEnergyR * roeWeightR) * invDenom;
 					Real internalSpecificEnergy = (internalSpecificEnergyL * roeWeightL + internalSpecificEnergyR * roeWeightR) * invDenom;
 					Real pressure = (pressureL * roeWeightL + pressureR * roeWeightR) * invDenom;
 					Real totalSpecificEnthalpy = (totalSpecificEnthalpyL * roeWeightL + totalSpecificEnthalpyR * roeWeightR) * invDenom;
+					Vector3 magnetism = (magnetismL * roeWeightL + magnetismR * roeWeightR) * invDenom;
 
 					//compute eigenvectors and values at the interface based on averages
 					hydro->equationOfState->buildEigenstate(
-						interface(side).eigenvalues, 
-						interface(side).eigenvectors, 
-						interface(side).eigenvectorsInverse, 
-						density, 
-						velocity, 
-						totalSpecificEnergy,
+						interface(side).eigenvalues,
+						interface(side).eigenvectors,
+						interface(side).eigenvectorsInverse,
+						density,
+						velocity,
+						magnetism,
 						pressure,
-						internalSpecificEnergy, 
-						totalSpecificEnthalpy, 
-						hydro->gamma, 
+						hydro->gamma,
 						normal);
 				}
 			}

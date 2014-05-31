@@ -31,7 +31,7 @@ struct Plot {
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_ONE, GL_ONE);
 		glBegin(GL_POINTS);
-		std::for_each(hydro.cells.begin(), hydro.cells.end(), [&](typename CellGrid::value_type &v) {
+		for (typename CellGrid::value_type &v : hydro.cells) {
 			IVector index = v.first;
 			Cell &cell = v.second;
 			bool edge = false;
@@ -46,7 +46,7 @@ struct Plot {
 				glTexCoord1f(2. * cell.state(0));	//color by density
 				glVertex3d(cell.x(0), cell.x(1), cell.x(2));
 			}
-		});
+		}
 		glEnd();
 		glDisable(GL_TEXTURE_1D);
 	}
@@ -115,11 +115,11 @@ struct Plot<1> {
 			color(state) = 1;
 			glColor3fv(color.v);
 			glBegin(GL_LINE_STRIP);
-			std::for_each(hydro.cells.begin(), hydro.cells.end(), [&](typename CellGrid::value_type &v) {
+			for (typename CellGrid::value_type &v : hydro.cells) {
 				Cell &cell = v.second;
 				StateVector primitives = hydro.equationOfState->getPrimitives(cell.state);
 				glVertex2d(cell.x(0), primitives(state));
-			});
+			}
 			glEnd();
 		}
 #endif

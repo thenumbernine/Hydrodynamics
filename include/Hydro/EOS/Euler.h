@@ -196,7 +196,7 @@ struct InverseGaussJordan {
 							}
 						} else {
 							if(ipiv[k] > 1) {
-								throw Exception() << "singular!";
+								throw Common::Exception() << "singular!";
 							}
 						}
 					}
@@ -213,7 +213,7 @@ struct InverseGaussJordan {
 			indxr[i] = irow;
 			indxc[i] = icol;
 			if(input(icol, icol) == Real(0)) {
-				throw Exception() << "singular!";
+				throw Common::Exception() << "singular!";
 			}
 			pivinv = Real(1) / input(icol, icol);
 			input(icol, icol) = Real(1);
@@ -289,136 +289,46 @@ void Euler<Real, rank>::buildEigenstate(
 	}
 	eigenvalues(rank+1) = velocityAlongNormal + speedOfSound;
 
-#if 0
-	if (rank == 1) {
-		//1D solver has this:
-
-		//1st col
-		eigenvectors(0,0) = 1;
-		eigenvectors(1,0) = velocity(0) - speedOfSound;
-		eigenvectors(2,0) = enthalpyTotal - speedOfSound * velocity(0);
-		//2nd col
-		eigenvectors(0,1) = 1;
-		eigenvectors(1,1) = velocity(0);
-		eigenvectors(2,1) = .5 * velocity(0) * velocity(0);
-		//3rd col
-		eigenvectors(0,2) = 1;
-		eigenvectors(1,2) = velocity(0) + speedOfSound;
-		eigenvectors(2,2) = enthalpyTotal + speedOfSound * velocity(0);
-
-		//TODO analytic inverse:
-		/*
-		[ 1					1			1				] 
-		[ u - Cs			u			u + Cs			]
-		[ hTotal - Cs u		1/2 u^2		hTotal + Cs u	] = A
-
-		det(A) = 
-			u (hTotal + Cs u) + (u + Cs) (hTotal - Cs u) + (u - Cs) 1/2 u^2
-			- (hTotal - Cs u) u - 1/2 u^2 (u + Cs) - (hTotal + Cs u) (u - Cs)
-		
-		= hTotal u + Cs u^2 + hTotal u + Cs hTotal - Cs u^2 - Cs^2 u + 1/2 u^3 - 1/2 u^2 Cs
-		 - hTotal u + Cs u^2 - 1/2 u^3 - 1/2 Cs u^2 - hTotal u + hTotal Cs - Cs u^2 + Cs^2 u
-		
-		= Cs (2 hTotal - u^2)
-		
-		*/
-
-		//calculate eigenvector inverses numerically ... 
-		//eigenvectorsInverse = If<rank == 1, InverseCramer<StateInverseMatrix, StateMatrix>, InverseGaussJordan<StateInverseMatrix, StateMatrix> >::Type::go(eigenvectors);
-		eigenvectorsInverse = InverseGaussJordan<StateInverseMatrix, StateMatrix>::go(eigenvectors);
-
-	} else 
-#endif
-	if (rank == 2) {
-		//2D solver has this:
+	//eigenvalues: min, mid, max
 	
-		//min eigenvector
-		eigenvectors(0,0) = 1;
-		eigenvectors(1,0) = velocity(0) - speedOfSound * normal(0);
-		eigenvectors(2,0) = velocity(1) - speedOfSound * normal(1);
-		eigenvectors(3,0) = enthalpyTotal - speedOfSound * velocityAlongNormal;
-		//mid eigenvector (normal)
-		eigenvectors(0,1) = 1;
-		eigenvectors(1,1) = velocity(0);
-		eigenvectors(2,1) = velocity(1);
-		eigenvectors(3,1) = .5 * velocitySq;
-		//mid eigenvector (tangent)
-		eigenvectors(0,2) = 0;
-		eigenvectors(1,2) = tangents(0)(0);
-		eigenvectors(2,2) = tangents(0)(1);
-		eigenvectors(3,2) = velocityAlongTangents(0);
-		//max eigenvector
-		eigenvectors(0,3) = 1;
-		eigenvectors(1,3) = velocity(0) + speedOfSound * normal(0);
-		eigenvectors(2,3) = velocity(1) + speedOfSound * normal(1);
-		eigenvectors(3,3) = enthalpyTotal + speedOfSound * velocityAlongNormal;
-#if 0
-		//2D case for javascript
-		eigenvectorsInverse(0,0) = (.5 * (gamma - 1) * velocitySq + speedOfSound * velocityAlongNormal) / (2 * speedOfSound * speedOfSound);
-		eigenvectorsInverse(0,1) = -(normal(0) * speedOfSound + (gamma - 1) * velocity(0)) / (2 * speedOfSound * speedOfSound);
-		eigenvectorsInverse(0,2) = -(normal(1) * speedOfSound + (gamma - 1) * velocity(1)) / (2 * speedOfSound * speedOfSound);
-		eigenvectorsInverse(0,3) = (gamma - 1) / (2 * speedOfSound * speedOfSound);
-		//mid normal row
-		eigenvectorsInverse(1,0) = 1 - .5 * (gamma - 1) * velocitySq / (speedOfSound * speedOfSound);
-		eigenvectorsInverse(1,1) = (gamma - 1) * velocity(0) / (speedOfSound * speedOfSound);
-		eigenvectorsInverse(1,2) = (gamma - 1) * velocity(1) / (speedOfSound * speedOfSound);
-		eigenvectorsInverse(1,3) = -(gamma - 1) / (speedOfSound * speedOfSound);
-		//mid tangent row
-		eigenvectorsInverse(2,0) = -velocityAlongTangents(0);
-		eigenvectorsInverse(2,1) = tangents(0)(0);
-		eigenvectorsInverse(2,2) = tangents(0)(1);
-		eigenvectorsInverse(2,3) = 0;
-		//max row
-		eigenvectorsInverse(3,0) = (.5 * (gamma - 1) * velocitySq - speedOfSound * velocityAlongNormal) / (2 * speedOfSound * speedOfSound);
-		eigenvectorsInverse(3,1) = (normal(0) * speedOfSound - (gamma - 1) * velocity(0)) / (2 * speedOfSound * speedOfSound);
-		eigenvectorsInverse(3,2) = (normal(1) * speedOfSound - (gamma - 1) * velocity(1)) / (2 * speedOfSound * speedOfSound);
-		eigenvectorsInverse(3,3) = (gamma - 1) / (2 * speedOfSound * speedOfSound);
-#else
-		eigenvectorsInverse = If<rank == 1, InverseCramer<StateInverseMatrix, StateMatrix>, InverseGaussJordan<StateInverseMatrix, StateMatrix> >::Type::go(eigenvectors);
-#endif
-
-	} else {
-		//eigenvalues: min, mid, max
-		
-		eigenvalues(0) = velocityAlongNormal - speedOfSound;
-		for (int k = 0; k < rank; ++k) {
-			eigenvalues(k+1) = velocityAlongNormal;
-		}
-		eigenvalues(rank+1) = velocityAlongNormal + speedOfSound;
-
-		//eigenvectors:
-
-		//min eigenvector
-		eigenvectors(0,0) = 1.;
-		for (int k = 0; k < rank; ++k) {
-			eigenvectors(k+1,0) = velocity(k) - speedOfSound * normal(k);
-		}
-		eigenvectors(rank+1,0) = enthalpyTotal - speedOfSound * velocityAlongNormal;
-		//mid eigenvectors (normal)
-		eigenvectors(0,1) = 1;
-		for (int k = 0; k < rank; ++k) {
-			eigenvectors(k+1,1) = velocity(k);
-		}
-		eigenvectors(rank+1,1) = .5 * velocitySq;
-		//mid eigenvectors (tangents)
-		for (int j = 0; j < rank-1; ++j) {
-			eigenvectors(0,j+2) = 0;
-			for (int k = 0; k < rank; ++k) {
-				eigenvectors(k+1,j+2) = tangents(j)(k);
-			}
-			eigenvectors(rank+1,j+2) = velocityAlongTangents(j);
-		}
-		//max eigenvector
-		eigenvectors(0,rank+1) = 1.;
-		for (int k = 0; k < rank; ++k) {
-			eigenvectors(k+1,rank+1) = velocity(k) + speedOfSound * normal(k);
-		}
-		eigenvectors(rank+1,rank+1) = enthalpyTotal + speedOfSound * velocityAlongNormal;
-
-		
-		//calculate eigenvector inverses numerically ... 
-		eigenvectorsInverse = If<rank == 1, InverseCramer<StateInverseMatrix, StateMatrix>, InverseGaussJordan<StateInverseMatrix, StateMatrix> >::Type::go(eigenvectors);
+	eigenvalues(0) = velocityAlongNormal - speedOfSound;
+	for (int k = 0; k < rank; ++k) {
+		eigenvalues(k+1) = velocityAlongNormal;
 	}
+	eigenvalues(rank+1) = velocityAlongNormal + speedOfSound;
+
+	//eigenvectors:
+
+	//min eigenvector
+	eigenvectors(0,0) = 1.;
+	for (int k = 0; k < rank; ++k) {
+		eigenvectors(k+1,0) = velocity(k) - speedOfSound * normal(k);
+	}
+	eigenvectors(rank+1,0) = enthalpyTotal - speedOfSound * velocityAlongNormal;
+	//mid eigenvectors (normal)
+	eigenvectors(0,1) = 1;
+	for (int k = 0; k < rank; ++k) {
+		eigenvectors(k+1,1) = velocity(k);
+	}
+	eigenvectors(rank+1,1) = .5 * velocitySq;
+	//mid eigenvectors (tangents)
+	for (int j = 0; j < rank-1; ++j) {
+		eigenvectors(0,j+2) = 0;
+		for (int k = 0; k < rank; ++k) {
+			eigenvectors(k+1,j+2) = tangents(j)(k);
+		}
+		eigenvectors(rank+1,j+2) = velocityAlongTangents(j);
+	}
+	//max eigenvector
+	eigenvectors(0,rank+1) = 1.;
+	for (int k = 0; k < rank; ++k) {
+		eigenvectors(k+1,rank+1) = velocity(k) + speedOfSound * normal(k);
+	}
+	eigenvectors(rank+1,rank+1) = enthalpyTotal + speedOfSound * velocityAlongNormal;
+
+	
+	//calculate eigenvector inverses numerically ... 
+	eigenvectorsInverse = If<rank == 1, InverseCramer<StateInverseMatrix, StateMatrix>, InverseGaussJordan<StateInverseMatrix, StateMatrix> >::Type::go(eigenvectors);
 }
 
 };

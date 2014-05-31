@@ -19,6 +19,7 @@ struct BrioWu : public InitialConditions<typename Hydro::Real, Hydro::rank> {
 	typedef typename Hydro::Cell Cell;
 	typedef typename Hydro::IVector IVector;
 	typedef typename Hydro::Vector Vector;
+	typedef typename Hydro::EOS::Vector3 Vector3;
 	
 	BrioWu();
 	virtual void operator()(IHydro *ihydro, Real noise); 
@@ -47,12 +48,12 @@ void BrioWu<Hydro>::operator()(IHydro *ihydro, Real noise) {
 		}
 		Real density = lhs ? 1. : .125;
 		
-		Vector velocity;
+		Vector3 velocity;
 		for (int k = 0; k < rank; ++k) {
 			velocity(k) += crand() * noise;
 		}
 		
-		Vector magnetism;
+		Vector3 magnetism;
 		magnetism(1) = lhs ? -1. : -1.;
 
 		Real pressure = lhs ? 1. : .1;
@@ -78,10 +79,6 @@ void BrioWu<Hydro>::operator()(IHydro *ihydro, Real noise) {
 		for (int k = 0; k < rank; ++k) {
 			energyPotential += (x(k) - hydro->xmin(k)) * hydro->externalForce(k);
 		}
-		
-		Real energyThermal = 1.;
-		
-		Real energyTotal = energyKinetic + energyThermal + energyPotential;
 		
 		//TODO some sort of rank-independent specifier
 		cell.state(0) = density;

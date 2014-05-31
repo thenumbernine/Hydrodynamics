@@ -1,27 +1,28 @@
 #pragma once
 
-#include "Hydro/EquationOfState.h"
+#include "Hydro/EOS/EOS.h"
 #include "TensorMath/Inverse.h"
 
 #include "Hydro/Solver/MHD/RoeExplicit.h"
-
-#include "Hydro/InitialConditions/MHDSodInitialConditions.h"
+#include "Hydro/InitialConditions/MHD/BrioWu.h"
 
 namespace EquationOfState {
 
 template<typename Real, int rank_>
-struct MHD : public ::EquationOfState<Real, rank_> {
-	typedef EquationOfState<Real, rank_> Super;
+struct MHD : public ::EOS::EOS<Real, rank_> {
+	typedef ::EOS::EOS<Real, rank_> Super;
 	
 	enum { rank = rank_ };
 	typedef ::Solver::ISolver<Real> ISolver;
-	typedef ::InitialConditions<Real, rank> InitialConditions;
-	typedef ::Hydro<MHD<Real, rank> > Hydro;
+	typedef ::InitialConditions::InitialConditions<Real, rank> InitialConditions;
+	typedef ::Hydro<MHD<Real, rank>> Hydro;
+	
 	enum { numberOfStates = 9 };	//mhd always needs to simulate all fields.  maybe not one or two of them.  might as well do all of them.
-	typedef Tensor<Real, Upper<rank> > Vector;
-	typedef Tensor<Real, Upper<numberOfStates> > StateVector;
-	typedef Tensor<Real, Lower<numberOfStates>, Lower<numberOfStates> > StateMatrix;
-	typedef Tensor<Real, Upper<numberOfStates>, Upper<numberOfStates> > StateInverseMatrix;
+	typedef Tensor<Real, Upper<rank>> Vector;
+	typedef Tensor<Real, Upper<numberOfStates>> StateVector;
+	typedef Tensor<Real, Lower<numberOfStates>, Lower<numberOfStates>> StateMatrix;
+	typedef Tensor<Real, Upper<numberOfStates>, Upper<numberOfStates>> StateInverseMatrix;
+	typedef Tensor<Real, Upper<3>> Vector3;
 
 	MHD();
 	
@@ -32,13 +33,11 @@ struct MHD : public ::EquationOfState<Real, rank_> {
 		StateMatrix &eigenvectors,
 		StateInverseMatrix &eigenvectorsInverse,
 		Real density,
-		Vector velocity,
-		Real totalSpecificEnergy,
+		Vector3 velocity,
+		Vector3 magnetism,
 		Real pressure,
-		Real internalSpecificEnergy,
-		Real enthalpyTotal,
 		Real gamma,
-		Vector normal);
+		Vector3 normal);
 };
 
 //construct solverAllocator map
@@ -46,17 +45,20 @@ template<typename Real, int rank>
 MHD<Real, rank>::MHD() {
 	Super::solvers.map["Roe"] = []() -> ISolver* { return new ::Solver::MHD::RoeExplicit<Hydro>(); };
 
-	Super::initialConditions.map["Sod"] = []() -> InitialConditions* { return new ::InitialConditions::MHD::Sod<Hydro>(); };
+	Super::initialConditions.map["BrioWu"] = []() -> InitialConditions* { return new ::InitialConditions::MHD::BrioWu<Hydro>(); };
 }
 
 template<typename Real, int rank>
 void MHD<Real, rank>::buildEigenstate(
 	StateVector &eigenvalues,
+	StateMatrix &eigenvectors,
+	StateInverseMatrix &eigenvectorsInverse,
 	Real density,
-	Vector velocity,
-	Vector magnetism,
-	Vector normal
-)
+	Vector3 velocity,
+	Vector3 magnetism,
+	Real pressure,
+	Real gamma,
+	Vector3 normal)
 {
 	Real velocitySq = Real(0);
 	for (int k = 0; k < rank; ++k) {
@@ -68,23 +70,18 @@ void MHD<Real, rank>::buildEigenstate(
 		magnetismSq += magnetism(k) * magnetism(k);
 	}
 
-	Real c_f, c_s, c_a;
+	Real c_f, c_s, c_a, c_h;
+	Vector3 c_fs;
 	{
-		Real a = Gamma * pressure + magnetismSq;
-		Real b = sqrt(a * a - 4 * Gamma * pressure * magnetism(0) * magnetism(0));
-		c_f = sqrt((a + b) / (2. * density));
-		c_s = sqrt((a - b) / (2. * density));
-		c_a = fabs(magnetismAlongNormal) / sqrt(density);
-	}
-
-	//this is just-for-axis-aligned grids
-	// and this could be pushed outside this function and stored
-	Real c_h;
-	{
-		Vector c_fs;
+		Real tmp1 = gamma * pressure + magnetismSq;
+		Real tmp2 = sqrt(tmp1 * tmp1 - 4 * gamma * pressure * magnetism(0) * magnetism(0));
+		c_f = sqrt((tmp1 + tmp2) / (2. * density));
+		c_s = sqrt((tmp1 - tmp2) / (2. * density));
+		c_a = fabs(magnetism(0)) / sqrt(density);
+		
 		for (int k = 0; k < rank; ++k) {
-			Real b = sqrt(a * a - 4 * Gamma * pressure * magnetism(k) * magnetism(k));
-			c_fs[k] = sqrt((a + b) / (2. * density));
+			Real tmp2 = sqrt(tmp1 * tmp1 - 4 * gamma * pressure * magnetism(k) * magnetism(k));
+			c_fs[k] = sqrt((tmp1 + tmp2) / (2. * density));
 		}
 		c_h = std::max(fabs(velocity(0)) + c_fs[0],
 			std::max(fabs(velocity(1)) + c_fs[1], fabs(velocity(2)) + c_fs[2]));
@@ -102,6 +99,7 @@ void MHD<Real, rank>::buildEigenstate(
 	eigenvalues(7) = velocity(0) + c_f;
 	eigenvalues(8) = c_h;
 
+	Real a = sqrt(gamma * pressure / density);
 	Real alpha_f = sqrt((a * a - c_s * c_s) / (c_f * c_f - c_s * c_s));
 	Real alpha_s = sqrt((c_f * c_f - a * a) / (c_f * c_f - c_s * c_s));
 	Real invMagnetismYZMagn = 1. / sqrt(magnetism(1) * magnetism(1) + magnetism(2) * magnetism(2));
@@ -111,7 +109,8 @@ void MHD<Real, rank>::buildEigenstate(
 	Real invSqrtDensity = 1. / sqrtDensity;
 	Real S = magnetism(0) >= 0. ? 1. : -1.;
 	Real J_f_0 = alpha_f * c_f * S;
-	Real J_f_1 = alpha_f * alpha * sqrtDensity;
+	Real J_f_1 = alpha_f * a * sqrtDensity;
+	Real gamma_2 = (gamma - Real(2)) / (gamma - Real(1));
 	Real H_f = alpha_f * (.5 * velocitySq + c_f * c_f - gamma_2 * a * a);
 	
 	//col 0

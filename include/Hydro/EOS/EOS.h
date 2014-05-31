@@ -16,13 +16,10 @@ struct AllocatorMap {
 
 template<typename Type>
 Type *AllocatorMap<Type>::create(const std::string &name) {
-	typename Map::iterator result = std::find_if(	//same as for_each but it lets you break!
-		map.begin(),
-		map.end(),
-		[&](const typename Map::value_type &value) -> bool
-		{ return value.first == name; });
-	if (result == map.end()) throw Exception() << "unknown " << name;
-	return result->second();
+	for (const typename Map::value_type &value : map) {
+		if (value.first == name) return value.second();
+	}
+	throw Common::Exception() << "unknown " << name;
 }
 
 

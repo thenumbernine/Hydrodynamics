@@ -105,10 +105,10 @@ Hydro<EOS>::Hydro(IVector size_,
 	limiter = limiter_;
 	
 	RangeObj<rank> range(IVector(), cells.size);
-	std::for_each(range.begin(), range.end(), [&](IVector index) {
+	for (IVector index : range) {
 		typename CellGrid::Type &v = cells(index);
 		v.first = index;
-	});
+	}
 
 	resetCoordinates(xmin, xmax);
 }
