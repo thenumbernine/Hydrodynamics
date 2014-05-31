@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Parallel.h"
+#include "Parallel/Parallel.h"
 #include <functional>
 
 namespace Explicit {
@@ -22,14 +22,14 @@ protected:
 
 template<typename Hydro>
 void Explicit<Hydro>::copyState(Hydro *hydro, StateVector Cell::*dst, StateVector Cell::*src) {
-	parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+	Parallel::parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		v.second.*dst = v.second.*src;
 	});
 }
 
 template<typename Hydro>
 void Explicit<Hydro>::addMulState(Hydro *hydro, StateVector Cell::*dst, StateVector Cell::*src, Real dt) {
-	parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+	Parallel::parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		Cell &cell = v.second;
 		for (int state = 0; state < numberOfStates; ++state) {
 			(cell.*dst)(state) += (cell.*src)(state) * dt;

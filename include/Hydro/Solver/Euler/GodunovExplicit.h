@@ -31,7 +31,7 @@ void GodunovExplicit<Hydro>::initStep(IHydro *ihydro) {
 		PROFILE()
 		Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 
-		parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+		Parallel::parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 			IVector index = v.first;
 			InterfaceVector &interface = v.second.interfaces;
 			bool edge = false;

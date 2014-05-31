@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Hydro/Solver/Euler/Burgers.h"
-#include "Parallel.h"
+#include "Parallel/Parallel.h"
 
 namespace Solver {
 namespace Euler {
@@ -59,7 +59,7 @@ template<typename Hydro>
 void BurgersExplicit<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Cell::*dq_dt) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 
-	parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+	Parallel::parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		IVector index = v.first;
 		InterfaceVector &interface = v.second.interfaces;
 		bool edge = false;
@@ -86,7 +86,7 @@ void BurgersExplicit<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector 
 	});
 
 	//compute flux and advect for each state vector
-	parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+	Parallel::parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		IVector index = v.first;
 		InterfaceVector &interface = v.second.interfaces;
 		bool edge = false;
@@ -131,7 +131,7 @@ void BurgersExplicit<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector 
 	});
 	
 	//construct flux
-	parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+	Parallel::parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		IVector index = v.first;
 		InterfaceVector &interface = v.second.interfaces;
 		bool edge = false;
@@ -172,7 +172,7 @@ void BurgersExplicit<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector 
 	});
 
 	//update cells
-	parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+	Parallel::parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		IVector index = v.first;
 		Cell &cell = v.second;
 		bool edge = false;
@@ -203,7 +203,7 @@ template<typename Hydro>
 void BurgersExplicit<Hydro>::integrateExternalForces(IHydro *ihydro, Real dt, StateVector Cell::*dq_dt) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	
-	parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+	Parallel::parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		IVector index = v.first;
 		Cell &cell = v.second;
 		bool edge = false;
@@ -235,7 +235,7 @@ void BurgersExplicit<Hydro>::integrateMomentumDiffusion(IHydro *ihydro, Real dt,
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 
 	//compute pressure
-	parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+	Parallel::parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		IVector index = v.first;
 		Cell &cell = v.second;
 		bool edge = false;
@@ -266,7 +266,7 @@ void BurgersExplicit<Hydro>::integrateMomentumDiffusion(IHydro *ihydro, Real dt,
 	});
 
 	//apply momentum diffusion = pressure
-	parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+	Parallel::parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		IVector index = v.first;
 		Cell &cell = v.second;
 		bool edge = false;
@@ -303,7 +303,7 @@ void BurgersExplicit<Hydro>::integrateWorkDiffusion(IHydro *ihydro, Real dt, Sta
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 
 	//apply work diffusion = momentum
-	parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+	Parallel::parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		IVector index = v.first;
 		Cell &cell = v.second;
 		bool edge = false;

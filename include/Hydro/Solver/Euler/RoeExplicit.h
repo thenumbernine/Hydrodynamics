@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Hydro/Solver/Godunov.h"
-#include "Parallel.h"
+#include "Parallel/Parallel.h"
 
 namespace Solver {
 namespace Euler {
@@ -33,7 +33,7 @@ void RoeExplicit<Hydro>::initStep(IHydro *ihydro) {
 		PROFILE()
 		Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	
-		parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+		Parallel::parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 			IVector index = v.first;
 			Cell &cell = v.second;
 			InterfaceVector &interface = cell.interfaces;

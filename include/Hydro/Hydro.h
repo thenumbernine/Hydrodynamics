@@ -10,7 +10,7 @@
 #include "Hydro/Limiter.h"
 #include "TensorMath/Grid.h"
 #include "TensorMath/Vector.h"
-#include "Parallel.h"
+#include "Parallel/Parallel.h"
 
 template<typename EOS_>
 struct Hydro : public IHydro {
@@ -118,7 +118,7 @@ void Hydro<EOS>::resetCoordinates(Vector xmin_, Vector xmax_) {
 	xmin = xmin_;
 	xmax = xmax_;
 
-	parallel->foreach(cells.begin(), cells.end(), [&](typename CellGrid::value_type &v) {
+	Parallel::parallel->foreach(cells.begin(), cells.end(), [&](typename CellGrid::value_type &v) {
 		IVector index = v.first;
 		Cell &cell = v.second;
 		for (int j = 0; j < rank; ++j) {
@@ -126,7 +126,7 @@ void Hydro<EOS>::resetCoordinates(Vector xmin_, Vector xmax_) {
 		}
 	});
 
-	parallel->foreach(cells.begin(), cells.end(), [&](typename CellGrid::value_type &v) {
+	Parallel::parallel->foreach(cells.begin(), cells.end(), [&](typename CellGrid::value_type &v) {
 		IVector index = v.first;
 		InterfaceVector &interface = v.second.interfaces;
 		bool edge = false;
@@ -148,7 +148,7 @@ void Hydro<EOS>::resetCoordinates(Vector xmin_, Vector xmax_) {
 		}
 	});
 
-	parallel->foreach(cells.begin(), cells.end(), [&](typename CellGrid::value_type &v) {
+	Parallel::parallel->foreach(cells.begin(), cells.end(), [&](typename CellGrid::value_type &v) {
 		IVector index = v.first;
 		InterfaceVector &interface = v.second.interfaces;
 		for (int k = 0; k < rank; ++k) {

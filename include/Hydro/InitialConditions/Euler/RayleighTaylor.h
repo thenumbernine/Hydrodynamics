@@ -31,7 +31,7 @@ RayleighTaylor<Hydro>::RayleighTaylor() {
 template<typename Hydro>
 void RayleighTaylor<Hydro>::operator()(IHydro *ihydro, Real noise) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
-	parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+	Parallel::parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		Cell &cell = v.second;
 		Vector x = cell.x;
 		bool greaterThanMid = x(rank-1) > (.5 * hydro->xmin(rank-1) + .5 * hydro->xmax(rank-1));
