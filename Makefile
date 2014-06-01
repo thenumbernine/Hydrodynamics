@@ -11,8 +11,3 @@ include ../Parallel/Include.mk
 #CFLAGS= -I../GLApp/include -I../TensorMath/include -m32 -mfpmath=387 -mno-sse
 #LDFLAGS= -m32
 
-$(DIST):: $(OBJPATHS)
-	install_name_tool -change dist/$(PLATFORM)/$(BUILD)/libGLApp.dylib ../GLApp/dist/$(PLATFORM)/$(BUILD)/libGLApp.dylib $@
-	install_name_tool -change dist/$(PLATFORM)/$(BUILD)/libProfiler.dylib ../Profiler/dist/$(PLATFORM)/$(BUILD)/libProfiler.dylib $@
-	install_name_tool -change dist/$(PLATFORM)/$(BUILD)/libParallel.dylib ../Parallel/dist/$(PLATFORM)/$(BUILD)/libParallel.dylib $@
-
