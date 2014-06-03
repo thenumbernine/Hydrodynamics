@@ -49,15 +49,8 @@ SRHD<Real, rank>::SRHD() {
 
 template<typename Real, int rank>
 typename SRHD<Real, rank>::StateVector
-SRHD<Real, rank>::getPrimitives(StateVector state) {
-	StateVector primitives;
-	//density
-	primitives(0) = state(0);
-	for (int k = 0; k < rank; ++k) {
-		primitives(k+1) = state(k+1) / state(0);
-	}
-	//total specific energy
-	primitives(rank+1) = state(rank+1) / state(0);
+SRHD<Real, rank>::getPrimitives(StateVector state, StateVector lastPrimitives) {
+	
 	return primitives;
 }
 
