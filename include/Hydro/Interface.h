@@ -1,22 +1,22 @@
 #pragma once
 
-#include "TensorMath/Tensor.h"
+#include "Tensor/Tensor.h"
 
 //cell interface values
 template<typename Real_, int rank, int numberOfStates>
 struct Interface {
 	typedef Real_ Real;
-	typedef Vector<int, rank> IVector;
-	typedef Tensor<Real, Upper<rank> > Vector;
-	typedef Tensor<Real, Upper<numberOfStates> > StateVector;
+	typedef Tensor::Vector<int, rank> IVector;
+	typedef Tensor::Tensor<Real, Tensor::Upper<rank> > Vector;
+	typedef Tensor::Tensor<Real, Tensor::Upper<numberOfStates> > StateVector;
 	
 	/*
 	in the tensor math library I don't have a generic any-2-indexes inverse function
 	i do have hardcoded a lower-lower function (for metric) that generates an upper-upper (for metric inverses)
 	so I'm working with that here:
 	*/
-	typedef Tensor<Real, Lower<numberOfStates>, Lower<numberOfStates> > StateMatrix;
-	typedef Tensor<Real, Upper<numberOfStates>, Upper<numberOfStates> > StateInverseMatrix;
+	typedef Tensor::Tensor<Real, Tensor::Lower<numberOfStates>, Tensor::Lower<numberOfStates> > StateMatrix;
+	typedef Tensor::Tensor<Real, Tensor::Upper<numberOfStates>, Tensor::Upper<numberOfStates> > StateInverseMatrix;
 
 	Interface() 
 	: velocity(Real())

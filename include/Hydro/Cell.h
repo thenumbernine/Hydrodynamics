@@ -1,6 +1,6 @@
 #pragma once
 
-#include "TensorMath/Tensor.h"
+#include "Tensor/Tensor.h"
 #include "Hydro/Interface.h"
 
 //cell-centered values
@@ -10,9 +10,9 @@ struct Cell {
 	
 	//static values
 	typedef Real_ Real;
-	typedef Vector<int, rank> IVector;
-	typedef Tensor<Real, Upper<rank> > Vector;
-	typedef Tensor<Real, Upper<numberOfStates> > StateVector;
+	typedef Tensor::Vector<int, rank> IVector;
+	typedef Tensor::Tensor<Real, Tensor::Upper<rank> > Vector;
+	typedef Tensor::Tensor<Real, Tensor::Upper<numberOfStates> > StateVector;
 	typedef ::Interface<Real, rank, numberOfStates> Interface;
 
 	Cell() : pressure(Real()) {}
@@ -27,7 +27,7 @@ struct Cell {
 	Real pressure;
 	
 	//used for Godunov
-	::Vector<StateVector, rank> stateLeft, stateRight;	//sized by state
+	Tensor::Vector<StateVector, rank> stateLeft, stateRight;	//sized by state
 
 	//used for integration
 	StateVector dq_dt;
@@ -38,6 +38,6 @@ struct Cell {
 	StateVector tmpState4;
 
 	//merging grids
-	::Vector<Interface, rank> interfaces;
+	Tensor::Vector<Interface, rank> interfaces;
 };
 

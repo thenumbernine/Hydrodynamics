@@ -1,8 +1,8 @@
 #pragma once
 
-#include "TensorMath/Vector.h"
+#include "Tensor/Vector.h"
 
-struct Quat : public ::Vector<float, 4> {
+struct Quat : public Tensor::Vector<float, 4> {
 	
 	Quat() {
 		(*this)(3) = 1.;

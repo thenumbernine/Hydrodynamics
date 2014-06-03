@@ -298,11 +298,11 @@ void HydroApp::initType() {
 	
 	//after external force is determined, recalibrate potential energy
 	//check the minimum of the potential energy at all corners
-	RangeObj<rank> range(IVector(), IVector(2));
+	Tensor::RangeObj<rank> range(IVector(), IVector(2));
 	hydro->minPotentialEnergy = HUGE_VAL;
 	for (IVector index : range) {
 		Real potentialSpecificEnergy = 0.; 
-		::Vector<Real, rank> x;
+		Tensor::Vector<Real, rank> x;
 		for (int k = 0; k < rank; ++k) {
 			x(k) = index(k) ? hydro->xmax(k) : hydro->xmin(k);
 			potentialSpecificEnergy += x(k) * hydro->externalForce(k);

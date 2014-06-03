@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Hydro/EOS/EOS.h"
-#include "TensorMath/Inverse.h"
+#include "Tensor/Inverse.h"
 #include "Hydro/Solver/SRHD/RoeExplicit.h"
 #include "Hydro/InitialConditions/SRHD/Sod.h"
 
@@ -18,10 +18,10 @@ struct SRHD : public ::EOS::EOS<Real, rank_> {
 	typedef ::InitialConditions::InitialConditions<Real, rank> InitialConditions;
 	typedef ::Hydro<SRHD<Real, rank> > Hydro;
 	enum { numberOfStates = rank + 2 };
-	typedef Tensor<Real, Upper<rank> > Vector;
-	typedef Tensor<Real, Upper<numberOfStates> > StateVector;
-	typedef Tensor<Real, Lower<numberOfStates>, Lower<numberOfStates> > StateMatrix;
-	typedef Tensor<Real, Upper<numberOfStates>, Upper<numberOfStates> > StateInverseMatrix;
+	typedef Tensor::Tensor<Real, Tensor::Upper<rank> > Vector;
+	typedef Tensor::Tensor<Real, Tensor::Upper<numberOfStates> > StateVector;
+	typedef Tensor::Tensor<Real, Tensor::Lower<numberOfStates>, Tensor::Lower<numberOfStates> > StateMatrix;
+	typedef Tensor::Tensor<Real, Tensor::Upper<numberOfStates>, Tensor::Upper<numberOfStates> > StateInverseMatrix;
 
 	SRHD();
 	
@@ -50,7 +50,6 @@ SRHD<Real, rank>::SRHD() {
 template<typename Real, int rank>
 typename SRHD<Real, rank>::StateVector
 SRHD<Real, rank>::getPrimitives(StateVector state, StateVector lastPrimitives) {
-	
 	return primitives;
 }
 

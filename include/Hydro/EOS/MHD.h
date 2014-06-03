@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Hydro/EOS/EOS.h"
-#include "TensorMath/Inverse.h"
+#include "Tensor/Inverse.h"
 
 #include "Hydro/Solver/MHD/RoeExplicit.h"
 #include "Hydro/InitialConditions/MHD/BrioWu.h"
@@ -18,11 +18,11 @@ struct MHD : public ::EOS::EOS<Real, rank_> {
 	typedef ::Hydro<MHD<Real, rank>> Hydro;
 	
 	enum { numberOfStates = 9 };	//mhd always needs to simulate all fields.  maybe not one or two of them.  might as well do all of them.
-	typedef Tensor<Real, Upper<rank>> Vector;
-	typedef Tensor<Real, Upper<numberOfStates>> StateVector;
-	typedef Tensor<Real, Lower<numberOfStates>, Lower<numberOfStates>> StateMatrix;
-	typedef Tensor<Real, Upper<numberOfStates>, Upper<numberOfStates>> StateInverseMatrix;
-	typedef Tensor<Real, Upper<3>> Vector3;
+	typedef Tensor::Tensor<Real, Tensor::Upper<rank>> Vector;
+	typedef Tensor::Tensor<Real, Tensor::Upper<numberOfStates>> StateVector;
+	typedef Tensor::Tensor<Real, Tensor::Lower<numberOfStates>, Tensor::Lower<numberOfStates>> StateMatrix;
+	typedef Tensor::Tensor<Real, Tensor::Upper<numberOfStates>, Tensor::Upper<numberOfStates>> StateInverseMatrix;
+	typedef Tensor::Tensor<Real, Tensor::Upper<3>> Vector3;
 
 	MHD();
 	

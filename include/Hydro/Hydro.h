@@ -8,8 +8,8 @@
 #include "Hydro/Explicit/Explicit.h"
 #include "Hydro/Boundary/Boundary.h"
 #include "Hydro/Limiter.h"
-#include "TensorMath/Grid.h"
-#include "TensorMath/Vector.h"
+#include "Tensor/Grid.h"
+#include "Tensor/Vector.h"
 #include "Parallel/Parallel.h"
 
 template<typename EOS_>
@@ -27,7 +27,7 @@ struct Hydro : public IHydro {
 	typedef ::Cell<Real, rank, numberOfStates> Cell;
 	typedef ::Interface<Real, rank, numberOfStates> Interface;
 	
-	typedef ::Vector<int, rank> IVector;
+	typedef Tensor::Vector<int, rank> IVector;
 	typedef typename Cell::Vector Vector;
 	typedef typename Cell::StateVector StateVector;
 	typedef typename Interface::StateMatrix StateMatrix;
@@ -50,8 +50,8 @@ public:	//'til I can work out access
 	int nghost;
 	Vector xmin, xmax;
 
-	typedef ::Grid<std::pair<IVector, Cell>, rank> CellGrid;
-	typedef ::Vector<Interface, rank> InterfaceVector;
+	typedef Tensor::Grid<std::pair<IVector, Cell>, rank> CellGrid;
+	typedef Tensor::Vector<Interface, rank> InterfaceVector;
 	CellGrid cells;
 
 	Plot<rank> plot;
@@ -104,7 +104,7 @@ Hydro<EOS>::Hydro(IVector size_,
 	explicitMethod = explicitMethod_;
 	limiter = limiter_;
 	
-	RangeObj<rank> range(IVector(), cells.size);
+	Tensor::RangeObj<rank> range(IVector(), cells.size);
 	for (IVector index : range) {
 		typename CellGrid::Type &v = cells(index);
 		v.first = index;

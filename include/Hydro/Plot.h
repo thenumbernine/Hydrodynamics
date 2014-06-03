@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Quat.h"
-#include "TensorMath/Vector.h"
+#include "Tensor/Vector.h"
 #include <OpenGL/gl.h>
 #include <algorithm>
 
@@ -77,7 +77,7 @@ struct Plot {
 //1D case
 template<>
 struct Plot<1> {
-	::Vector<float, 2> viewPos;
+	Tensor::Vector<float, 2> viewPos;
 	float viewZoom;
 
 	Plot() : viewZoom(1.) {}
@@ -93,7 +93,7 @@ struct Plot<1> {
 		glScalef(viewZoom, viewZoom, viewZoom);
 #if 0	//show piecewise step functions - in anticipation of getting PPM method working	
 		for (int state = 0; state < 3; ++state) {
-			::Vector<float,3> color;
+			Tensor::Vector<float,3> color;
 			color(state) = 1;
 			glColor3fv(color.v);
 			for (int i = 0; i < hydro.size(0); ++i) {
@@ -111,7 +111,7 @@ struct Plot<1> {
 #endif
 #if 1	//good ol fashioned graph
 		for (int state = 0; state < 3; ++state) {
-			::Vector<float,3> color;
+			Tensor::Vector<float,3> color;
 			color(state) = 1;
 			glColor3fv(color.v);
 			glBegin(GL_LINE_STRIP);
@@ -149,7 +149,7 @@ struct Plot<1> {
 //2D case
 template<>
 struct Plot<2> {
-	::Vector<float, 2> viewPos;
+	Tensor::Vector<float, 2> viewPos;
 	float viewZoom;
 
 	Plot() : viewZoom(1.) {}

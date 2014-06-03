@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Hydro/EOS/EOS.h"
-#include "TensorMath/Inverse.h"
+#include "Tensor/Inverse.h"
 
 #include "Hydro/Solver/Euler/BurgersExplicit.h"
 #include "Hydro/Solver/Euler/GodunovExplicit.h"
@@ -27,10 +27,10 @@ struct Euler : public ::EOS::EOS<Real, rank_> {
 	typedef ::InitialConditions::InitialConditions<Real, rank> InitialConditions;
 	typedef ::Hydro<Euler<Real, rank> > Hydro;
 	enum { numberOfStates = rank + 2 };
-	typedef Tensor<Real, Upper<rank> > Vector;
-	typedef Tensor<Real, Upper<numberOfStates> > StateVector;
-	typedef Tensor<Real, Lower<numberOfStates>, Lower<numberOfStates> > StateMatrix;
-	typedef Tensor<Real, Upper<numberOfStates>, Upper<numberOfStates> > StateInverseMatrix;
+	typedef Tensor::Tensor<Real, Tensor::Upper<rank> > Vector;
+	typedef Tensor::Tensor<Real, Tensor::Upper<numberOfStates> > StateVector;
+	typedef Tensor::Tensor<Real, Tensor::Lower<numberOfStates>, Tensor::Lower<numberOfStates> > StateMatrix;
+	typedef Tensor::Tensor<Real, Tensor::Upper<numberOfStates>, Tensor::Upper<numberOfStates> > StateInverseMatrix;
 
 	Euler();
 	
@@ -83,8 +83,8 @@ template<int rank>
 struct BuildPerpendicularBasis {
 	template<typename Real>
 	static void go(
-		::Tensor<Real, Upper<rank> > normal, 
-		::Vector<::Tensor<Real, Upper<rank> >, rank-1> &tangents) 
+		Tensor::Tensor<Real, Tensor::Upper<rank> > normal, 
+		Tensor::Vector<Tensor::Tensor<Real, Tensor::Upper<rank> >, rank-1> &tangents) 
 	{
 		//1) pick normal's max abs component
 		//2) fill in all axii but that component
@@ -139,8 +139,8 @@ template<>
 struct BuildPerpendicularBasis<1> {
 	template<typename Real>
 	static void go(
-		::Tensor<Real, Upper<1> > normal, 
-		::Vector<::Tensor<Real, Upper<1> >, 0> &tangents)
+		Tensor::Tensor<Real, Tensor::Upper<1> > normal, 
+		Tensor::Vector<Tensor::Tensor<Real, Tensor::Upper<1> >, 0> &tangents)
 	{
 	}
 };
@@ -149,8 +149,8 @@ template<>
 struct BuildPerpendicularBasis<2> {
 	template<typename Real>
 	static void go(
-		::Tensor<Real, Upper<2> > normal, 
-		::Vector<::Tensor<Real, Upper<2> >, 1> &tangents) 
+		Tensor::Tensor<Real, Tensor::Upper<2> > normal, 
+		Tensor::Vector<Tensor::Tensor<Real, Tensor::Upper<2> >, 1> &tangents) 
 	{
 		tangents(0)(0) = -normal(1);
 		tangents(0)(1) = normal(0);
@@ -160,7 +160,7 @@ struct BuildPerpendicularBasis<2> {
 template<typename OutputType, typename InputType>
 struct InverseCramer {
 	static OutputType go(InputType input) {
-		return inverse<InputType>(input);
+		return Tensor::inverse<InputType>(input);
 	}
 };
 
@@ -268,10 +268,10 @@ void Euler<Real, rank>::buildEigenstate(
 	static_assert(rank >= 1 && rank <= 3, "only 1D-3D support at the moment");
 
 	//common with Euler EOS
-	::Vector<Vector, rank-1> tangents;
+	Tensor::Vector<Vector, rank-1> tangents;
 	BuildPerpendicularBasis<rank>::template go<Real>(normal, tangents);
 	Real velocityAlongNormal = Real(0);
-	::Vector<Real, rank-1> velocityAlongTangents;
+	Tensor::Vector<Real, rank-1> velocityAlongTangents;
 	Real velocitySq = Real(0);
 	for (int k = 0; k < rank; ++k) {
 		velocityAlongNormal += normal(k) * velocity(k);

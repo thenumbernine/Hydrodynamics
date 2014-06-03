@@ -1,6 +1,6 @@
 #pragma once
 
-#include "TensorMath/Grid.h"	//RangeObj
+#include "Tensor/Grid.h"	//RangeObj
 #include "Hydro/Boundary/Boundary.h"
 
 namespace Boundary {
@@ -22,7 +22,7 @@ void Mirror<Hydro>::operator()(IHydro *ihydro) {
 	
 	for (int side = 0; side < rank; ++side) {
 		//volume range over all other dimensions ...
-		typedef ::Vector<int, rank-1> BoundaryIntVector;
+		typedef Tensor::Vector<int, rank-1> BoundaryIntVector;
 		BoundaryIntVector min, max;
 		for (int k = 0; k < rank - 1; ++k) {
 			if (k < side) {
@@ -31,7 +31,7 @@ void Mirror<Hydro>::operator()(IHydro *ihydro) {
 				max(k) = hydro->size(k+1);
 			}
 		}
-		RangeObj<rank-1> boundary(min, max);
+		Tensor::RangeObj<rank-1> boundary(min, max);
 		
 		auto callback = [&](BoundaryIntVector boundaryIndex) {
 			IVector index;

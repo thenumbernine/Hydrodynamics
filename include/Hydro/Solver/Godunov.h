@@ -193,7 +193,7 @@ void Godunov<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Cell::*d
 			}
 			if (!edge) {
 				for (int side = 0; side < rank; ++side) {
-					IVector indexR = index;
+					//IVector indexR = index;
 					IVector indexL = index;
 					--indexL(side);
 					
