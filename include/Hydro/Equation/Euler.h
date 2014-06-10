@@ -55,16 +55,16 @@ struct Euler : public ::Equation::Equation<Real, rank_> {
 //construct solverAllocator map
 template<typename Real, int rank>
 Euler<Real, rank>::Euler() {
-	Super::solvers.map["Burgers"] = []() -> ISolver* { return new ::Solver::Euler::BurgersExplicit<Hydro>(); };
-	Super::solvers.map["Godunov"] = []() -> ISolver* { return new ::Solver::Euler::GodunovExplicit<Hydro>(); };
-	Super::solvers.map["Roe"] = []() -> ISolver* { return new ::Solver::Euler::RoeExplicit<Hydro>(); };
+	Super::solvers.template add<::Solver::Euler::BurgersExplicit<Hydro>>("Burgers");
+	Super::solvers.template add<::Solver::Euler::GodunovExplicit<Hydro>>("Godunov");
+	Super::solvers.template add<::Solver::Euler::RoeExplicit<Hydro>>("Roe");
 
-	Super::initialConditions.map["Sod"] = []() -> InitialConditions* { return new ::InitialConditions::Euler::Sod<Hydro>(); };
-	Super::initialConditions.map["Sedov"] = []() -> InitialConditions* { return new ::InitialConditions::Euler::Sedov<Hydro>(); };
-	Super::initialConditions.map["Advect"] = []() -> InitialConditions* { return new ::InitialConditions::Euler::Advect<Hydro>(); };
-	Super::initialConditions.map["Wave"] = []() -> InitialConditions* { return new ::InitialConditions::Euler::Wave<Hydro>(); };
-	Super::initialConditions.map["KelvinHemholtz"] = []() -> InitialConditions* { return new ::InitialConditions::Euler::KelvinHemholtz<Hydro>(); };
-	Super::initialConditions.map["RayleighTaylor"] = []() -> InitialConditions* { return new ::InitialConditions::Euler::RayleighTaylor<Hydro>(); };
+	Super::initialConditions.template add<::InitialConditions::Euler::Sod<Hydro>>("Sod");
+	Super::initialConditions.template add<::InitialConditions::Euler::Sedov<Hydro>>("Sedov");
+	Super::initialConditions.template add<::InitialConditions::Euler::Advect<Hydro>>("Advect");
+	Super::initialConditions.template add<::InitialConditions::Euler::Wave<Hydro>>("Wave");
+	Super::initialConditions.template add<::InitialConditions::Euler::KelvinHemholtz<Hydro>>("KelvinHemholtz");
+	Super::initialConditions.template add<::InitialConditions::Euler::RayleighTaylor<Hydro>>("RayleighTaylor");
 }
 
 template<typename Real, int rank>

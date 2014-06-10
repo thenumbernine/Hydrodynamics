@@ -41,11 +41,11 @@ public:	//hydro args
 	Real gamma;
 	Vector externalForce;
 	Real minPotentialEnergy;
-	::Boundary::Boundary *boundaryMethod;
-	Equation *equation;
-	ISolver *solver;
-	Explicit *explicitMethod;
-	Limiter *limiter;
+	std::shared_ptr<::Boundary::Boundary> boundaryMethod;
+	std::shared_ptr<Equation> equation;
+	std::shared_ptr<ISolver> solver;
+	std::shared_ptr<Explicit> explicitMethod;
+	std::shared_ptr<Limiter> limiter;
 	std::shared_ptr<DisplayMethod> displayMethod;
 
 public:	//'til I can work out access
@@ -63,11 +63,11 @@ public:
 		Real cfl_,
 		Real fixedDT_,
 		Real gamma_,
-		::Boundary::Boundary *boundaryMethod_,
-		Equation *equation_,
-		ISolver *solver_,
-		Explicit *explicitMethod_,
-		Limiter *limiter_,
+		std::shared_ptr<::Boundary::Boundary> boundaryMethod_,
+		std::shared_ptr<Equation> equation_,
+		std::shared_ptr<ISolver> solver_,
+		std::shared_ptr<Explicit> explicitMethod_,
+		std::shared_ptr<Limiter> limiter_,
 		std::shared_ptr<DisplayMethod> displayMethod_);
 	
 	void resetCoordinates(Vector xmin_, Vector xmax_);
@@ -87,11 +87,11 @@ Hydro<Equation>::Hydro(IVector size_,
 	Real cfl_,
 	Real fixedDT_,
 	Real gamma_,
-	::Boundary::Boundary *boundaryMethod_,
-	Equation *equation_,
-	ISolver *solver_,
-	Explicit *explicitMethod_,
-	Limiter *limiter_,
+	std::shared_ptr<::Boundary::Boundary> boundaryMethod_,
+	std::shared_ptr<Equation> equation_,
+	std::shared_ptr<ISolver> solver_,
+	std::shared_ptr<Explicit> explicitMethod_,
+	std::shared_ptr<Limiter> limiter_,
 	std::shared_ptr<DisplayMethod> displayMethod_)
 : size(size_)
 , useCFL(useCFL_)

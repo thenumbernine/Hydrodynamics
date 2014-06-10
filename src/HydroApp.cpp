@@ -216,95 +216,54 @@ void HydroApp::initType() {
 	typedef ::Explicit::Explicit<Hydro> Explicit;
 	typedef ::Limiter::Limiter<Real> Limiter;
 
-	Equation *equation = new Equation();
+	std::shared_ptr<Equation> equation = std::make_shared<Equation>();
 
 	//these are eos-specific
-	::InitialConditions::InitialConditions<Real, rank> *initialConditions = equation->initialConditions.create(hydroArgs.initialConditionsName);
-	ISolver *solver = equation->solvers.create(hydroArgs.solverName);
+	std::shared_ptr<::InitialConditions::InitialConditions<Real, rank>> initialConditions = equation->initialConditions(hydroArgs.initialConditionsName);
+	std::shared_ptr<ISolver> solver = equation->solvers(hydroArgs.solverName);
 
-	::Boundary::Boundary *boundary = NULL;
-	if (hydroArgs.boundaryName =="Mirror") {
-		boundary = new ::Boundary::Mirror<Hydro>();
-	} else if (hydroArgs.boundaryName == "Periodic") {
-		boundary = new ::Boundary::Periodic<Hydro>();
-#if 0
-	} else if (hydroArgs.boundaryName =="Constant") {
-		boundary = new ::Boundary::Constant<Hydro>();
-	} else if (hydroArgs.boundaryName =="FreeFlow") {
-		boundary = new ::Boundary::FreeFlow<Hydro>();
-#endif
-	} else {
-		throw Common::Exception() << "unknown boundary method " << hydroArgs.boundaryName;
-	}
+	AllocatorMap<::Boundary::Boundary> boundaryMethods;
+	boundaryMethods.template add<::Boundary::Mirror<Hydro>>("Mirror");
+	boundaryMethods.template add<::Boundary::Periodic<Hydro>>("Periodic");
+	//boundaryMethods.template add<::Boundary::Constant<Hydro>>("Constant");
+	//boundaryMethods.template add<::Boundary::FreeFlow<Hydro>>("FreeFlow");
+	std::shared_ptr<::Boundary::Boundary> boundaryMethod = boundaryMethods(hydroArgs.boundaryName);
 
-	Explicit *explicitMethod = NULL;
-	if (hydroArgs.explicitName == "ForwardEuler") {
-		explicitMethod = new ::Explicit::ForwardEuler<Hydro>();
-	} else if (hydroArgs.explicitName == "RungeKutta2") {
-		explicitMethod = new ::Explicit::RungeKutta2<Hydro>();
-	} else if (hydroArgs.explicitName == "RungeKutta4") {
-		explicitMethod = new ::Explicit::RungeKutta4<Hydro>();
-	} else if (hydroArgs.explicitName == "IterativeCrankNicolson3") {
-		explicitMethod = new ::Explicit::IterativeCrankNicolson3<Hydro>();
-	} else {
-		throw Common::Exception() << "unknown explicit method " << hydroArgs.explicitName;
-	}
+	AllocatorMap<Explicit> explicitMethods;
+	explicitMethods.template add<::Explicit::ForwardEuler<Hydro>>("ForwardEuler");
+	explicitMethods.template add<::Explicit::RungeKutta2<Hydro>>("RungeKutta2");
+	explicitMethods.template add<::Explicit::RungeKutta4<Hydro>>("RungeKutta4");
+	explicitMethods.template add<::Explicit::IterativeCrankNicolson3<Hydro>>("IterativeCrankNicolson3");
+	std::shared_ptr<Explicit> explicitMethod = explicitMethods(hydroArgs.explicitName);
 
-	Limiter *limiter = NULL;
-	if (hydroArgs.limiterName == "DonorCell") {
-		limiter = new ::Limiter::DonorCell<Real>();
-	} else if (hydroArgs.limiterName == "LaxWendroff") {
-		limiter = new ::Limiter::LaxWendroff<Real>();
-	} else if (hydroArgs.limiterName == "BeamWarming") {
-		limiter = new ::Limiter::BeamWarming<Real>();
-	} else if (hydroArgs.limiterName == "Fromm") {
-		limiter = new ::Limiter::Fromm<Real>();
-	} else if (hydroArgs.limiterName == "CHARM") {
-		limiter = new ::Limiter::CHARM<Real>();
-	} else if (hydroArgs.limiterName == "HCUS") {
-		limiter = new ::Limiter::HCUS<Real>();
-	} else if (hydroArgs.limiterName == "HQUICK") {
-		limiter = new ::Limiter::HQUICK<Real>();
-	} else if (hydroArgs.limiterName == "Koren") {
-		limiter = new ::Limiter::Koren<Real>();
-	} else if (hydroArgs.limiterName == "MinMod") {
-		limiter = new ::Limiter::MinMod<Real>();
-	} else if (hydroArgs.limiterName == "Oshker") {
-		limiter = new ::Limiter::Oshker<Real>();
-	} else if (hydroArgs.limiterName == "Ospre") {
-		limiter = new ::Limiter::Ospre<Real>();
-	} else if (hydroArgs.limiterName == "Smart") {
-		limiter = new ::Limiter::Smart<Real>();
-	} else if (hydroArgs.limiterName == "Sweby") {
-		limiter = new ::Limiter::Sweby<Real>();
-	} else if (hydroArgs.limiterName == "UMIST") {
-		limiter = new ::Limiter::UMIST<Real>();
-	} else if (hydroArgs.limiterName == "VanAlbada1") {
-		limiter = new ::Limiter::VanAlbada1<Real>();
-	} else if (hydroArgs.limiterName == "VanAlbada2") {
-		limiter = new ::Limiter::VanAlbada2<Real>();
-	} else if (hydroArgs.limiterName == "VanLeer") {
-		limiter = new ::Limiter::VanLeer<Real>();
-	} else if (hydroArgs.limiterName == "MonotonizedCentral") {
-		limiter = new ::Limiter::MonotonizedCentral<Real>();
-	} else if (hydroArgs.limiterName == "Superbee") {
-		limiter = new ::Limiter::Superbee<Real>();
-	} else if (hydroArgs.limiterName == "BarthJespersen") {
-		limiter = new ::Limiter::BarthJespersen<Real>();
-	} else {
-		throw Common::Exception() << "unknown limiter " << hydroArgs.limiterName;
-	}
+	AllocatorMap<Limiter> limiters;
+	limiters.template add<::Limiter::DonorCell<Real>>("DonorCell");
+	limiters.template add<::Limiter::LaxWendroff<Real>>("LaxWendroff");
+	limiters.template add<::Limiter::BeamWarming<Real>>("BeamWarming");
+	limiters.template add<::Limiter::Fromm<Real>>("Fromm");
+	limiters.template add<::Limiter::CHARM<Real>>("CHARM");
+	limiters.template add<::Limiter::HCUS<Real>>("HCUS");
+	limiters.template add<::Limiter::HQUICK<Real>>("HQUICK");
+	limiters.template add<::Limiter::Koren<Real>>("Koren");
+	limiters.template add<::Limiter::MinMod<Real>>("MinMod");
+	limiters.template add<::Limiter::Oshker<Real>>("Oshker");
+	limiters.template add<::Limiter::Ospre<Real>>("Ospre");
+	limiters.template add<::Limiter::Smart<Real>>("Smart");
+	limiters.template add<::Limiter::Sweby<Real>>("Sweby");
+	limiters.template add<::Limiter::UMIST<Real>>("UMIST");
+	limiters.template add<::Limiter::VanAlbada1<Real>>("VanAlbada1");
+	limiters.template add<::Limiter::VanAlbada2<Real>>("VanAlbada2");
+	limiters.template add<::Limiter::VanLeer<Real>>("VanLeer");
+	limiters.template add<::Limiter::MonotonizedCentral<Real>>("MonotonizedCentral");
+	limiters.template add<::Limiter::Superbee<Real>>("Superbee");
+	limiters.template add<::Limiter::BarthJespersen<Real>>("BarthJespersen");
+	std::shared_ptr<Limiter> limiter = limiters(hydroArgs.limiterName);
 
-	std::shared_ptr<DisplayMethod<Hydro>> displayMethod;
-	if (hydroArgs.displayName == "density") {
-		displayMethod = std::make_shared<DensityColoring<Hydro>>();
-	} else if (hydroArgs.displayName == "velocity") {
-		displayMethod = std::make_shared<VelocityColoring<Hydro>>();
-	} else if (hydroArgs.displayName == "pressure") {
-		displayMethod = std::make_shared<PressureColoring<Hydro>>();
-	} else {
-		throw Common::Exception() << "unknown display " << hydroArgs.displayName;
-	}
+	AllocatorMap<DisplayMethod<Hydro>> displayMethods;
+	displayMethods.template add<DensityColoring<Hydro>>("density");
+	displayMethods.template add<VelocityColoring<Hydro>>("velocity");
+	displayMethods.template add<PressureColoring<Hydro>>("pressure");
+	std::shared_ptr<DisplayMethod<Hydro>> displayMethod = displayMethods(hydroArgs.displayName);
 
 	typedef typename Hydro::IVector IVector;
 	IVector sizev;
@@ -318,7 +277,7 @@ void HydroApp::initType() {
 		hydroArgs.cfl,
 		hydroArgs.fixedDT,
 		hydroArgs.gamma,
-		boundary,
+		boundaryMethod,
 		equation,
 		solver,
 		explicitMethod,
