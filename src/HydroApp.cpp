@@ -69,10 +69,8 @@ public:
 struct HydroApp : public GLApp::GLApp {
 	typedef ::GLApp::GLApp Super;
 
-	IHydro *ihydro;
+	std::shared_ptr<IHydro> ihydro;
 	HydroArgs hydroArgs;
-
-	HydroApp();
 	
 	virtual int main(std::vector<std::string> args);
 
@@ -91,11 +89,6 @@ struct HydroApp : public GLApp::GLApp {
 	virtual void sdlEvent(SDL_Event &event);
 };
 GLAPP_MAIN(HydroApp)
-
-HydroApp::HydroApp()
-: Super()
-, ihydro(NULL)
-{}
 
 int HydroApp::main(std::vector<std::string> args) {
 	bool setSize = false;
@@ -271,7 +264,7 @@ void HydroApp::initType() {
 		sizev(i) = hydroArgs.size[i];
 	}
 
-	Hydro *hydro = new Hydro(
+	std::shared_ptr<Hydro> hydro = std::make_shared<Hydro>(
 		sizev,
 		hydroArgs.useCFL,
 		hydroArgs.cfl,
@@ -311,7 +304,7 @@ std::cout << " min potential " << hydro->minPotentialEnergy << std::endl;
 	hydro->minPotentialEnergy = 0;//-hydro->minPotentialEnergy;
 	
 	//once min potential energy is determined, set up initial conditions
-	(*initialConditions)(ihydro, hydroArgs.noise);
+	(*initialConditions)(&*ihydro, hydroArgs.noise);
 }
 
 template<typename Real, int rank>

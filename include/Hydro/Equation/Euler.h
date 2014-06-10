@@ -109,7 +109,7 @@ void Euler<Real, rank>::buildEigenstate(
 {
 	static_assert(rank >= 1 && rank <= 3, "only 1D-3D support at the moment");
 
-#if 0	//specify eigenbasis in terms of normal (works)
+#if 1	//specify eigenbasis in terms of normal (works)
 
 	//common with Euler Equation
 	Tensor::Vector<Vector, rank-1> tangents;
@@ -207,7 +207,7 @@ void Euler<Real, rank>::buildEigenstate(
 
 
 
-#if 1	//rotate velocity from normal to x axis, rotate eigenvectors & inverse from x axis back to normal (still working on it)
+#if 0	//rotate velocity from normal to x axis, rotate eigenvectors & inverse from x axis back to normal (still working on it)
 
 	if (rank == 2 && normal(1) > .5) {	//x,y <- y,-x
 		Real tmp = velocity(0);

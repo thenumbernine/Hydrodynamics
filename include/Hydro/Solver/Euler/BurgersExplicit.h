@@ -163,7 +163,7 @@ void BurgersExplicit<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector 
 						interface(side).flux(state) = velocity * qR;
 					}
 					Real delta = phi * (qR - qL);
-					interface(side).flux(state) += delta * .5 * fabs(velocity) * (1. - fabs(velocity * dt / dx));
+					interface(side).flux(state) += delta * .5 * fabs(velocity) * (1. - fabs(velocity * dt / dx)) / Real(rank);
 				}
 			}
 		} else {
