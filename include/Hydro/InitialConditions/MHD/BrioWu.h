@@ -19,7 +19,7 @@ struct BrioWu : public InitialConditions<typename Hydro::Real, Hydro::rank> {
 	typedef typename Hydro::Cell Cell;
 	typedef typename Hydro::IVector IVector;
 	typedef typename Hydro::Vector Vector;
-	typedef typename Hydro::EOS::Vector3 Vector3;
+	typedef typename Hydro::Equation::Vector3 Vector3;
 	
 	BrioWu();
 	virtual void operator()(IHydro *ihydro, Real noise); 

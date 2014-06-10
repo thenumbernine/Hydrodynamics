@@ -1,14 +1,14 @@
 #pragma once
 
-#include "Hydro/Solver/Godunov.h"
+#include "Hydro/Solver/Euler/Godunov.h"
 #include "Parallel/Parallel.h"
 
 namespace Solver {
 namespace Euler {
 
 template<typename Hydro>
-struct RoeExplicit : public ::Solver::Godunov<Hydro> {
-	typedef ::Solver::Godunov<Hydro> Super;
+struct RoeExplicit : public ::Solver::Euler::Godunov<Hydro> {
+	typedef ::Solver::Euler::Godunov<Hydro> Super;
 	
 	enum { rank = Hydro::rank };
 	enum { numberOfStates = Hydro::numberOfStates };
@@ -102,7 +102,7 @@ void RoeExplicit<Hydro>::initStep(IHydro *ihydro) {
 					Real totalSpecificEnthalpy = (totalSpecificEnthalpyL * roeWeightL + totalSpecificEnthalpyR * roeWeightR) * invDenom;
 
 					//compute eigenvectors and values at the interface based on averages
-					hydro->equationOfState->buildEigenstate(
+					hydro->equation->buildEigenstate(
 						interface(side).eigenvalues, 
 						interface(side).eigenvectors, 
 						interface(side).eigenvectorsInverse, 

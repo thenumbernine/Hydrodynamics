@@ -1,7 +1,6 @@
 #pragma once
 
-#include "Hydro/Solver/ISolver.h"
-#include "Hydro/InitialConditions/InitialConditions.h"
+#include "Common/Exception.h"
 #include <string>
 #include <map>
 #include <functional>
@@ -21,21 +20,4 @@ Type *AllocatorMap<Type>::create(const std::string &name) {
 	}
 	throw Common::Exception() << "unknown " << name;
 }
-
-
-namespace EOS {
-
-template<typename Real_, int rank_>
-struct EOS {
-	enum { rank = rank_ };
-	typedef Real_ Real;
-	typedef ::Solver::ISolver<Real> ISolver;
-	typedef ::InitialConditions::InitialConditions<Real, rank> InitialConditions;
-
-	//child classes need to populate these
-	AllocatorMap<ISolver> solvers;
-	AllocatorMap<InitialConditions> initialConditions;
-};
-
-};
 

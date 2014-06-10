@@ -1,8 +1,9 @@
 #include "Profiler/Profiler.h"	//placed at the top so everyone can use it without including it because I am lazy like that
 #include "Common/Macros.h"		//similar laziness
 #include "Hydro/Hydro.h"
-#include "Hydro/EOS/Euler.h"
-//#include "Hydro/EOS/MHD.h"
+#include "Hydro/Equation/Euler.h"
+//#include "Hydro/Equation/MHD.h"
+#include "Hydro/Equation/SRHD.h"
 #include "Hydro/Boundary/Mirror.h"
 #include "Hydro/Boundary/Periodic.h"
 //TODO get these working for all dimensions
@@ -38,12 +39,13 @@ public:
 	std::vector<double> externalForce;	//relies on dim ... hmm ... reason to use config file over arguments?
 	std::string precision;
 	std::string boundaryName;
-	std::string equationOfStateName;
+	std::string equationName;
 	std::string solverName;
 	std::string explicitName;
 	std::string limiterName;
 	std::string initialConditionsName;
-	
+	std::string displayName;
+
 	HydroArgs() 
 	: dim(2)
 	, size({256,256})
@@ -54,11 +56,12 @@ public:
 	, gamma(1.4)
 	, precision("double")
 	, boundaryName("Mirror")
-	, equationOfStateName("Euler")
+	, equationName("Euler")
 	, solverName("Roe")
 	, explicitName("ForwardEuler")
 	, limiterName("Superbee")
 	, initialConditionsName("Sod")
+	, displayName("density")
 	{}
 };
 
@@ -73,7 +76,7 @@ struct HydroApp : public GLApp::GLApp {
 	
 	virtual int main(std::vector<std::string> args);
 
-	template<typename Real, int rank, typename EOS>
+	template<typename Real, int rank, typename Equation>
 	void initType();
 
 	template<typename Real, int rank>
@@ -97,11 +100,11 @@ HydroApp::HydroApp()
 int HydroApp::main(std::vector<std::string> args) {
 	bool setSize = false;
 	bool setExternalForce = false;
-	for (int i = 0; i < args.size(); ++i) {
+	for (int i = 1; i < args.size(); ++i) {
 		if (args[i] ==  "--help") {
 			std::cout << "usage: hydro <args>" << std::endl;
 			std::cout << "args:" << std::endl;
-			std::cout << "  --equationOfState <equationOfState>" << std::endl;
+			std::cout << "  --equation <equation>" << std::endl;
 			std::cout << "    can be one of the following: (Euler)" << std::endl;
 			std::cout << "  --initialConditions <initialConditions>" << std::endl;
 			std::cout << "    can be one of the following:" << std::endl;
@@ -120,6 +123,8 @@ int HydroApp::main(std::vector<std::string> args) {
 			std::cout << "      DonorCell LaxWendroff BeamWarming Fromm CHARM HCUS HQUICK Koren MinMod" << std::endl;
 			std::cout << "      Oshker Ospre Smart Sweby UMIST VanAlbada1 VanAlbada2 VanLeer" << std::endl;
 			std::cout << "      MonotonizedCentral (Superbee) BarthJespersen" << std::endl;
+			std::cout << "  --display <display>" << std::endl;
+			std::cout << "    can be one of the following: (density) velocity pressure" << std::endl;
 			std::cout << "  --dim <dim>" << std::endl;
 			std::cout << "    the dimension, can be 1, 2, or 3.  default " << hydroArgs.dim << std::endl;
 			std::cout << "  --size <size1> <size2> ... <sizeN>" << std::endl;
@@ -137,38 +142,55 @@ int HydroApp::main(std::vector<std::string> args) {
 		if (i < args.size()-1) {
 			if (args[i] == "--initialConditions") {
 				hydroArgs.initialConditionsName = args[++i];
+				continue;
 			} else if (args[i] == "--boundary") {
 				hydroArgs.boundaryName = args[++i];
-			} else if (args[i] == "--equationOfState") {
-				hydroArgs.equationOfStateName = args[++i];
+				continue;
+			} else if (args[i] == "--equation") {
+				hydroArgs.equationName = args[++i];
+				continue;
 			} else if (args[i] == "--solver") {
 				hydroArgs.solverName = args[++i];
+				continue;
 			} else if (args[i] == "--explicit") {
 				hydroArgs.explicitName = args[++i];
+				continue;
 			} else if (args[i] == "--limiter") {
 				hydroArgs.limiterName = args[++i];
+				continue;
+			} else if (args[i] == "--display") {
+				hydroArgs.displayName = args[++i];
+				continue;
 			} else if (args[i] == "--size") {
 				setSize = true;
 				hydroArgs.size.resize(hydroArgs.dim);
 				for (int k = 0; k < hydroArgs.dim; ++k) {
 					hydroArgs.size[k] = std::stoi(args[++i]);
 				}
+				continue;
 			} else if (args[i] == "--useCFL") {
 				hydroArgs.useCFL = args[++i] == "true" ? true : false;
+				continue;
 			} else if (args[i] == "--cfl") {
 				hydroArgs.cfl = std::stof(args[++i]);
+				continue;
 			} else if (args[i] == "--noise") {
 				hydroArgs.noise = std::stof(args[++i]);
+				continue;
 			} else if (args[i] == "--fixedDT") {
 				hydroArgs.fixedDT = std::stof(args[++i]);
+				continue;
 			} else if (args[i] == "--gamma") {
 				hydroArgs.gamma = std::stof(args[++i]);
+				continue;
 			} else if (args[i] == "--dim") {
 				if (setSize) throw Common::Exception() << "you must set dim before you set size";
 				if (setExternalForce) throw Common::Exception() << "you must set dim before you set externalForce";
 				hydroArgs.dim = std::stoi(args[++i]);
+				continue;
 			} else if (args[i] == "--precision") {
 				hydroArgs.precision = args[++i];
+				continue;
 			}
 		}
 		if (i < args.size()-hydroArgs.dim) {	//dim must be set first
@@ -178,25 +200,27 @@ int HydroApp::main(std::vector<std::string> args) {
 				for (int k = 0; k < hydroArgs.dim; ++k) {
 					hydroArgs.externalForce[k] = std::stof(args[++i]);
 				}
+				continue;
 			}
 		}
+		throw Common::Exception() << "got unknown cmdline argument: " << args[i];
 	}
 
 	return GLApp::main(args);
 }
 
-template<typename Real, int rank, typename EOS>
+template<typename Real, int rank, typename Equation>
 void HydroApp::initType() {
-	typedef ::Hydro<EOS> Hydro;
+	typedef ::Hydro<Equation> Hydro;
 	typedef ::Solver::ISolver<Real> ISolver;
 	typedef ::Explicit::Explicit<Hydro> Explicit;
 	typedef ::Limiter::Limiter<Real> Limiter;
 
-	EOS *equationOfState = new EOS();
+	Equation *equation = new Equation();
 
 	//these are eos-specific
-	::InitialConditions::InitialConditions<Real, rank> *initialConditions = equationOfState->initialConditions.create(hydroArgs.initialConditionsName);
-	ISolver *solver = equationOfState->solvers.create(hydroArgs.solverName);
+	::InitialConditions::InitialConditions<Real, rank> *initialConditions = equation->initialConditions.create(hydroArgs.initialConditionsName);
+	ISolver *solver = equation->solvers.create(hydroArgs.solverName);
 
 	::Boundary::Boundary *boundary = NULL;
 	if (hydroArgs.boundaryName =="Mirror") {
@@ -271,6 +295,17 @@ void HydroApp::initType() {
 		throw Common::Exception() << "unknown limiter " << hydroArgs.limiterName;
 	}
 
+	std::shared_ptr<DisplayMethod<Hydro>> displayMethod;
+	if (hydroArgs.displayName == "density") {
+		displayMethod = std::make_shared<DensityColoring<Hydro>>();
+	} else if (hydroArgs.displayName == "velocity") {
+		displayMethod = std::make_shared<VelocityColoring<Hydro>>();
+	} else if (hydroArgs.displayName == "pressure") {
+		displayMethod = std::make_shared<PressureColoring<Hydro>>();
+	} else {
+		throw Common::Exception() << "unknown display " << hydroArgs.displayName;
+	}
+
 	typedef typename Hydro::IVector IVector;
 	IVector sizev;
 	for (int i = 0; i < rank; ++i) {
@@ -284,10 +319,11 @@ void HydroApp::initType() {
 		hydroArgs.fixedDT,
 		hydroArgs.gamma,
 		boundary,
-		equationOfState,
+		equation,
 		solver,
 		explicitMethod,
-		limiter);
+		limiter,
+		displayMethod);
 	
 	for (int i = 0; i < rank && i < hydroArgs.externalForce.size(); ++i) {
 		hydro->externalForce(i) = hydroArgs.externalForce[i];
@@ -307,7 +343,7 @@ void HydroApp::initType() {
 			x(k) = index(k) ? hydro->xmax(k) : hydro->xmin(k);
 			potentialSpecificEnergy += x(k) * hydro->externalForce(k);
 		}
-		std::cout << " corner " << index << " potential " << potentialSpecificEnergy << " corner " << x << " extrnal force " << hydro->externalForce << std::endl;
+		std::cout << " corner " << index << " potential " << potentialSpecificEnergy << " corner " << x << " external force " << hydro->externalForce << std::endl;
 		hydro->minPotentialEnergy = std::min<Real>(hydro->minPotentialEnergy, potentialSpecificEnergy);
 	}
 	//add its negative to all potential energy calculations
@@ -321,12 +357,14 @@ std::cout << " min potential " << hydro->minPotentialEnergy << std::endl;
 
 template<typename Real, int rank>
 void HydroApp::initPrecision() {
-	if (hydroArgs.equationOfStateName == "Euler") {
-		initType<Real, rank, ::EOS::Euler<Real, rank>>();
-	//} else if (hydroArgs.equationOfStateName == "MHD") {
-	//	initType<Real, rank, ::EOS::MHD<Real, rank>>();
+	if (hydroArgs.equationName == "Euler") {
+		initType<Real, rank, ::Equation::Euler<Real, rank>>();
+	//} else if (hydroArgs.equationName == "MHD") {
+	//	initType<Real, rank, ::Equation::MHD<Real, rank>>();
+	} else if (hydroArgs.equationName == "SRHD") {
+		initType<Real, rank, ::Equation::SRHD<Real, rank>>();
 	} else {
-		throw Common::Exception() << "unknown equation of state " << hydroArgs.equationOfStateName;
+		throw Common::Exception() << "unknown equation of state " << hydroArgs.equationName;
 	}
 }
 
@@ -381,7 +419,7 @@ void HydroApp::init() {
 	}
 	
 	switch (hydroArgs.dim) {
-	case 1:
+	case 1:	//SRHD only works for 3D
 		initSize<1>();
 		break;
 	case 2:

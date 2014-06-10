@@ -12,18 +12,19 @@
 #include "Tensor/Vector.h"
 #include "Parallel/Parallel.h"
 
-template<typename EOS_>
+template<typename Equation_>
 struct Hydro : public IHydro {
-	typedef EOS_ EOS;
+	typedef Equation_ Equation;
 	
-	typedef typename EOS::Real Real;
-	enum { rank = EOS::rank };
+	typedef typename Equation::Real Real;
+	enum { rank = Equation::rank };
 
 	typedef ::Solver::ISolver<Real> ISolver;
 	typedef ::Explicit::Explicit<Hydro> Explicit;
 	typedef ::Limiter::Limiter<Real> Limiter;
+	typedef typename ::DisplayMethod<Hydro> DisplayMethod;
 	
-	enum { numberOfStates = EOS::numberOfStates };
+	enum { numberOfStates = Equation::numberOfStates };
 	typedef ::Cell<Real, rank, numberOfStates> Cell;
 	typedef ::Interface<Real, rank, numberOfStates> Interface;
 	
@@ -41,10 +42,11 @@ public:	//hydro args
 	Vector externalForce;
 	Real minPotentialEnergy;
 	::Boundary::Boundary *boundaryMethod;
-	EOS *equationOfState;
+	Equation *equation;
 	ISolver *solver;
 	Explicit *explicitMethod;
 	Limiter *limiter;
+	std::shared_ptr<DisplayMethod> displayMethod;
 
 public:	//'til I can work out access
 	int nghost;
@@ -62,10 +64,11 @@ public:
 		Real fixedDT_,
 		Real gamma_,
 		::Boundary::Boundary *boundaryMethod_,
-		EOS *equationOfState_,
+		Equation *equation_,
 		ISolver *solver_,
 		Explicit *explicitMethod_,
-		Limiter *limiter_);
+		Limiter *limiter_,
+		std::shared_ptr<DisplayMethod> displayMethod_);
 	
 	void resetCoordinates(Vector xmin_, Vector xmax_);
 	void step(Real dt);
@@ -78,32 +81,33 @@ public:
 	virtual void zoom(int dz);
 };
 
-template<typename EOS>
-Hydro<EOS>::Hydro(IVector size_,
+template<typename Equation>
+Hydro<Equation>::Hydro(IVector size_,
 	bool useCFL_,
 	Real cfl_,
 	Real fixedDT_,
 	Real gamma_,
 	::Boundary::Boundary *boundaryMethod_,
-	EOS *equationOfState_,
+	Equation *equation_,
 	ISolver *solver_,
 	Explicit *explicitMethod_,
-	Limiter *limiter_)
-: minPotentialEnergy(0)
+	Limiter *limiter_,
+	std::shared_ptr<DisplayMethod> displayMethod_)
+: size(size_)
+, useCFL(useCFL_)
+, cfl(cfl_)
+, fixedDT(fixedDT_)
+, gamma(gamma_)
+, minPotentialEnergy(0)
+, boundaryMethod(boundaryMethod_)
+, equation(equation_)
+, solver(solver_)
+, explicitMethod(explicitMethod_)
+, limiter(limiter_)
+, displayMethod(displayMethod_)
 , nghost(2) 
 , cells(size_+1)
 {
-	size = size_;
-	useCFL = useCFL_;
-	cfl = cfl_;
-	fixedDT = fixedDT_;
-	gamma = gamma_;
-	boundaryMethod = boundaryMethod_;
-	equationOfState = equationOfState_;
-	solver = solver_;
-	explicitMethod = explicitMethod_;
-	limiter = limiter_;
-	
 	Tensor::RangeObj<rank> range(IVector(), cells.size);
 	for (IVector index : range) {
 		typename CellGrid::Type &v = cells(index);
@@ -113,8 +117,8 @@ Hydro<EOS>::Hydro(IVector size_,
 	resetCoordinates(xmin, xmax);
 }
 
-template<typename EOS>
-void Hydro<EOS>::resetCoordinates(Vector xmin_, Vector xmax_) {
+template<typename Equation>
+void Hydro<Equation>::resetCoordinates(Vector xmin_, Vector xmax_) {
 	xmin = xmin_;
 	xmax = xmax_;
 
@@ -174,21 +178,21 @@ void Hydro<EOS>::resetCoordinates(Vector xmin_, Vector xmax_) {
 	});
 }
 
-template<typename EOS>
-void Hydro<EOS>::boundary() {
+template<typename Equation>
+void Hydro<Equation>::boundary() {
 	PROFILE()
 	(*boundaryMethod)(this);
 }
 
-template<typename EOS>
-void Hydro<EOS>::step(Real dt) {
+template<typename Equation>
+void Hydro<Equation>::step(Real dt) {
 	PROFILE()
 	boundary();
 	solver->step(this, dt);
 }
 
-template<typename EOS>
-void Hydro<EOS>::update() {
+template<typename Equation>
+void Hydro<Equation>::update() {
 	PROFILE()
 
 	solver->initStep(this);
@@ -200,24 +204,24 @@ void Hydro<EOS>::update() {
 	step(dt);
 }
 
-template<typename EOS>
-void Hydro<EOS>::resize(int width, int height) {
+template<typename Equation>
+void Hydro<Equation>::resize(int width, int height) {
 	plot.resize(width, height);
 }
 
-template<typename EOS>
-void Hydro<EOS>::pan(int dx, int dy) {
+template<typename Equation>
+void Hydro<Equation>::pan(int dx, int dy) {
 	plot.pan(dx, dy);
 }
 
-template<typename EOS>
-void Hydro<EOS>::zoom(int dz) {
+template<typename Equation>
+void Hydro<Equation>::zoom(int dz) {
 	plot.zoom(dz);
 }
 
-template<typename EOS>
-void Hydro<EOS>::draw() {
+template<typename Equation>
+void Hydro<Equation>::draw() {
 	PROFILE()
-	plot.template draw<Hydro>(*this);
+	plot.template draw<Hydro>(*this, displayMethod);
 }
 

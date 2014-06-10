@@ -32,13 +32,12 @@ template<typename Hydro>
 void Sod<Hydro>::operator()(IHydro *ihydro, Real noise) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	hydro->gamma = 1.4;
-	Vector xmid = hydro->xmin * .7 + hydro->xmax * .3;
 	Parallel::parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		Cell &cell = v.second;
 		Vector x = cell.x;
 		bool lhs = true;
 		for (int k = 0; k < rank; ++k) {
-			if (x(k) > xmid(k)) {
+			if (fabs(x(k)) > .15) {
 				lhs = false;
 				break;
 			}
@@ -60,11 +59,12 @@ void Sod<Hydro>::operator()(IHydro *ihydro, Real noise) {
 		Real internalSpecificEnergy = 1.;
 		Real totalSpecificEnergy = kineticSpecificEnergy + internalSpecificEnergy + potentialSpecificEnergy;
 		//TODO some sort of rank-independent specifier
-		cell.state(0) = density;
+		cell.primitives(0) = density;
 		for (int k = 0; k < rank; ++k) {
-			cell.state(k+1) = density * velocity(k);
+			cell.primitives(k+1) = velocity(k);
 		}
-		cell.state(rank+1) = density * totalSpecificEnergy;
+		cell.primitives(rank+1) = totalSpecificEnergy;
+		cell.state = hydro->equation->getState(cell.primitives);
 	});
 }
 

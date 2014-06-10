@@ -5,6 +5,49 @@
 #include <OpenGL/gl.h>
 #include <algorithm>
 
+template<typename Hydro>
+struct DisplayMethod {
+	typedef typename Hydro::Real Real;
+	typedef typename Hydro::StateVector StateVector;
+	virtual Real getValue(const Hydro &hydro, StateVector state) = 0;
+};
+
+//TODO these are specific to Euler
+template<typename Hydro>
+struct DensityColoring : public DisplayMethod<Hydro> {
+	typedef typename Hydro::Real Real;
+	typedef typename Hydro::StateVector StateVector;
+	Real getValue(const Hydro &hydro, StateVector state) {
+		return state(0);
+	}
+};
+
+template<typename Hydro>
+struct VelocityColoring : public DisplayMethod<Hydro> {
+	enum { rank = Hydro::rank };
+	typedef typename Hydro::Real Real;
+	typedef typename Hydro::Vector Vector;
+	typedef typename Hydro::StateVector StateVector;
+	Real getValue(const Hydro &hydro, StateVector state) {
+		Real momentumSq = 0.f;
+		for (int i = 0; i < rank; ++i) {
+			momentumSq += state(i+1) * state(i+1);
+		}
+		Real density = state(0);
+		return sqrt(momentumSq) / density;
+	}
+};
+
+template<typename Hydro>
+struct PressureColoring : public DisplayMethod<Hydro> {
+	enum { rank = Hydro::rank };
+	typedef typename Hydro::Real Real;
+	typedef typename Hydro::StateVector StateVector;
+	Real getValue(const Hydro &hydro, StateVector state) {
+		return (hydro.gamma - 1.) * state(0) * state(rank+1);
+	}
+};
+
 template<int rank>
 struct Plot {
 	Quat viewAngle;
@@ -13,7 +56,7 @@ struct Plot {
 	Plot() : dist(2.) {}
 
 	template<typename Hydro>
-	void draw(Hydro &hydro) {
+	void draw(Hydro &hydro, std::shared_ptr<DisplayMethod<Hydro>> displayMethod) {
 		typedef typename Hydro::CellGrid CellGrid;
 		typedef typename Hydro::Cell Cell;
 		typedef typename Hydro::StateVector StateVector;
@@ -43,7 +86,7 @@ struct Plot {
 			}
 			if (!edge) {
 				//color by state value, neglect height or use it for coordinates
-				glTexCoord1f(2. * cell.state(0));	//color by density
+				glTexCoord1f(2. * displayMethod->getValue(hydro, cell.state));
 				glVertex3d(cell.x(0), cell.x(1), cell.x(2));
 			}
 		}
@@ -83,7 +126,7 @@ struct Plot<1> {
 	Plot() : viewZoom(1.) {}
 
 	template<typename Hydro>
-	void draw(Hydro &hydro) {
+	void draw(Hydro &hydro, std::shared_ptr<DisplayMethod<Hydro>> displayMethod) {
 		typedef typename Hydro::CellGrid CellGrid;
 		typedef typename Hydro::Cell Cell;
 		typedef typename Hydro::StateVector StateVector;
@@ -98,9 +141,9 @@ struct Plot<1> {
 			glColor3fv(color.v);
 			for (int i = 0; i < hydro.size(0); ++i) {
 				Cell &cell = hydro.cells(IVector(i));
-				StateVector primitivesLeft = hydro.equationOfState->getPrimitives(cell.stateLeft(0));
-				StateVector primitives = hydro.equationOfState->getPrimitives(cell.state);
-				StateVector primitivesRight = hydro.equationOfState->getPrimitives(cell.stateRight(0));
+				StateVector primitivesLeft = hydro.equation->getPrimitives(cell.stateLeft(0));
+				StateVector primitives = hydro.equation->getPrimitives(cell.state);
+				StateVector primitivesRight = hydro.equation->getPrimitives(cell.stateRight(0));
 				glBegin(GL_LINE_STRIP);
 				glVertex2d(cell.interfaces(0).x(0), primitivesLeft(state));
 				glVertex2d(cell.x(0), primitives(state));
@@ -117,8 +160,7 @@ struct Plot<1> {
 			glBegin(GL_LINE_STRIP);
 			for (typename CellGrid::value_type &v : hydro.cells) {
 				Cell &cell = v.second;
-				StateVector primitives = hydro.equationOfState->getPrimitives(cell.state);
-				glVertex2d(cell.x(0), primitives(state));
+				glVertex2d(cell.x(0), cell.primitives(state));
 			}
 			glEnd();
 		}
@@ -155,7 +197,7 @@ struct Plot<2> {
 	Plot() : viewZoom(1.) {}
 
 	template<typename Hydro>
-	void draw(Hydro &hydro) {
+	void draw(Hydro &hydro, std::shared_ptr<DisplayMethod<Hydro>> displayMethod) {
 		typedef typename Hydro::CellGrid CellGrid;
 		typedef typename Hydro::Cell Cell;
 		typedef typename Hydro::IVector IVector;
@@ -173,7 +215,7 @@ struct Plot<2> {
 					Cell &cell = hydro.cells.v[index].second;
 
 					//color by state value, neglect height or use it for coordinates
-					glTexCoord1f(2. * cell.state(0));
+					glTexCoord1f(2. * displayMethod->getValue(hydro, cell.state));
 					glVertex2d(cell.x(0), cell.x(1));
 				}
 			}
@@ -187,7 +229,7 @@ struct Plot<2> {
 		float aspectRatio = (float)width / (float)height;
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
-		glOrtho(-aspectRatio, aspectRatio, -1., 1., -1., 1.);
+		glOrtho(-aspectRatio * .5, aspectRatio * .5, -.5, .5, -1., 1.);
 		glMatrixMode(GL_MODELVIEW);
 	}
 

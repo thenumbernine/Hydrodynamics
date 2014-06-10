@@ -1,14 +1,14 @@
 #pragma once
 
-#include "Hydro/Solver/Godunov.h"
+#include "Hydro/Solver/SRHD/Godunov.h"
 #include "Parallel/Parallel.h"
 
 namespace Solver {
 namespace SRHD {
 
 template<typename Hydro>
-struct RoeExplicit : public ::Solver::Godunov<Hydro> {
-	typedef ::Solver::Godunov<Hydro> Super;
+struct RoeExplicit : public ::Solver::SRHD::Godunov<Hydro> {
+	typedef ::Solver::SRHD::Godunov<Hydro> Super;
 	
 	enum { rank = Hydro::rank };
 	enum { numberOfStates = Hydro::numberOfStates };
@@ -32,6 +32,8 @@ void RoeExplicit<Hydro>::initStep(IHydro *ihydro) {
 	{
 		PROFILE()
 		Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
+
+		Real gamma = hydro->gamma;
 	
 		Parallel::parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 			IVector index = v.first;
@@ -57,45 +59,50 @@ void RoeExplicit<Hydro>::initStep(IHydro *ihydro) {
 
 					//lhs values
 
-					Real lorentzFactorL = cellL.q(0);
-					Vector velocityL =
-					Vector relativisticVelocityL = velocityL * lorentzFactorL;
-					Real densityL = 
-					Real enthalpyL =
-					Real pressureL = 
-					Real pressureOverDensityEnthalpyL = pressureL / (densityL * enthalpyL);
-					Real weightL = sqrt(densityL * specificEnthalpyL);
+					Real densityL = cellL.primitives(0);
+					Vector velocityL;
+					for (int i = 0; i < rank; ++i) {
+						velocityL(i) = cellL.primitives(i+1);
+					}
+					Real pressureL = cellL.primitives(rank+1);
+					Real totalSpecificEnergyL = pressureL / (densityL * (gamma - 1.));
+					Real internalSpecificEnthalpyL = 1. + totalSpecificEnergyL + pressureL / densityL;
+					
+					//Real lorentzFactorL = cellL.state(0);
+					Real weightL = sqrt(densityL * internalSpecificEnthalpyL);
 			
 					//rhs values
+					
+					Real densityR = cellR.primitives(0);
+					Vector velocityR;
+					for (int i = 0; i < rank; ++i) {
+						velocityR(i) = cellR.primitives(i+1);
+					}
+					Real pressureR = cellR.primitives(rank+1);
+					Real totalSpecificEnergyR = pressureR / (densityR * (gamma - 1.));
+					Real internalSpecificEnthalpyR  = 1. + totalSpecificEnergyR + pressureR / densityR;
 
-					Real lorentzFactorR = cellR.q(0);
-					Vector velocityR = 
-					Vector relativisticVelocityR = velocityR * lorentzFactorR;
-					Real densityR = 
-					Real enthalpyR =
-					Real pressureR =
-					Real pressureOverDensityEnthalpyR = pressureR / (densityR * enthalpyR);
-					Real weightR = sqrt(densityR * specificEnthalpyR);
+					//Real lorentzFactorR = cellR.state(0);
+					Real weightR = sqrt(densityR * internalSpecificEnthalpyR);
 
 					//Roe-averaged values
-
-					Real lorentzFactor = (lorentzFactorL * weightL + lorentzFactorR * weightR) / (weightL + weightR);
-					Vector relativisticVelocity = (relativisticVelocityL * weightL + relativisticVelocityR * weightR) / (weightL + weightR);
-					Real pressureOverDensityEnthalpy = (pressureOverDensityEnthalpyL * weightL + pressureOverDensityEnthalpyR * weightR) / (weightL + weightR);
+					Real invDenom = 1. / (weightL + weightR);	
+					Real density = (densityL * weightL + densityR * weightR) * invDenom;
+					Real pressure = (pressureL * weightL + pressureR * weightR) * invDenom;
+					Real internalSpecificEnthalpy = (internalSpecificEnthalpyL * weightL + internalSpecificEnthalpyR * weightR) * invDenom;
+					Vector velocity = (velocityL * weightL + velocityR * weightR) * invDenom;
 
 					//eigenvalues and eigenvectors
 
-					hydro->equationOfState->buildEigenstate(
+					hydro->equation->buildEigenstate(
 						interface(side).eigenvalues, 
 						interface(side).eigenvectors, 
 						interface(side).eigenvectorsInverse, 
 						density, 
 						velocity, 
-						totalSpecificEnergy,
 						pressure,
-						internalSpecificEnergy, 
-						totalSpecificEnthalpy, 
-						hydro->gamma, 
+						internalSpecificEnthalpy, 
+						gamma, 
 						normal);
 				}
 			}

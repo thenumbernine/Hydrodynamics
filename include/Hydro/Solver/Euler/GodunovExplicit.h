@@ -1,13 +1,13 @@
 #pragma once
 
-#include "Hydro/Solver/Godunov.h"
+#include "Hydro/Solver/Euler/Godunov.h"
 
 namespace Solver {
 namespace Euler {
 
 template<typename Hydro>
-struct GodunovExplicit : public ::Solver::Godunov<Hydro> {
-	typedef ::Solver::Godunov<Hydro> Super;	
+struct GodunovExplicit : public ::Solver::Euler::Godunov<Hydro> {
+	typedef ::Solver::Euler::Godunov<Hydro> Super;	
 	
 	enum { rank = Hydro::rank };
 	enum { numberOfStates = Hydro::numberOfStates };
@@ -103,7 +103,7 @@ void GodunovExplicit<Hydro>::initStep(IHydro *ihydro) {
 					Real totalSpecificEnthalpy = (totalSpecificEnthalpyL + totalSpecificEnthalpyR) * .5;
 
 					//compute eigenvectors and values at the interface based on averages
-					hydro->equationOfState->buildEigenstate(
+					hydro->equation->buildEigenstate(
 						interface(side).eigenvalues, 
 						interface(side).eigenvectors, 
 						interface(side).eigenvectorsInverse, 

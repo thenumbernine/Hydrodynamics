@@ -20,7 +20,8 @@ struct Cell {
 	Vector x;	//position
 
 	//dynamic values
-	StateVector state;	//state variables
+	StateVector primitives;		//primitives
+	StateVector state;			//state variables
 
 	//used for Burgers
 	//aux variables:

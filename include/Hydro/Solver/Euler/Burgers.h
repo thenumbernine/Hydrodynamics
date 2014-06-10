@@ -47,11 +47,10 @@ Burgers<Hydro>::calcCFLTimestep(IHydro *ihydro)
 			Vector velocity;
 			Real velocitySq = Real();
 			for (int k = 0; k < rank; ++k) {
-				velocity(k) = cell.state(k+1) / cell.state(0);
+				velocity(k) = cell.primitives(k+1);
 				velocitySq += velocity(k) * velocity(k);
 			}
-			Real velocityMag = sqrt(velocitySq);
-			Real totalSpecificEnergy = cell.state(rank+1) / cell.state(0);
+			Real totalSpecificEnergy = cell.primitives(rank+1);
 			Real kineticSpecificEnergy = .5 * velocitySq;
 			Real potentialSpecificEnergy = hydro->minPotentialEnergy;
 			for (int k = 0; k < rank; ++k) {
@@ -63,7 +62,7 @@ Burgers<Hydro>::calcCFLTimestep(IHydro *ihydro)
 				IVector nextIndex = index;
 				++nextIndex(k);
 				Real dx = hydro->cells(nextIndex).second.interfaces(k).x(k) - hydro->cells(index).second.interfaces(k).x(k);
-				Real dum = dx / (speedOfSound + velocityMag);
+				Real dum = dx / (speedOfSound + fabs(velocity(k)));
 				if (dum < mindum) mindum = dum;
 			}
 		}

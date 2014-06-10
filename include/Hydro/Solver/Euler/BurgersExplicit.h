@@ -28,6 +28,8 @@ struct BurgersExplicit : public ::Solver::Euler::Burgers<Hydro> {
 	void integrateExternalForces(IHydro *hdyro, Real dt, StateVector Cell::*dq_dt);
 	void integrateMomentumDiffusion(IHydro *hdyro, Real dt, StateVector Cell::*dq_dt);
 	void integrateWorkDiffusion(IHydro *hdyro, Real dt, StateVector Cell::*dq_dt);
+	
+	void updatePrimitives(IHydro *ihydro);
 };
 
 template<typename Hydro>
@@ -53,6 +55,8 @@ void BurgersExplicit<Hydro>::step(IHydro *ihydro, Real dt) {
 	(*hydro->explicitMethod)(hydro, dt, [&](Hydro *hydro, Real dt, StateVector Cell::*dq_dt){
 		integrateWorkDiffusion(ihydro, dt, dq_dt);
 	});
+
+	updatePrimitives(ihydro);
 }
 	
 template<typename Hydro>
@@ -74,8 +78,8 @@ void BurgersExplicit<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector 
 				IVector indexR = index;
 				IVector indexL = index;
 				--indexL(side);
-				Real uL = hydro->cells(indexL).second.state(side+1) / hydro->cells(indexL).second.state(0);
-				Real uR = hydro->cells(indexR).second.state(side+1) / hydro->cells(indexR).second.state(0);
+				Real uL = hydro->cells(indexL).second.primitives(side+1);
+				Real uR = hydro->cells(indexR).second.primitives(side+1);
 				interface(side).velocity = .5 * (uL + uR);
 			}
 		} else {
@@ -332,6 +336,18 @@ void BurgersExplicit<Hydro>::integrateWorkDiffusion(IHydro *ihydro, Real dt, Sta
 				(cell.*dq_dt)(rank+1) -= (pressureR * uR - pressureL * uL) / dx;
 			}
 		}
+	});
+}
+
+//every Euler solver has this as the last step
+//maybe I could move it somewhere they all have in common?
+//I would put it in Hydro, but SRHD is looking to have its own signature for getPrimitives, taking the last iteration to use as the start for gradient descent to find the next iteration's primitives
+template<typename Hydro>
+void BurgersExplicit<Hydro>::updatePrimitives(IHydro *ihydro) {
+	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
+	Parallel::parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+		Cell &cell = v.second;
+		cell.primitives = hydro->equation->getPrimitives(cell.state);
 	});
 }
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Hydro/EOS/EOS.h"
+#include "Hydro/Equation/Equation.h"
 #include "Tensor/Inverse.h"
 
 #include "Hydro/Solver/MHD/RoeExplicit.h"
@@ -9,8 +9,8 @@
 namespace EquationOfState {
 
 template<typename Real, int rank_>
-struct MHD : public ::EOS::EOS<Real, rank_> {
-	typedef ::EOS::EOS<Real, rank_> Super;
+struct MHD : public ::Equation::Equation<Real, rank_> {
+	typedef ::Equation::Equation<Real, rank_> Super;
 	
 	enum { rank = rank_ };
 	typedef ::Solver::ISolver<Real> ISolver;

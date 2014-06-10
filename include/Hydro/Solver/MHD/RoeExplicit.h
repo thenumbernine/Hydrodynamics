@@ -19,7 +19,7 @@ struct RoeExplicit : public ::Solver::Godunov<Hydro> {
 	typedef typename Hydro::InterfaceVector InterfaceVector;
 	typedef typename Hydro::Cell Cell;
 	typedef typename Hydro::CellGrid CellGrid;
-	typedef typename Hydro::EOS::Vector3 Vector3;
+	typedef typename Hydro::Equation::Vector3 Vector3;
 
 	virtual void initStep(IHydro *ihydro);
 };
@@ -106,7 +106,7 @@ void RoeExplicit<Hydro>::initStep(IHydro *ihydro) {
 					Vector3 magnetism = (magnetismL * roeWeightL + magnetismR * roeWeightR) * invDenom;
 
 					//compute eigenvectors and values at the interface based on averages
-					hydro->equationOfState->buildEigenstate(
+					hydro->equation->buildEigenstate(
 						interface(side).eigenvalues,
 						interface(side).eigenvectors,
 						interface(side).eigenvectorsInverse,
