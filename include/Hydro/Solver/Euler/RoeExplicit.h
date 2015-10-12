@@ -24,7 +24,7 @@ struct RoeExplicit : public ::Solver::Euler::Godunov<Hydro> {
 };
 
 template<typename Hydro>
-void RoeExplicit<Hydro>::initStep(IHydro *ihydro) {
+void RoeExplicit<Hydro>::initStep(IHydro* ihydro) {
 	PROFILE()
 
 	Super::initStep(ihydro);

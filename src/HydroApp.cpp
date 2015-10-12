@@ -72,7 +72,7 @@ struct HydroApp : public GLApp::GLApp {
 	std::shared_ptr<IHydro> ihydro;
 	HydroArgs hydroArgs;
 	
-	virtual int main(std::vector<std::string> args);
+	virtual int main(const std::vector<std::string>& args);
 
 	template<typename Real, int rank, typename Equation>
 	void initType();
@@ -90,7 +90,7 @@ struct HydroApp : public GLApp::GLApp {
 };
 GLAPP_MAIN(HydroApp)
 
-int HydroApp::main(std::vector<std::string> args) {
+int HydroApp::main(const std::vector<std::string>& args) {
 	bool setSize = false;
 	bool setExternalForce = false;
 	for (int i = 1; i < args.size(); ++i) {

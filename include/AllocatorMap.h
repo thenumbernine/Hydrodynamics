@@ -24,7 +24,7 @@ struct AllocatorMap {
 	typedef std::map<std::string, std::shared_ptr<Allocator<Type>>> Map;
 	Map map;
 	
-	std::shared_ptr<Type> operator()(const std::string &name);
+	std::shared_ptr<Type> operator()(const std::string& name);
 
 	template<typename ChildType>
 	void add(std::string name) {
@@ -33,7 +33,7 @@ struct AllocatorMap {
 };
 
 template<typename Type>
-std::shared_ptr<Type> AllocatorMap<Type>::operator()(const std::string &name) {
+std::shared_ptr<Type> AllocatorMap<Type>::operator()(const std::string& name) {
 	for (typename Map::value_type &value : map) {
 		if (value.first == name) return (*value.second)();
 	}

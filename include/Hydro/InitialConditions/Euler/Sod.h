@@ -31,13 +31,15 @@ Sod<Hydro>::Sod() {
 template<typename Hydro>
 void Sod<Hydro>::operator()(IHydro *ihydro, Real noise) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
+	Vector xmid = (hydro->xmin + hydro->xmax) * .5;
 	hydro->gamma = 1.4;
 	Parallel::parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		Cell &cell = v.second;
 		Vector x = cell.x;
 		bool lhs = true;
 		for (int k = 0; k < rank; ++k) {
-			if (fabs(x(k)) > .15) {
+			//if (fabs(x(k)) > .15) {
+			if (x(k) > xmid(k)) {
 				lhs = false;
 				break;
 			}

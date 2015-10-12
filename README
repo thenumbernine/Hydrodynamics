@@ -11,7 +11,6 @@ to do:
 - external forces of any kind crash - due to singular matrix - most likely due to negative sqrts, most likely due to total energy inconsistency / negative potential energies computed from the external force
 - analytic flux jacobian and eignevector inverses
 - cut down on all those lookups? pointer offsetting, as ugly as it is
-- move Quat.h into "Tensor" include folder? or into a "Math" include folder, and make "Tensor" a sub-folder?
 - add arbitrary boundaries
 - mouse interaction?
 - configuration scripts, especially as I add different EOS's with new variables 

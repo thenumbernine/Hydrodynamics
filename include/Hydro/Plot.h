@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Quat.h"
+#include "Tensor/Quat.h"
 #include "Tensor/Vector.h"
 #include <OpenGL/gl.h>
 #include <algorithm>
@@ -50,6 +50,8 @@ struct PressureColoring : public DisplayMethod<Hydro> {
 
 template<int rank>
 struct Plot {
+	typedef Tensor::Quat<float> Quat;
+	
 	Quat viewAngle;
 	float dist;
 
@@ -59,9 +61,7 @@ struct Plot {
 	void draw(Hydro &hydro, std::shared_ptr<DisplayMethod<Hydro>> displayMethod) {
 		typedef typename Hydro::CellGrid CellGrid;
 		typedef typename Hydro::Cell Cell;
-		typedef typename Hydro::StateVector StateVector;
 		typedef typename Hydro::IVector IVector;
-		typedef typename Hydro::Real Real;
 		
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
@@ -129,12 +129,12 @@ struct Plot<1> {
 	void draw(Hydro &hydro, std::shared_ptr<DisplayMethod<Hydro>> displayMethod) {
 		typedef typename Hydro::CellGrid CellGrid;
 		typedef typename Hydro::Cell Cell;
-		typedef typename Hydro::StateVector StateVector;
-		typedef typename Hydro::IVector IVector;
 		glPushMatrix();
 		glTranslatef(-viewPos(0), -viewPos(1), 0);
 		glScalef(viewZoom, viewZoom, viewZoom);
 #if 0	//show piecewise step functions - in anticipation of getting PPM method working	
+		typedef typename Hydro::IVector IVector;
+		typedef typename Hydro::StateVector StateVector;
 		for (int state = 0; state < 3; ++state) {
 			Tensor::Vector<float,3> color;
 			color(state) = 1;
@@ -198,10 +198,7 @@ struct Plot<2> {
 
 	template<typename Hydro>
 	void draw(Hydro &hydro, std::shared_ptr<DisplayMethod<Hydro>> displayMethod) {
-		typedef typename Hydro::CellGrid CellGrid;
 		typedef typename Hydro::Cell Cell;
-		typedef typename Hydro::IVector IVector;
-		typedef typename Hydro::Real Real;
 		glPushMatrix();
 		glTranslatef(-viewPos(0), -viewPos(1), 0);
 		glScalef(viewZoom, viewZoom, viewZoom);
