@@ -29,7 +29,7 @@ void Solver<Hydro>::initStep(IHydro *ihydro) {
 	//should only be up to < size
 	{
 		PROFILE()
-		parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+		parallel.foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 			Cell &cell = v.second;
 			for (int side = 0; side < rank; ++side) {
 				cell.stateLeft(side) = cell.stateRight(side) = cell.state;
@@ -39,7 +39,7 @@ void Solver<Hydro>::initStep(IHydro *ihydro) {
 
 	{
 		PROFILE()
-		parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+		parallel.foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 			IVector index = v.first;
 			InterfaceVector &interface = v.second.interfaces;
 			bool edge = false;

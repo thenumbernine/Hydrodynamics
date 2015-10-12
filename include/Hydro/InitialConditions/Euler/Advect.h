@@ -32,7 +32,7 @@ template<typename Hydro>
 void Advect<Hydro>::operator()(IHydro *ihydro, Real noise) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	Vector xmid = (hydro->xmin + hydro->xmax) * .5;
-	parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+	parallel.foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		Cell &cell = v.second;
 		Vector x = cell.x;
 		bool lhs = true;

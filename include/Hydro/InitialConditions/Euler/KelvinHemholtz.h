@@ -33,7 +33,7 @@ KelvinHemholtz<Hydro>::KelvinHemholtz() {
 template<typename Hydro>
 void KelvinHemholtz<Hydro>::operator()(IHydro *ihydro, Real noise) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
-	parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+	parallel.foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		Cell &cell = v.second;
 		Vector x = cell.x;
 		bool inTheMiddle = x(rank-1) > (.75 * hydro->xmin(rank-1) + .25 * hydro->xmax(rank-1)) && x(rank-1) < (.25 * hydro->xmin(rank-1) + .75 * hydro->xmax(rank-1));
