@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Hydro/Solver/SRHD/Godunov.h"
-#include "Parallel/Parallel.h"
+#include "Hydro/Parallel.h"
 
 namespace Solver {
 namespace SRHD {
@@ -35,7 +35,7 @@ void RoeExplicit<Hydro>::initStep(IHydro *ihydro) {
 
 		Real gamma = hydro->gamma;
 	
-		Parallel::parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+		parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 			IVector index = v.first;
 			Cell &cell = v.second;
 			InterfaceVector &interface = cell.interfaces;

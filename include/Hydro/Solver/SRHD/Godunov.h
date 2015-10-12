@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Hydro/Solver/Godunov.h"
-#include "Parallel/Parallel.h"
+#include "Hydro/Parallel.h"
 
 namespace Solver {
 namespace SRHD {
@@ -32,7 +32,7 @@ void Godunov<Hydro>::updatePrimitives(IHydro *ihydro) {
 	PROFILE()
 	
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
-	Parallel::parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+	parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		Cell &cell = v.second;
 		hydro->equation->updatePrimitives(cell.primitives, cell.state, hydro->gamma);
 	});
