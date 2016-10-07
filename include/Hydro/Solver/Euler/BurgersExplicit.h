@@ -60,7 +60,7 @@ void BurgersExplicit<Hydro>::step(IHydro *ihydro, Real dt) {
 }
 	
 template<typename Hydro>
-void BurgersExplicit<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Cell::*dq_dt) {
+void BurgersExplicit<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Hydro::Cell::*dq_dt) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 
 	parallel.foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
@@ -204,7 +204,7 @@ void BurgersExplicit<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector 
 }
 
 template<typename Hydro>
-void BurgersExplicit<Hydro>::integrateExternalForces(IHydro *ihydro, Real dt, StateVector Cell::*dq_dt) {
+void BurgersExplicit<Hydro>::integrateExternalForces(IHydro *ihydro, Real dt, StateVector Hydro::Cell::*dq_dt) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	
 	parallel.foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
@@ -235,7 +235,7 @@ void BurgersExplicit<Hydro>::integrateExternalForces(IHydro *ihydro, Real dt, St
 
 
 template<typename Hydro>
-void BurgersExplicit<Hydro>::integrateMomentumDiffusion(IHydro *ihydro, Real dt, StateVector Cell::*dq_dt) {
+void BurgersExplicit<Hydro>::integrateMomentumDiffusion(IHydro *ihydro, Real dt, StateVector Hydro::Cell::*dq_dt) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 
 	//compute pressure
@@ -303,7 +303,7 @@ void BurgersExplicit<Hydro>::integrateMomentumDiffusion(IHydro *ihydro, Real dt,
 }
 
 template<typename Hydro>
-void BurgersExplicit<Hydro>::integrateWorkDiffusion(IHydro *ihydro, Real dt, StateVector Cell::*dq_dt) {
+void BurgersExplicit<Hydro>::integrateWorkDiffusion(IHydro *ihydro, Real dt, StateVector Hydro::Cell::*dq_dt) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 
 	//apply work diffusion = momentum
@@ -351,6 +351,5 @@ void BurgersExplicit<Hydro>::updatePrimitives(IHydro *ihydro) {
 	});
 }
 
-};
-};
-
+}
+}

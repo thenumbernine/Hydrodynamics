@@ -16,8 +16,8 @@
 #include "Hydro/Limiter.h"
 #include "GLApp/GLApp.h" 
 #include "Common/Exception.h"
-#include <OpenGL/gl.h>
-#include <SDL2/SDL.h>
+#include "Common/gl.h"
+#include "SDL.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

@@ -127,12 +127,6 @@ void Euler<Real, rank>::buildEigenstate(
 
 	Real speedOfSound = sqrt(pressure / density);
 	
-	eigenvalues(0) = velocityAlongNormal - speedOfSound;
-	for (int k = 0; k < rank; ++k) {
-		eigenvalues(k+1) = velocityAlongNormal;
-	}
-	eigenvalues(rank+1) = velocityAlongNormal + speedOfSound;
-
 	//eigenvalues: min, mid, max
 	
 	eigenvalues(0) = velocityAlongNormal - speedOfSound;

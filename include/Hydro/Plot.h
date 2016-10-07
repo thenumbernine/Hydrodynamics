@@ -2,8 +2,9 @@
 
 #include "Tensor/Quat.h"
 #include "Tensor/Vector.h"
-#include <OpenGL/gl.h>
+#include "Common/gl.h"
 #include <algorithm>
+#include <memory>
 
 template<typename Hydro>
 struct DisplayMethod {

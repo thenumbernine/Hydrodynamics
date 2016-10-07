@@ -224,4 +224,3 @@ void Hydro<Equation>::draw() {
 	PROFILE()
 	plot.template draw<Hydro>(*this, displayMethod);
 }
-
