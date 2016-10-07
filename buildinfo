@@ -1,0 +1,3 @@
+distName='Hydro'
+distType='app'
+depends:append{'../Common', '../GLApp', '../Tensor', '../Profiler', '../Parallel'}
