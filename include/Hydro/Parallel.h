@@ -1,5 +1,6 @@
 #pragma once
 
 #include "Parallel/Parallel.h"
+#include <memory>
 
-extern ::Parallel::Parallel parallel;
+extern std::shared_ptr<::Parallel::Parallel> parallel;

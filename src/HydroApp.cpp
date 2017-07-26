@@ -30,12 +30,13 @@ class HydroArgs {
 public:
 	int dim;
 	std::vector<int> size;
+	int numThreads;
 	bool useCFL;
 	double cfl;
 	double noise;
 	double fixedDT;
 	double gamma;
-	
+
 	std::vector<double> externalForce;	//relies on dim ... hmm ... reason to use config file over arguments?
 	std::string precision;
 	std::string boundaryName;
@@ -49,6 +50,7 @@ public:
 	HydroArgs() 
 	: dim(2)
 	, size({256,256})
+	, numThreads(4)
 	, useCFL(true)
 	, cfl(.5)
 	, noise(0.)
@@ -93,7 +95,7 @@ GLAPP_MAIN(HydroApp)
 int HydroApp::main(const std::vector<std::string>& args) {
 	bool setSize = false;
 	bool setExternalForce = false;
-	for (int i = 1; i < args.size(); ++i) {
+	for (int i = 1; i < (int)args.size(); ++i) {
 		if (args[i] ==  "--help") {
 			std::cout << "usage: hydro <args>" << std::endl;
 			std::cout << "args:" << std::endl;
@@ -110,7 +112,7 @@ int HydroApp::main(const std::vector<std::string>& args) {
 			std::cout << "    for Euler equation of state: Burgers Godunov (Roe)" << std::endl;
 			std::cout << "  --explicit <explicit>" << std::endl;
 			std::cout << "    can be one of the following:" << std::endl;
-			std::cout << "      ForwardEuler RungeKutta2 (RungeKutta4) IterativeCrankNicolson3" << std::endl;
+			std::cout << "      (ForwardEuler) RungeKutta2 RungeKutta4 IterativeCrankNicolson3" << std::endl;
 			std::cout << "  --limiter <limiter>" << std::endl;
 			std::cout << "    can be one of the following:" << std::endl;
 			std::cout << "      DonorCell LaxWendroff BeamWarming Fromm CHARM HCUS HQUICK Koren MinMod" << std::endl;
@@ -125,14 +127,15 @@ int HydroApp::main(const std::vector<std::string>& args) {
 			const char *comma = "";
 			for (int i : hydroArgs.size) { std::cout << comma << i; comma = ", "; }
 			std::cout << std::endl;
-			std::cout << "  --useCFL <true|false> = whether to use CFL or a fixed timestep.  default " << hydroArgs.useCFL << std::endl;
-			std::cout << "  --cfl <CFL> = the CFL number.  default" << hydroArgs.cfl << std::endl;
+			std::cout << "  --numThreads <numThreads> = the number of threads to use.  default " << hydroArgs.numThreads << std::endl;
+			std::cout << "  --useCFL <true|false> = whether to use CFL or a fixed timestep.  default " << (hydroArgs.useCFL ? "true" : "false") << std::endl;
+			std::cout << "  --cfl <CFL> = the CFL number.  default " << hydroArgs.cfl << std::endl;
 			std::cout << "  --fixedDT <dt> = the fixed timestep. default " << hydroArgs.fixedDT << std::endl;
 			std::cout << "  --noise <noise> = noise amplitude to apply to initial velocity.  default " << hydroArgs.noise << std::endl;
 			std::cout << "  --precision <precision> = precision: single double.  default: " << hydroArgs.precision << std::endl;
 			return 1;
 		}
-		if (i < args.size()-1) {
+		if (i < (int)args.size()-1) {
 			if (args[i] == "--initialConditions") {
 				hydroArgs.initialConditionsName = args[++i];
 				continue;
@@ -161,6 +164,9 @@ int HydroApp::main(const std::vector<std::string>& args) {
 					hydroArgs.size[k] = std::stoi(args[++i]);
 				}
 				continue;
+			} else if (args[i] == "--numThreads") {
+				hydroArgs.numThreads = std::stoi(args[++i]);
+				continue;
 			} else if (args[i] == "--useCFL") {
 				hydroArgs.useCFL = args[++i] == "true" ? true : false;
 				continue;
@@ -186,7 +192,7 @@ int HydroApp::main(const std::vector<std::string>& args) {
 				continue;
 			}
 		}
-		if (i < args.size()-hydroArgs.dim) {	//dim must be set first
+		if (i < (int)args.size()-hydroArgs.dim) {	//dim must be set first
 			if (args[i] == "--externalForce") {
 				setExternalForce = true;
 				hydroArgs.externalForce.resize(hydroArgs.dim);
@@ -264,6 +270,8 @@ void HydroApp::initType() {
 		sizev(i) = hydroArgs.size[i];
 	}
 
+	parallel = std::make_shared<::Parallel::Parallel>(hydroArgs.numThreads);
+
 	std::shared_ptr<Hydro> hydro = std::make_shared<Hydro>(
 		sizev,
 		hydroArgs.useCFL,
@@ -277,7 +285,7 @@ void HydroApp::initType() {
 		limiter,
 		displayMethod);
 	
-	for (int i = 0; i < rank && i < hydroArgs.externalForce.size(); ++i) {
+	for (int i = 0; i < rank && i < (int)hydroArgs.externalForce.size(); ++i) {
 		hydro->externalForce(i) = hydroArgs.externalForce[i];
 	}
 	ihydro = hydro;
@@ -342,10 +350,14 @@ void HydroApp::init() {
 		glBindTexture(GL_TEXTURE_1D, texID);
 
 		float colors[][3] = {
-			{0, 0, 0},
-			{0, 0, .5},
-			{1, .5, 0},
-			{1, 0, 0}
+			{0,0,0},	// black ... ?
+			{0,0,1},	// blue
+			{0,1,1},	// cyan
+			{0,1,0},	// green
+			{1,1,0},	// yellow
+			{1,.5,0},	// orange
+			{1,0,0},	// red
+			{1,1,1},	// white
 		};
 
 		const int width = 256;
@@ -354,8 +366,8 @@ void HydroApp::init() {
 			float f = (float)i / (float)width * (float)numberof(colors);
 			int ci = (int)f;
 			float s = f - (float)ci;
-			if (ci >= numberof(colors)) {
-				ci = numberof(colors)-1;
+			if (ci >= (int)numberof(colors)) {
+				ci = (int)numberof(colors)-1;
 				s = 0;
 			}
 
@@ -451,4 +463,3 @@ void HydroApp::sdlEvent(SDL_Event &event) {
 		break;
 	}
 }
-

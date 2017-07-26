@@ -31,7 +31,7 @@ typename Godunov<Hydro>::Real Godunov<Hydro>::calcCFLTimestep(IHydro *ihydro) {
 	
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	
-	Real mindum = parallel.reduce(
+	Real mindum = parallel->reduce(
 		hydro->cells.begin(), 
 		hydro->cells.end(),
 		[&](typename CellGrid::value_type &v) -> Real 
@@ -93,7 +93,7 @@ void Godunov<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Hydro::C
 
 	{
 		PROFILE()
-		parallel.foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+		parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 			IVector index = v.first;
 			InterfaceVector &interface = v.second.interfaces;
 			bool edge = false;
@@ -130,7 +130,7 @@ void Godunov<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Hydro::C
 
 	{
 		PROFILE()
-		parallel.foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+		parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 			IVector index = v.first;
 			InterfaceVector &interface = v.second.interfaces;
 			bool edge = false;
@@ -181,7 +181,7 @@ void Godunov<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Hydro::C
 	//transform cell q's into cell qTilde's (eigenspace)
 	{
 		PROFILE()
-		parallel.foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+		parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 			IVector index = v.first;
 			InterfaceVector &interface = v.second.interfaces;
 			bool edge = false;
@@ -245,7 +245,7 @@ void Godunov<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Hydro::C
 	//update cells
 	{
 		PROFILE()
-		parallel.foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+		parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 			IVector index = v.first;
 			Cell &cell = v.second;
 			bool edge = false;

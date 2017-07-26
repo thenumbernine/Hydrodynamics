@@ -1,3 +1,3 @@
 #include "Hydro/Parallel.h"
 
-::Parallel::Parallel parallel;
+std::shared_ptr<::Parallel::Parallel> parallel;

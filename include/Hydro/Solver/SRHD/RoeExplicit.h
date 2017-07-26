@@ -35,7 +35,7 @@ void RoeExplicit<Hydro>::initStep(IHydro *ihydro) {
 
 		Real gamma = hydro->gamma;
 	
-		parallel.foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+		parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 			IVector index = v.first;
 			Cell &cell = v.second;
 			InterfaceVector &interface = cell.interfaces;
@@ -110,6 +110,5 @@ void RoeExplicit<Hydro>::initStep(IHydro *ihydro) {
 	}
 }
 
-};
-};
-
+}
+}

@@ -28,7 +28,7 @@ Burgers<Hydro>::calcCFLTimestep(IHydro *ihydro)
 {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	
-	Real mindum = parallel.reduce(
+	Real mindum = parallel->reduce(
 		hydro->cells.begin(), 
 		hydro->cells.end(),
 		[&](typename CellGrid::value_type &v) -> Real
@@ -77,6 +77,5 @@ Burgers<Hydro>::calcCFLTimestep(IHydro *ihydro)
 	return hydro->cfl * mindum;
 }
 
-};
-};
-
+}
+}

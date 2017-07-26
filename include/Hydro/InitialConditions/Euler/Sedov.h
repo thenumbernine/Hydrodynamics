@@ -31,7 +31,7 @@ Sedov<Hydro>::Sedov() {
 template<typename Hydro>
 void Sedov<Hydro>::operator()(IHydro *ihydro, Real noise) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
-	parallel.foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+	parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		Cell &cell = v.second;
 		Real density = 1.;
 		Vector velocity;	
@@ -58,6 +58,5 @@ void Sedov<Hydro>::operator()(IHydro *ihydro, Real noise) {
 	hydro->cells(hydro->size/2).second.state(rank+1) = 1e+5;
 }
 
-};
-};
-
+}
+}

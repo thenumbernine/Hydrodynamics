@@ -32,12 +32,11 @@ void Godunov<Hydro>::updatePrimitives(IHydro *ihydro) {
 	PROFILE()
 	
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
-	parallel.foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+	parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		Cell &cell = v.second;
 		hydro->equation->updatePrimitives(cell.primitives, cell.state, hydro->gamma);
 	});
 }
 
-};
-};
-
+}
+}

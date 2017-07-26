@@ -37,7 +37,7 @@ void Wave<Hydro>::operator()(IHydro *ihydro, Real noise) {
 	for (int k = 0; k < rank; ++k) {
 		dgSq += dg(k) * dg(k);
 	}
-	parallel.foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
+	parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		Cell &cell = v.second;
 		Vector x = cell.x;
 		Vector dx = x - xmid;
@@ -69,6 +69,5 @@ void Wave<Hydro>::operator()(IHydro *ihydro, Real noise) {
 	});
 }
 
-};
-};
-
+}
+}

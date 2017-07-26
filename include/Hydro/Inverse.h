@@ -91,11 +91,11 @@ struct InverseCramer {
 template<typename OutputType, typename InputType>
 struct InverseGaussJordan {
 	static OutputType go(InputType input) {
-		static_assert(InputType::rank == 2, "input must be a matrix!");
-		static_assert(OutputType::rank == 2, "output must be a matrix!");
-		static_assert(InputType::template IndexInfo<0>::dim == InputType::template IndexInfo<1>::dim, "input must be square!"); 
-		static_assert(OutputType::template IndexInfo<0>::dim == OutputType::template IndexInfo<1>::dim, "output must be square!"); 
-		static_assert(InputType::template IndexInfo<0>::dim == OutputType::template IndexInfo<0>::dim, "input and output dimensions must match!");
+		static_assert((int)InputType::rank == 2, "input must be a matrix!");
+		static_assert((int)OutputType::rank == 2, "output must be a matrix!");
+		static_assert((int)InputType::template IndexInfo<0>::dim == (int)InputType::template IndexInfo<1>::dim, "input must be square!"); 
+		static_assert((int)OutputType::template IndexInfo<0>::dim == (int)OutputType::template IndexInfo<1>::dim, "output must be square!"); 
+		static_assert((int)InputType::template IndexInfo<0>::dim == (int)OutputType::template IndexInfo<0>::dim, "input and output dimensions must match!");
 		
 		enum { dim = InputType::template IndexInfo<0>::dim };
 		typedef typename InputType::Type Real;
