@@ -19,7 +19,7 @@ struct SRHD : public Equation<Real, rank_> {
 	enum { rank = rank_ };
 	typedef Solver::ISolver<Real> ISolver;
 	typedef Hydrodynamics::InitialConditions::InitialConditions<Real, rank> InitialConditions;
-	typedef Hydro<SRHD<Real, rank> > Hydro;
+	typedef Hydrodynamics::Hydro<SRHD<Real, rank> > Hydro;
 	enum { numberOfStates = rank + 2 };
 	typedef Tensor::Tensor<Real, Tensor::Upper<rank> > Vector;
 	typedef Tensor::Tensor<Real, Tensor::Upper<numberOfStates> > StateVector;

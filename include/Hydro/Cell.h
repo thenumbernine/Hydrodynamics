@@ -15,7 +15,7 @@ struct Cell {
 	typedef Tensor::Vector<int, rank> IVector;
 	typedef Tensor::Tensor<Real, Tensor::Upper<rank> > Vector;
 	typedef Tensor::Tensor<Real, Tensor::Upper<numberOfStates> > StateVector;
-	typedef Interface<Real, rank, numberOfStates> Interface;
+	typedef Hydrodynamics::Interface<Real, rank, numberOfStates> Interface;
 
 	Cell() : pressure(Real()) {}
 

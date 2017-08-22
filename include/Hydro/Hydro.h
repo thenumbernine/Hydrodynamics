@@ -24,11 +24,11 @@ struct Hydro : public IHydro {
 	typedef Solver::ISolver<Real> ISolver;
 	typedef Explicit::Explicit<Hydro> Explicit;
 	typedef Limiter::Limiter<Real> Limiter;
-	typedef typename DisplayMethod<Hydro> DisplayMethod;
+	typedef Hydrodynamics::DisplayMethod<Hydro> DisplayMethod;
 	
 	enum { numberOfStates = Equation::numberOfStates };
-	typedef Cell<Real, rank, numberOfStates> Cell;
-	typedef Interface<Real, rank, numberOfStates> Interface;
+	typedef Hydrodynamics::Cell<Real, rank, numberOfStates> Cell;
+	typedef Hydrodynamics::Interface<Real, rank, numberOfStates> Interface;
 	
 	typedef Tensor::Vector<int, rank> IVector;
 	typedef typename Cell::Vector Vector;
