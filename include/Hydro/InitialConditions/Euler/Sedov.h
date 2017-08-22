@@ -3,6 +3,7 @@
 #include "Hydro/Hydro.h"
 #include "Hydro/InitialConditions/InitialConditions.h"
 
+namespace Hydrodynamics {
 namespace InitialConditions {
 namespace Euler {
 
@@ -58,5 +59,6 @@ void Sedov<Hydro>::operator()(IHydro *ihydro, Real noise) {
 	hydro->cells(hydro->size/2).second.state(rank+1) = 1e+5;
 }
 
+}
 }
 }

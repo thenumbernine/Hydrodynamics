@@ -2,6 +2,7 @@
 
 #include "Hydro/Boundary/Boundary.h"
 
+namespace Hydrodynamics {
 namespace Boundary {
 
 template<typename Hydro>
@@ -27,5 +28,5 @@ void Constant<Hydro>::operator()(IHydro *ihydro) {
 	hydro->cells(hydro->size(0)-1).second.state(2) = 0;
 }
 
-};
-
+}
+}

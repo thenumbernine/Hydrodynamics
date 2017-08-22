@@ -3,12 +3,13 @@
 #include "Hydro/Solver/Euler/Burgers.h"
 #include "Hydro/Parallel.h"
 
+namespace Hydrodynamics {
 namespace Solver {
 namespace Euler {
 
 template<typename Hydro>
-struct BurgersExplicit : public ::Solver::Euler::Burgers<Hydro> {
-	typedef ::Solver::Euler::Burgers<Hydro> Super; 
+struct BurgersExplicit : public Burgers<Hydro> {
+	typedef Burgers<Hydro> Super; 
 	
 	enum { rank = Hydro::rank };
 	enum { numberOfStates = Hydro::numberOfStates };
@@ -65,7 +66,7 @@ void BurgersExplicit<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector 
 
 	parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		IVector index = v.first;
-		InterfaceVector &interface = v.second.interfaces;
+		InterfaceVector &interface_ = v.second.interfaces;
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
 			if (index(side) < hydro->nghost - 1 || index(side) >= hydro->size(side) + hydro->nghost - 2) {
@@ -80,11 +81,11 @@ void BurgersExplicit<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector 
 				--indexL(side);
 				Real uL = hydro->cells(indexL).second.primitives(side+1);
 				Real uR = hydro->cells(indexR).second.primitives(side+1);
-				interface(side).velocity = .5 * (uL + uR);
+				interface_(side).velocity = .5 * (uL + uR);
 			}
 		} else {
 			for (int side = 0; side < rank; ++side) {
-				interface(side).velocity = 0.;
+				interface_(side).velocity = 0.;
 			}
 		}
 	});
@@ -92,7 +93,7 @@ void BurgersExplicit<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector 
 	//compute flux and advect for each state vector
 	parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		IVector index = v.first;
-		InterfaceVector &interface = v.second.interfaces;
+		InterfaceVector &interface_ = v.second.interfaces;
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
 			if (index(side) < hydro->nghost || index(side) >= hydro->size(side) + hydro->nghost - 3) {
@@ -115,20 +116,20 @@ void BurgersExplicit<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector 
 					
 					Real dq = qR1 - qL1;
 					if (fabs(dq) > 0.) {
-						if (interface(side).velocity > 0.) {
-							interface(side).r(state) = (qL1 - qL2) / dq;
+						if (interface_(side).velocity > 0.) {
+							interface_(side).r(state) = (qL1 - qL2) / dq;
 						} else {
-							interface(side).r(state) = (qR2 - qR1) / dq;
+							interface_(side).r(state) = (qR2 - qR1) / dq;
 						}
 					} else {
-						interface(side).r(state) = 0.;
+						interface_(side).r(state) = 0.;
 					}
 				}
 			}
 		} else {
 			for (int state = 0; state < numberOfStates; ++state) {
 				for (int side = 0; side < rank; ++side) {
-					interface(side).r(state) = 0.;
+					interface_(side).r(state) = 0.;
 				}
 			}
 		}
@@ -137,7 +138,7 @@ void BurgersExplicit<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector 
 	//construct flux
 	parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		IVector index = v.first;
-		InterfaceVector &interface = v.second.interfaces;
+		InterfaceVector &interface_ = v.second.interfaces;
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {
 			if (index(side) < hydro->nghost - 1 || index(side) >= hydro->size(side) + hydro->nghost - 2) {
@@ -153,23 +154,23 @@ void BurgersExplicit<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector 
 				--indexL(side);
 				Real dx = hydro->cells(index).second.x(side) - hydro->cells(indexL).second.x(side);			
 				for (int state = 0; state < numberOfStates; ++state) {
-					Real phi = (*hydro->limiter)(interface(side).r(state));
-					Real velocity = interface(side).velocity;
+					Real phi = (*hydro->limiter)(interface_(side).r(state));
+					Real velocity = interface_(side).velocity;
 					Real qL = hydro->cells(indexL).second.state(state);
 					Real qR = hydro->cells(indexR).second.state(state);
 					if (velocity >= 0.) {
-						interface(side).flux(state) = velocity * qL;
+						interface_(side).flux(state) = velocity * qL;
 					} else {
-						interface(side).flux(state) = velocity * qR;
+						interface_(side).flux(state) = velocity * qR;
 					}
 					Real delta = phi * (qR - qL);
-					interface(side).flux(state) += delta * .5 * fabs(velocity) * (1. - fabs(velocity * dt / dx)) / Real(rank);
+					interface_(side).flux(state) += delta * .5 * fabs(velocity) * (1. - fabs(velocity * dt / dx)) / Real(rank);
 				}
 			}
 		} else {
 			for (int state = 0; state < numberOfStates; ++state) {
 				for (int side = 0; side < rank; ++side) {
-					interface(side).flux(state) = 0.;
+					interface_(side).flux(state) = 0.;
 				}
 			}
 		}
@@ -351,5 +352,6 @@ void BurgersExplicit<Hydro>::updatePrimitives(IHydro *ihydro) {
 	});
 }
 
+}
 }
 }

@@ -1,3 +1,10 @@
 distName='Hydro'
 distType='app'
 depends:append{'../Common', '../GLApp', '../Tensor', '../Profiler', '../Parallel'}
+cppver='c++14'
+
+-- https://stackoverflow.com/questions/26065359/m-pi-flagged-as-undeclared-identifier 
+if platform=='msvc' then
+	macros:insert'_USE_MATH_DEFINES'
+	compileFlags = compileFlags .. ' /bigobj'
+end

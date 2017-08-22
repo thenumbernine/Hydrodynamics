@@ -1,8 +1,9 @@
 #pragma once
 
-#include <math.h>
+#include <cmath>
 #include <algorithm>
 
+namespace Hydrodynamics {
 namespace Limiter {
 
 template<typename Real>
@@ -131,5 +132,5 @@ template<typename Real> Real MonotonizedCentral<Real>::operator()(Real r) { retu
 template<typename Real> Real Superbee<Real>::operator()(Real r) { return std::max<Real>(Real(0.), std::max<Real>(std::min<Real>(Real(1.), Real(2.)*r), std::min<Real>(Real(2.), r))); }
 template<typename Real> Real BarthJespersen<Real>::operator()(Real r) { return Real(.5) * (r + Real(1.)) * std::min<Real>(Real(1.), std::min<Real>(Real(4.)*r/(r+Real(1.)), Real(4.)/(r+Real(1.)))); }
 
-};
-
+}
+}

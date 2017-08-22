@@ -3,6 +3,7 @@
 #include "Hydro/Parallel.h"
 #include <functional>
 
+namespace Hydrodynamics {
 namespace Explicit {
 
 template<typename Hydro>
@@ -37,4 +38,5 @@ void Explicit<Hydro>::addMulState(Hydro *hydro, StateVector Hydro::Cell::*dst, S
 	});
 }
 
+}
 }

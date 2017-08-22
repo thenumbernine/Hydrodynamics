@@ -3,11 +3,12 @@
 #include "Hydro/Solver/Solver.h"
 #include "Hydro/Parallel.h"
 
+namespace Hydrodynamics {
 namespace Solver {
 
 template<typename Hydro>
-struct Godunov : public ::Solver::Solver<Hydro> {
-	typedef ::Solver::Solver<Hydro> Super;
+struct Godunov : public Solver<Hydro> {
+	typedef Solver<Hydro> Super;
 
 	enum { rank = Hydro::rank };
 	enum { numberOfStates = Hydro::numberOfStates };
@@ -95,7 +96,7 @@ void Godunov<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Hydro::C
 		PROFILE()
 		parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 			IVector index = v.first;
-			InterfaceVector &interface = v.second.interfaces;
+			InterfaceVector &interface_ = v.second.interfaces;
 			bool edge = false;
 			for (int side = 0; side < rank; ++side) {
 				if (index(side) < 1 || index(side) >= hydro->size(side)) {
@@ -113,15 +114,15 @@ void Godunov<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Hydro::C
 					for (int state = 0; state < numberOfStates; ++state) {
 						Real sum = Real(0);
 						for (int k = 0; k < numberOfStates; ++k) {
-							sum += interface(side).eigenvectorsInverse(state,k) * (stateRight(k) - stateLeft(k));
+							sum += interface_(side).eigenvectorsInverse(state,k) * (stateRight(k) - stateLeft(k));
 						}
-						interface(side).deltaStateTilde(state) = sum;
+						interface_(side).deltaStateTilde(state) = sum;
 					}
 				}
 			} else {
 				for (int side = 0; side < rank; ++side) {
 					for (int state = 0; state < numberOfStates; ++state) {
-						interface(side).deltaStateTilde(state) = Real(0);
+						interface_(side).deltaStateTilde(state) = Real(0);
 					}
 				}
 			}
@@ -132,7 +133,7 @@ void Godunov<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Hydro::C
 		PROFILE()
 		parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 			IVector index = v.first;
-			InterfaceVector &interface = v.second.interfaces;
+			InterfaceVector &interface_ = v.second.interfaces;
 			bool edge = false;
 			for (int side = 0; side < rank; ++side) {
 				if (index(side) < hydro->nghost || index(side) >= hydro->size(side) - hydro->nghost + 1) {
@@ -156,23 +157,23 @@ void Godunov<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Hydro::C
 					
 					for (int state = 0; state < numberOfStates; ++state) {
 						Real interfaceDeltaStateTildeL = hydro->cells(interfaceIndexL).second.interfaces(side).deltaStateTilde(state);
-						Real interfaceDeltaStateTilde = interface(side).deltaStateTilde(state);
+						Real interfaceDeltaStateTilde = interface_(side).deltaStateTilde(state);
 						Real interfaceDeltaStateTildeR = hydro->cells(interfaceIndexR).second.interfaces(side).deltaStateTilde(state);
 						
 						if (fabs(interfaceDeltaStateTilde) > Real(0)) {
-							if (interface(side).eigenvalues(state) > Real(0)) {
-								interface(side).rTilde(state) = interfaceDeltaStateTildeL / interfaceDeltaStateTilde;
+							if (interface_(side).eigenvalues(state) > Real(0)) {
+								interface_(side).rTilde(state) = interfaceDeltaStateTildeL / interfaceDeltaStateTilde;
 							} else {
-								interface(side).rTilde(state) = interfaceDeltaStateTildeR / interfaceDeltaStateTilde;
+								interface_(side).rTilde(state) = interfaceDeltaStateTildeR / interfaceDeltaStateTilde;
 							}
 						} else {
-							interface(side).rTilde(state) = Real(0);						
+							interface_(side).rTilde(state) = Real(0);						
 						}
 					}
 				}
 			} else {
 				for (int side = 0; side < rank; ++side) {
-					interface(side).rTilde = StateVector();
+					interface_(side).rTilde = StateVector();
 				}
 			}
 		});
@@ -183,7 +184,7 @@ void Godunov<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Hydro::C
 		PROFILE()
 		parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 			IVector index = v.first;
-			InterfaceVector &interface = v.second.interfaces;
+			InterfaceVector &interface_ = v.second.interfaces;
 			bool edge = false;
 			for (int side = 0; side < rank; ++side) {
 				if (index(side) < hydro->nghost - 1 || index(side) >= hydro->size(side) + hydro->nghost - 2) {
@@ -197,31 +198,31 @@ void Godunov<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Hydro::C
 					IVector indexL = index;
 					--indexL(side);
 					
-					Real dx = interface(side).x(side) - hydro->cells(indexL).second.interfaces(side).x(side);
+					Real dx = interface_(side).x(side) - hydro->cells(indexL).second.interfaces(side).x(side);
 
 					StateVector fluxTildeAvg;
 					for (int state = 0; state < numberOfStates; ++state) {
 						Real sum = Real();
 						for (int k = 0; k < numberOfStates; ++k) {
-							sum += interface(side).eigenvectorsInverse(state, k) * interface(side).stateMid(k);
+							sum += interface_(side).eigenvectorsInverse(state, k) * interface_(side).stateMid(k);
 						}
-						fluxTildeAvg(state) = sum * interface(side).eigenvalues(state);
+						fluxTildeAvg(state) = sum * interface_(side).eigenvalues(state);
 					}
 
 					//calculate flux
 					StateVector fluxTilde;
 					for (int state = 0; state < numberOfStates; ++state) {
 						Real theta = Real(0);
-						Real eigenvalue = interface(side).eigenvalues(state);
+						Real eigenvalue = interface_(side).eigenvalues(state);
 						if (eigenvalue >= Real(0)) {
 							theta = Real(1);
 						} else {
 							theta = Real(-1);
 						}
 
-						Real phi = (*hydro->limiter)(interface(side).rTilde(state));
+						Real phi = (*hydro->limiter)(interface_(side).rTilde(state));
 						Real epsilon = eigenvalue * dt / dx;
-						Real deltaFluxTilde = eigenvalue * interface(side).deltaStateTilde(state);
+						Real deltaFluxTilde = eigenvalue * interface_(side).deltaStateTilde(state);
 						fluxTilde(state) = fluxTildeAvg(state) - .5 * deltaFluxTilde * (theta + phi * (epsilon - theta) / Real(rank));
 					}
 				
@@ -229,14 +230,14 @@ void Godunov<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Hydro::C
 					for (int state = 0; state < numberOfStates; ++state) {
 						Real sum = Real(0);
 						for (int k = 0; k < numberOfStates; ++k) {
-							sum += interface(side).eigenvectors(state, k) * fluxTilde(k);
+							sum += interface_(side).eigenvectors(state, k) * fluxTilde(k);
 						}
-						interface(side).flux(state) = sum;
+						interface_(side).flux(state) = sum;
 					}
 				}
 			} else {
 				for (int side = 0; side < rank; ++side) {
-					interface(side).flux = StateVector();
+					interface_(side).flux = StateVector();
 				}
 			}
 		});
@@ -273,4 +274,5 @@ void Godunov<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Hydro::C
 	}
 }
 
+}
 }

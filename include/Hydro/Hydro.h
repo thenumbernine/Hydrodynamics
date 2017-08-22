@@ -12,6 +12,8 @@
 #include "Tensor/Vector.h"
 #include "Hydro/Parallel.h"
 
+namespace Hydrodynamics {
+
 template<typename Equation_>
 struct Hydro : public IHydro {
 	typedef Equation_ Equation;
@@ -19,14 +21,14 @@ struct Hydro : public IHydro {
 	typedef typename Equation::Real Real;
 	enum { rank = Equation::rank };
 
-	typedef ::Solver::ISolver<Real> ISolver;
-	typedef ::Explicit::Explicit<Hydro> Explicit;
-	typedef ::Limiter::Limiter<Real> Limiter;
-	typedef typename ::DisplayMethod<Hydro> DisplayMethod;
+	typedef Solver::ISolver<Real> ISolver;
+	typedef Explicit::Explicit<Hydro> Explicit;
+	typedef Limiter::Limiter<Real> Limiter;
+	typedef typename DisplayMethod<Hydro> DisplayMethod;
 	
 	enum { numberOfStates = Equation::numberOfStates };
-	typedef ::Cell<Real, rank, numberOfStates> Cell;
-	typedef ::Interface<Real, rank, numberOfStates> Interface;
+	typedef Cell<Real, rank, numberOfStates> Cell;
+	typedef Interface<Real, rank, numberOfStates> Interface;
 	
 	typedef Tensor::Vector<int, rank> IVector;
 	typedef typename Cell::Vector Vector;
@@ -41,7 +43,7 @@ public:	//hydro args
 	Real gamma;
 	Vector externalForce;
 	Real minPotentialEnergy;
-	std::shared_ptr<::Boundary::Boundary> boundaryMethod;
+	std::shared_ptr<Boundary::Boundary> boundaryMethod;
 	std::shared_ptr<Equation> equation;
 	std::shared_ptr<ISolver> solver;
 	std::shared_ptr<Explicit> explicitMethod;
@@ -63,7 +65,7 @@ public:
 		Real cfl_,
 		Real fixedDT_,
 		Real gamma_,
-		std::shared_ptr<::Boundary::Boundary> boundaryMethod_,
+		std::shared_ptr<Boundary::Boundary> boundaryMethod_,
 		std::shared_ptr<Equation> equation_,
 		std::shared_ptr<ISolver> solver_,
 		std::shared_ptr<Explicit> explicitMethod_,
@@ -87,7 +89,7 @@ Hydro<Equation>::Hydro(IVector size_,
 	Real cfl_,
 	Real fixedDT_,
 	Real gamma_,
-	std::shared_ptr<::Boundary::Boundary> boundaryMethod_,
+	std::shared_ptr<Boundary::Boundary> boundaryMethod_,
 	std::shared_ptr<Equation> equation_,
 	std::shared_ptr<ISolver> solver_,
 	std::shared_ptr<Explicit> explicitMethod_,
@@ -132,7 +134,7 @@ void Hydro<Equation>::resetCoordinates(Vector xmin_, Vector xmax_) {
 
 	parallel->foreach(cells.begin(), cells.end(), [&](typename CellGrid::value_type &v) {
 		IVector index = v.first;
-		InterfaceVector &interface = v.second.interfaces;
+		InterfaceVector &interface_ = v.second.interfaces;
 		bool edge = false;
 		for (int side = 0; side < rank; ++side) {	//which side
 			if (index(side) < 1 || index(side) >= size(side)) {
@@ -146,7 +148,7 @@ void Hydro<Equation>::resetCoordinates(Vector xmin_, Vector xmax_) {
 				IVector indexL = index;
 				--indexL(side);
 				for (int k = 0; k < rank; ++k) {
-					interface(side).x(k) = (cells(indexR).second.x(k) + cells(indexL).second.x(k)) * Real(.5);
+					interface_(side).x(k) = (cells(indexR).second.x(k) + cells(indexL).second.x(k)) * Real(.5);
 				}
 			}
 		}
@@ -154,7 +156,7 @@ void Hydro<Equation>::resetCoordinates(Vector xmin_, Vector xmax_) {
 
 	parallel->foreach(cells.begin(), cells.end(), [&](typename CellGrid::value_type &v) {
 		IVector index = v.first;
-		InterfaceVector &interface = v.second.interfaces;
+		InterfaceVector &interface_ = v.second.interfaces;
 		for (int k = 0; k < rank; ++k) {
 			//extrapolate based on which edge it is
 			if (index(k) == size(k)) {
@@ -163,7 +165,7 @@ void Hydro<Equation>::resetCoordinates(Vector xmin_, Vector xmax_) {
 				IVector indexL2 = indexL;
 				--indexL2(k);
 				for (int j = 0; j < 3; ++j) {
-					interface(k).x(j) = 2. * cells(indexL).second.interfaces(k).x(j) - cells(indexL2).second.interfaces(k).x(j);
+					interface_(k).x(j) = 2. * cells(indexL).second.interfaces(k).x(j) - cells(indexL2).second.interfaces(k).x(j);
 				}
 			} else if (index(k) == 0) {
 				IVector indexR = index;
@@ -171,7 +173,7 @@ void Hydro<Equation>::resetCoordinates(Vector xmin_, Vector xmax_) {
 				IVector indexR2 = indexR;
 				++indexR2(k);			
 				for (int j = 0; j < 3; ++j) {
-					interface(k).x(j) = 2. * cells(indexR).second.interfaces(k).x(j) - cells(indexR2).second.interfaces(k).x(j);
+					interface_(k).x(j) = 2. * cells(indexR).second.interfaces(k).x(j) - cells(indexR2).second.interfaces(k).x(j);
 				}
 			}
 		}
@@ -223,4 +225,6 @@ template<typename Equation>
 void Hydro<Equation>::draw() {
 	PROFILE()
 	plot.template draw<Hydro>(*this, displayMethod);
+}
+
 }

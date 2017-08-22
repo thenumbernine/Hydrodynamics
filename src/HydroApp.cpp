@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
+#include <cmath>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -67,6 +67,7 @@ public:
 	{}
 };
 
+namespace Hydrodynamics {
 
 struct HydroApp : public GLApp::GLApp {
 	typedef ::GLApp::GLApp Super;
@@ -90,7 +91,6 @@ struct HydroApp : public GLApp::GLApp {
 	virtual void update();
 	virtual void sdlEvent(SDL_Event &event);
 };
-GLAPP_MAIN(HydroApp)
 
 int HydroApp::main(const std::vector<std::string>& args) {
 	bool setSize = false;
@@ -210,52 +210,52 @@ int HydroApp::main(const std::vector<std::string>& args) {
 
 template<typename Real, int rank, typename Equation>
 void HydroApp::initType() {
-	typedef ::Hydro<Equation> Hydro;
-	typedef ::Solver::ISolver<Real> ISolver;
-	typedef ::Explicit::Explicit<Hydro> Explicit;
-	typedef ::Limiter::Limiter<Real> Limiter;
+	typedef Hydrodynamics::Hydro<Equation> Hydro;
+	typedef Hydrodynamics::Solver::ISolver<Real> ISolver;
+	typedef Hydrodynamics::Explicit::Explicit<Hydro> Explicit;
+	typedef Hydrodynamics::Limiter::Limiter<Real> Limiter;
 
 	std::shared_ptr<Equation> equation = std::make_shared<Equation>();
 
 	//these are eos-specific
-	std::shared_ptr<::InitialConditions::InitialConditions<Real, rank>> initialConditions = equation->initialConditions(hydroArgs.initialConditionsName);
+	std::shared_ptr<InitialConditions::InitialConditions<Real, rank>> initialConditions = equation->initialConditions(hydroArgs.initialConditionsName);
 	std::shared_ptr<ISolver> solver = equation->solvers(hydroArgs.solverName);
 
-	AllocatorMap<::Boundary::Boundary> boundaryMethods;
-	boundaryMethods.template add<::Boundary::Mirror<Hydro>>("Mirror");
-	boundaryMethods.template add<::Boundary::Periodic<Hydro>>("Periodic");
-	//boundaryMethods.template add<::Boundary::Constant<Hydro>>("Constant");
-	//boundaryMethods.template add<::Boundary::FreeFlow<Hydro>>("FreeFlow");
-	std::shared_ptr<::Boundary::Boundary> boundaryMethod = boundaryMethods(hydroArgs.boundaryName);
+	AllocatorMap<Boundary::Boundary> boundaryMethods;
+	boundaryMethods.template add<Boundary::Mirror<Hydro>>("Mirror");
+	boundaryMethods.template add<Boundary::Periodic<Hydro>>("Periodic");
+	//boundaryMethods.template add<Boundary::Constant<Hydro>>("Constant");
+	//boundaryMethods.template add<Boundary::FreeFlow<Hydro>>("FreeFlow");
+	std::shared_ptr<Boundary::Boundary> boundaryMethod = boundaryMethods(hydroArgs.boundaryName);
 
 	AllocatorMap<Explicit> explicitMethods;
-	explicitMethods.template add<::Explicit::ForwardEuler<Hydro>>("ForwardEuler");
-	explicitMethods.template add<::Explicit::RungeKutta2<Hydro>>("RungeKutta2");
-	explicitMethods.template add<::Explicit::RungeKutta4<Hydro>>("RungeKutta4");
-	explicitMethods.template add<::Explicit::IterativeCrankNicolson3<Hydro>>("IterativeCrankNicolson3");
+	explicitMethods.template add<Hydrodynamics::Explicit::ForwardEuler<Hydro>>("ForwardEuler");
+	explicitMethods.template add<Hydrodynamics::Explicit::RungeKutta2<Hydro>>("RungeKutta2");
+	explicitMethods.template add<Hydrodynamics::Explicit::RungeKutta4<Hydro>>("RungeKutta4");
+	explicitMethods.template add<Hydrodynamics::Explicit::IterativeCrankNicolson3<Hydro>>("IterativeCrankNicolson3");
 	std::shared_ptr<Explicit> explicitMethod = explicitMethods(hydroArgs.explicitName);
 
 	AllocatorMap<Limiter> limiters;
-	limiters.template add<::Limiter::DonorCell<Real>>("DonorCell");
-	limiters.template add<::Limiter::LaxWendroff<Real>>("LaxWendroff");
-	limiters.template add<::Limiter::BeamWarming<Real>>("BeamWarming");
-	limiters.template add<::Limiter::Fromm<Real>>("Fromm");
-	limiters.template add<::Limiter::CHARM<Real>>("CHARM");
-	limiters.template add<::Limiter::HCUS<Real>>("HCUS");
-	limiters.template add<::Limiter::HQUICK<Real>>("HQUICK");
-	limiters.template add<::Limiter::Koren<Real>>("Koren");
-	limiters.template add<::Limiter::MinMod<Real>>("MinMod");
-	limiters.template add<::Limiter::Oshker<Real>>("Oshker");
-	limiters.template add<::Limiter::Ospre<Real>>("Ospre");
-	limiters.template add<::Limiter::Smart<Real>>("Smart");
-	limiters.template add<::Limiter::Sweby<Real>>("Sweby");
-	limiters.template add<::Limiter::UMIST<Real>>("UMIST");
-	limiters.template add<::Limiter::VanAlbada1<Real>>("VanAlbada1");
-	limiters.template add<::Limiter::VanAlbada2<Real>>("VanAlbada2");
-	limiters.template add<::Limiter::VanLeer<Real>>("VanLeer");
-	limiters.template add<::Limiter::MonotonizedCentral<Real>>("MonotonizedCentral");
-	limiters.template add<::Limiter::Superbee<Real>>("Superbee");
-	limiters.template add<::Limiter::BarthJespersen<Real>>("BarthJespersen");
+	limiters.template add<Hydrodynamics::Limiter::DonorCell<Real>>("DonorCell");
+	limiters.template add<Hydrodynamics::Limiter::LaxWendroff<Real>>("LaxWendroff");
+	limiters.template add<Hydrodynamics::Limiter::BeamWarming<Real>>("BeamWarming");
+	limiters.template add<Hydrodynamics::Limiter::Fromm<Real>>("Fromm");
+	limiters.template add<Hydrodynamics::Limiter::CHARM<Real>>("CHARM");
+	limiters.template add<Hydrodynamics::Limiter::HCUS<Real>>("HCUS");
+	limiters.template add<Hydrodynamics::Limiter::HQUICK<Real>>("HQUICK");
+	limiters.template add<Hydrodynamics::Limiter::Koren<Real>>("Koren");
+	limiters.template add<Hydrodynamics::Limiter::MinMod<Real>>("MinMod");
+	limiters.template add<Hydrodynamics::Limiter::Oshker<Real>>("Oshker");
+	limiters.template add<Hydrodynamics::Limiter::Ospre<Real>>("Ospre");
+	limiters.template add<Hydrodynamics::Limiter::Smart<Real>>("Smart");
+	limiters.template add<Hydrodynamics::Limiter::Sweby<Real>>("Sweby");
+	limiters.template add<Hydrodynamics::Limiter::UMIST<Real>>("UMIST");
+	limiters.template add<Hydrodynamics::Limiter::VanAlbada1<Real>>("VanAlbada1");
+	limiters.template add<Hydrodynamics::Limiter::VanAlbada2<Real>>("VanAlbada2");
+	limiters.template add<Hydrodynamics::Limiter::VanLeer<Real>>("VanLeer");
+	limiters.template add<Hydrodynamics::Limiter::MonotonizedCentral<Real>>("MonotonizedCentral");
+	limiters.template add<Hydrodynamics::Limiter::Superbee<Real>>("Superbee");
+	limiters.template add<Hydrodynamics::Limiter::BarthJespersen<Real>>("BarthJespersen");
 	std::shared_ptr<Limiter> limiter = limiters(hydroArgs.limiterName);
 
 	AllocatorMap<DisplayMethod<Hydro>> displayMethods;
@@ -275,9 +275,9 @@ void HydroApp::initType() {
 	std::shared_ptr<Hydro> hydro = std::make_shared<Hydro>(
 		sizev,
 		hydroArgs.useCFL,
-		hydroArgs.cfl,
-		hydroArgs.fixedDT,
-		hydroArgs.gamma,
+		(Real)hydroArgs.cfl,
+		(Real)hydroArgs.fixedDT,
+		(Real)hydroArgs.gamma,
 		boundaryMethod,
 		equation,
 		solver,
@@ -318,11 +318,11 @@ std::cout << " min potential " << hydro->minPotentialEnergy << std::endl;
 template<typename Real, int rank>
 void HydroApp::initPrecision() {
 	if (hydroArgs.equationName == "Euler") {
-		initType<Real, rank, ::Equation::Euler<Real, rank>>();
+		initType<Real, rank, Hydrodynamics::Equation::Euler<Real, rank>>();
 	//} else if (hydroArgs.equationName == "MHD") {
-	//	initType<Real, rank, ::Equation::MHD<Real, rank>>();
+	//	initType<Real, rank, Hydrodynamics::Equation::MHD<Real, rank>>();
 	} else if (hydroArgs.equationName == "SRHD") {
-		initType<Real, rank, ::Equation::SRHD<Real, rank>>();
+		initType<Real, rank, Hydrodynamics::Equation::SRHD<Real, rank>>();
 	} else {
 		throw Common::Exception() << "unknown equation of state " << hydroArgs.equationName;
 	}
@@ -463,3 +463,7 @@ void HydroApp::sdlEvent(SDL_Event &event) {
 		break;
 	}
 }
+
+}
+
+GLAPP_MAIN(Hydrodynamics::HydroApp)

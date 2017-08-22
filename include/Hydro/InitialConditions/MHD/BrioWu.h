@@ -5,6 +5,7 @@
 #include "Hydro/IHydro.h"
 #include "Hydro/InitialConditions/InitialConditions.h"
 
+namespace Hydrodynamics {
 namespace InitialConditions {
 namespace MHD {
 
@@ -93,5 +94,6 @@ void BrioWu<Hydro>::operator()(IHydro *ihydro, Real noise) {
 
 }
 
+}
 }
 }

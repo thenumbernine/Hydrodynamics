@@ -3,6 +3,7 @@
 #include "Hydro/IHydro.h"
 #include "Hydro/InitialConditions/InitialConditions.h"
 
+namespace Hydrodynamics {
 namespace InitialConditions {
 namespace Euler {
 
@@ -70,5 +71,6 @@ void Sod<Hydro>::operator()(IHydro *ihydro, Real noise) {
 	});
 }
 
+}
 }
 }

@@ -1,13 +1,16 @@
 #pragma once
 
 #include "Tensor/Inverse.h"
+#include "Hydro/MinOneMinusOne.h"
+
+namespace Hydrodynamics {
 
 template<int rank>
 struct BuildPerpendicularBasis {
 	template<typename Real>
 	static void go(
 		Tensor::Tensor<Real, Tensor::Upper<rank> > normal, 
-		Tensor::Vector<Tensor::Tensor<Real, Tensor::Upper<rank> >, rank-1> &tangents) 
+		Tensor::Vector<Tensor::Tensor<Real, Tensor::Upper<rank> >, MinOneMinusOne<rank>::value> &tangents) 
 	{
 		//1) pick normal's max abs component
 		//2) fill in all axii but that component
@@ -63,7 +66,9 @@ struct BuildPerpendicularBasis<1> {
 	template<typename Real>
 	static void go(
 		Tensor::Tensor<Real, Tensor::Upper<1> > normal, 
-		Tensor::Vector<Tensor::Tensor<Real, Tensor::Upper<1> >, 0> &tangents)
+		//the 2nd param should be ,0, but MSVC complains if I allocate a size-zero array
+		// so the array has to be size 1, so the pattern has to be 1 here as well ...
+		Tensor::Vector<Tensor::Tensor<Real, Tensor::Upper<1> >, 1> &tangents)
 	{
 	}
 };
@@ -174,3 +179,4 @@ struct InverseGaussJordan {
 	}
 };
 
+}

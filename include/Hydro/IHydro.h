@@ -1,5 +1,7 @@
 #pragma once
 
+namespace Hydrodynamics {
+
 struct IHydro {
 	virtual void update() = 0;
 	virtual void draw() = 0;
@@ -8,3 +10,4 @@ struct IHydro {
 	virtual void zoom(int dz) = 0;
 };
 
+}

@@ -2,6 +2,7 @@
 
 #include "Hydro/Explicit/Explicit.h"
 
+namespace Hydrodynamics {
 namespace Explicit {
 
 template<typename Hydro>
@@ -24,4 +25,5 @@ void ForwardEuler<Hydro>::operator()(Hydro *hydro, Real dt, std::function<void(H
 	Super::addMulState(hydro, &Cell::state, dq_dt, dt);
 }
 
+}
 }

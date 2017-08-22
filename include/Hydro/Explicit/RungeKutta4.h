@@ -2,6 +2,7 @@
 
 #include "Hydro/Explicit/Explicit.h"
 
+namespace Hydrodynamics {
 namespace Explicit {
 
 template<typename Hydro>
@@ -44,4 +45,5 @@ void RungeKutta4<Hydro>::operator()(Hydro *hydro, Real dt, std::function<void(Hy
 	Super::addMulState(hydro, &Cell::state, k4, dt / 6.);
 }
 
+}
 }

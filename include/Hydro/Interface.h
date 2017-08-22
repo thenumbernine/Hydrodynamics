@@ -2,6 +2,8 @@
 
 #include "Tensor/Tensor.h"
 
+namespace Hydrodynamics {
+
 //cell interface values
 template<typename Real_, int rank, int numberOfStates>
 struct Interface {
@@ -48,4 +50,4 @@ struct Interface {
 	StateVector deltaStateTilde;	//dq projected into eigenvector basis
 };
 
-
+}

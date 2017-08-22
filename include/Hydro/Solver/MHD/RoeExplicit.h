@@ -3,12 +3,13 @@
 #include "Hydro/Solver/Godunov.h"
 #include "Hydro/Parallel.h"
 
+namespace Hydrodynamics {
 namespace Solver {
 namespace MHD {
 
 template<typename Hydro>
-struct RoeExplicit : public ::Solver::Godunov<Hydro> {
-	typedef ::Solver::Godunov<Hydro> Super;
+struct RoeExplicit : public Hydrodynamics::Solver::Godunov<Hydro> {
+	typedef Hydrodynamics::Solver::Godunov<Hydro> Super;
 	
 	enum { rank = Hydro::rank };
 	enum { numberOfStates = Hydro::numberOfStates };
@@ -37,7 +38,7 @@ void RoeExplicit<Hydro>::initStep(IHydro *ihydro) {
 		parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 			IVector index = v.first;
 			Cell &cell = v.second;
-			InterfaceVector &interface = cell.interfaces;
+			InterfaceVector &interface_ = cell.interfaces;
 			bool edge = false;
 			for (int side = 0; side < rank; ++side) {
 				if (index(side) < 1 || index(side) >= hydro->size(side)) {
@@ -107,9 +108,9 @@ void RoeExplicit<Hydro>::initStep(IHydro *ihydro) {
 
 					//compute eigenvectors and values at the interface based on averages
 					hydro->equation->buildEigenstate(
-						interface(side).eigenvalues,
-						interface(side).eigenvectors,
-						interface(side).eigenvectorsInverse,
+						interface_(side).eigenvalues,
+						interface_(side).eigenvectors,
+						interface_(side).eigenvectorsInverse,
 						density,
 						velocity,
 						magnetism,
@@ -123,5 +124,6 @@ void RoeExplicit<Hydro>::initStep(IHydro *ihydro) {
 }
 
 
+}
 }
 }

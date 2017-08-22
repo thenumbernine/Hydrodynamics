@@ -2,6 +2,7 @@
 
 #include "Hydro/Equation/Equation.h"
 #include "Hydro/Inverse.h"
+#include "Hydro/MinOneMinusOne.h"
 #include "Tensor/Inverse.h"
 
 #include "Hydro/Solver/Euler/BurgersExplicit.h"
@@ -17,16 +18,17 @@
 
 #include <cmath>
 
+namespace Hydrodynamics {
 namespace Equation {
 
 template<typename Real, int rank_>
-struct Euler : public ::Equation::Equation<Real, rank_> {
-	typedef ::Equation::Equation<Real, rank_> Super;
+struct Euler : public Equation<Real, rank_> {
+	typedef Equation<Real, rank_> Super;
 	
 	enum { rank = rank_ };
-	typedef ::Solver::ISolver<Real> ISolver;
-	typedef ::InitialConditions::InitialConditions<Real, rank> InitialConditions;
-	typedef ::Hydro<Euler<Real, rank> > Hydro;
+	typedef Solver::ISolver<Real> ISolver;
+	typedef Hydrodynamics::InitialConditions::InitialConditions<Real, rank> InitialConditions;
+	typedef Hydro<Euler<Real, rank> > Hydro;
 	enum { numberOfStates = rank + 2 };
 	typedef Tensor::Tensor<Real, Tensor::Upper<rank> > Vector;
 	typedef Tensor::Tensor<Real, Tensor::Upper<numberOfStates> > StateVector;
@@ -55,16 +57,16 @@ struct Euler : public ::Equation::Equation<Real, rank_> {
 //construct solverAllocator map
 template<typename Real, int rank>
 Euler<Real, rank>::Euler() {
-	Super::solvers.template add<::Solver::Euler::BurgersExplicit<Hydro>>("Burgers");
-	Super::solvers.template add<::Solver::Euler::GodunovExplicit<Hydro>>("Godunov");
-	Super::solvers.template add<::Solver::Euler::RoeExplicit<Hydro>>("Roe");
+	Super::solvers.template add<Solver::Euler::BurgersExplicit<Hydro>>("Burgers");
+	Super::solvers.template add<Solver::Euler::GodunovExplicit<Hydro>>("Godunov");
+	Super::solvers.template add<Solver::Euler::RoeExplicit<Hydro>>("Roe");
 
-	Super::initialConditions.template add<::InitialConditions::Euler::Sod<Hydro>>("Sod");
-	Super::initialConditions.template add<::InitialConditions::Euler::Sedov<Hydro>>("Sedov");
-	Super::initialConditions.template add<::InitialConditions::Euler::Advect<Hydro>>("Advect");
-	Super::initialConditions.template add<::InitialConditions::Euler::Wave<Hydro>>("Wave");
-	Super::initialConditions.template add<::InitialConditions::Euler::KelvinHemholtz<Hydro>>("KelvinHemholtz");
-	Super::initialConditions.template add<::InitialConditions::Euler::RayleighTaylor<Hydro>>("RayleighTaylor");
+	Super::initialConditions.template add<Hydrodynamics::InitialConditions::Euler::Sod<Hydro>>("Sod");
+	Super::initialConditions.template add<Hydrodynamics::InitialConditions::Euler::Sedov<Hydro>>("Sedov");
+	Super::initialConditions.template add<Hydrodynamics::InitialConditions::Euler::Advect<Hydro>>("Advect");
+	Super::initialConditions.template add<Hydrodynamics::InitialConditions::Euler::Wave<Hydro>>("Wave");
+	Super::initialConditions.template add<Hydrodynamics::InitialConditions::Euler::KelvinHemholtz<Hydro>>("KelvinHemholtz");
+	Super::initialConditions.template add<Hydrodynamics::InitialConditions::Euler::RayleighTaylor<Hydro>>("RayleighTaylor");
 }
 
 template<typename Real, int rank>
@@ -112,10 +114,10 @@ void Euler<Real, rank>::buildEigenstate(
 #if 1	//specify eigenbasis in terms of normal (works)
 
 	//common with Euler Equation
-	Tensor::Vector<Vector, rank-1> tangents;
+	Tensor::Vector<Vector, MinOneMinusOne<rank>::value> tangents;
 	BuildPerpendicularBasis<rank>::template go<Real>(normal, tangents);
 	Real velocityAlongNormal = Real(0);
-	Tensor::Vector<Real, rank-1> velocityAlongTangents;
+	Tensor::Vector<Real, MinOneMinusOne<rank>::value> velocityAlongTangents;
 	Real velocitySq = Real(0);
 	for (int k = 0; k < rank; ++k) {
 		velocityAlongNormal += normal(k) * velocity(k);
@@ -376,5 +378,5 @@ void Euler<Real, rank>::buildEigenstate(
 #endif
 }
 
-};
-
+}
+}

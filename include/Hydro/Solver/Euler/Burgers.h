@@ -1,8 +1,9 @@
 #pragma once
 
 #include "Hydro/Solver/Solver.h"
-#include <math.h>
+#include <cmath>
 
+namespace Hydrodynamics {
 namespace Solver {
 namespace Euler {
 
@@ -77,5 +78,6 @@ Burgers<Hydro>::calcCFLTimestep(IHydro *ihydro)
 	return hydro->cfl * mindum;
 }
 
+}
 }
 }

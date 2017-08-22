@@ -3,6 +3,8 @@
 #include "Tensor/Tensor.h"
 #include "Hydro/Interface.h"
 
+namespace Hydrodynamics {
+
 //cell-centered values
 template<typename Real_, int rank, int numberOfStates_>
 struct Cell {
@@ -13,7 +15,7 @@ struct Cell {
 	typedef Tensor::Vector<int, rank> IVector;
 	typedef Tensor::Tensor<Real, Tensor::Upper<rank> > Vector;
 	typedef Tensor::Tensor<Real, Tensor::Upper<numberOfStates> > StateVector;
-	typedef ::Interface<Real, rank, numberOfStates> Interface;
+	typedef Interface<Real, rank, numberOfStates> Interface;
 
 	Cell() : pressure(Real()) {}
 
@@ -42,3 +44,4 @@ struct Cell {
 	Tensor::Vector<Interface, rank> interfaces;
 };
 
+}

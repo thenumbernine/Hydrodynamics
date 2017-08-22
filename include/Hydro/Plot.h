@@ -5,6 +5,9 @@
 #include "Common/gl.h"
 #include <algorithm>
 #include <memory>
+#include <cmath> //M_PI
+
+namespace Hydrodynamics {
 
 template<typename Hydro>
 struct DisplayMethod {
@@ -243,5 +246,4 @@ struct Plot<2> {
 	}
 };
 
-
-
+}

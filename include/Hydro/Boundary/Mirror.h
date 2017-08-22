@@ -3,6 +3,7 @@
 #include "Tensor/Grid.h"	//RangeObj
 #include "Hydro/Boundary/Boundary.h"
 
+namespace Hydrodynamics {
 namespace Boundary {
 
 template<typename Hydro>
@@ -22,7 +23,8 @@ void Mirror<Hydro>::operator()(IHydro *ihydro) {
 	
 	for (int side = 0; side < rank; ++side) {
 		//volume range over all other dimensions ...
-		typedef Tensor::Vector<int, rank-1> BoundaryIntVector;
+		typedef Tensor::Vector<int, MinOneMinusOne<rank>::value> BoundaryIntVector; 
+		typedef Tensor::RangeObj<MinOneMinusOne<rank>::value> BoundaryRangeObj;
 		BoundaryIntVector min, max;
 		for (int k = 0; k < rank - 1; ++k) {
 			if (k < side) {
@@ -31,7 +33,7 @@ void Mirror<Hydro>::operator()(IHydro *ihydro) {
 				max(k) = hydro->size(k+1);
 			}
 		}
-		Tensor::RangeObj<rank-1> boundary(min, max);
+		BoundaryRangeObj boundary(min, max);
 		
 		auto callback = [&](BoundaryIntVector boundaryIndex) {
 			IVector index;
@@ -73,10 +75,16 @@ void Mirror<Hydro>::operator()(IHydro *ihydro) {
 		if (rank == 1) {
 			callback(BoundaryIntVector());
 		} else {
+#ifdef PLATFORM_msvc	//Microsoft is why we can't have nice things.
+			for (BoundaryRangeObj::iterator i = boundary.begin(); i != boundary.end(); ++i) {
+				callback(*i);
+			}
+#else
 			std::for_each(boundary.begin(), boundary.end(), callback);
+#endif		
 		}
 	}
 }
 
-};
-
+}
+}

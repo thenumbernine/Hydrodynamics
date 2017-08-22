@@ -9,16 +9,17 @@
 
 #include <cmath>
 
+namespace Hydrodynamics {
 namespace Equation {
 
 template<typename Real, int rank_>
-struct SRHD : public ::Equation::Equation<Real, rank_> {
-	typedef ::Equation::Equation<Real, rank_> Super;
+struct SRHD : public Equation<Real, rank_> {
+	typedef Equation<Real, rank_> Super;
 	
 	enum { rank = rank_ };
-	typedef ::Solver::ISolver<Real> ISolver;
-	typedef ::InitialConditions::InitialConditions<Real, rank> InitialConditions;
-	typedef ::Hydro<SRHD<Real, rank> > Hydro;
+	typedef Solver::ISolver<Real> ISolver;
+	typedef Hydrodynamics::InitialConditions::InitialConditions<Real, rank> InitialConditions;
+	typedef Hydro<SRHD<Real, rank> > Hydro;
 	enum { numberOfStates = rank + 2 };
 	typedef Tensor::Tensor<Real, Tensor::Upper<rank> > Vector;
 	typedef Tensor::Tensor<Real, Tensor::Upper<numberOfStates> > StateVector;
@@ -44,9 +45,9 @@ struct SRHD : public ::Equation::Equation<Real, rank_> {
 //construct solverAllocator map
 template<typename Real, int rank>
 SRHD<Real, rank>::SRHD() {
-	Super::solvers.template add<::Solver::SRHD::RoeExplicit<Hydro>>("Roe");
+	Super::solvers.template add<Solver::SRHD::RoeExplicit<Hydro>>("Roe");
 
-	Super::initialConditions.template add<::InitialConditions::SRHD::Sod<Hydro>>("Sod");
+	Super::initialConditions.template add<Hydrodynamics::InitialConditions::SRHD::Sod<Hydro>>("Sod");
 }
 
 template<typename Real, int rank>
@@ -67,5 +68,5 @@ void SRHD<Real, rank>::buildEigenstate(
 {
 }
 
-};
-
+}
+}

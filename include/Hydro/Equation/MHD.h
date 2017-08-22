@@ -6,6 +6,7 @@
 #include "Hydro/Solver/MHD/RoeExplicit.h"
 #include "Hydro/InitialConditions/MHD/BrioWu.h"
 
+namespace Hydrodynamics {
 namespace Equation {
 
 template<typename Real, int rank_>
@@ -13,9 +14,9 @@ struct MHD : public ::Equation::Equation<Real, rank_> {
 	typedef ::Equation::Equation<Real, rank_> Super;
 	
 	enum { rank = rank_ };
-	typedef ::Solver::ISolver<Real> ISolver;
-	typedef ::InitialConditions::InitialConditions<Real, rank> InitialConditions;
-	typedef ::Hydro<MHD<Real, rank>> Hydro;
+	typedef Solver::ISolver<Real> ISolver;
+	typedef InitialConditions::InitialConditions<Real, rank> InitialConditions;
+	typedef Hydro<MHD<Real, rank>> Hydro;
 	
 	enum { numberOfStates = 9 };	//mhd always needs to simulate all fields.  maybe not one or two of them.  might as well do all of them.
 	typedef Tensor::Tensor<Real, Tensor::Upper<rank>> Vector;
@@ -43,7 +44,7 @@ struct MHD : public ::Equation::Equation<Real, rank_> {
 //construct solverAllocator map
 template<typename Real, int rank>
 MHD<Real, rank>::MHD() {
-	Super::solvers.map["Roe"] = []() -> ISolver* { return new ::Solver::MHD::RoeExplicit<Hydro>(); };
+	Super::solvers.map["Roe"] = []() -> ISolver* { return new Solver::MHD::RoeExplicit<Hydro>(); };
 
 	Super::initialConditions.map["BrioWu"] = []() -> InitialConditions* { return new ::InitialConditions::MHD::BrioWu<Hydro>(); };
 }
@@ -62,5 +63,5 @@ void MHD<Real, rank>::buildEigenstate(
 {
 }
 
-};
-
+}
+}

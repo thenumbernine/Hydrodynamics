@@ -3,12 +3,13 @@
 #include "Hydro/Solver/Euler/Godunov.h"
 #include "Hydro/Parallel.h"
 
+namespace Hydrodynamics {
 namespace Solver {
 namespace Euler {
 
 template<typename Hydro>
-struct HLLExplicit : public ::Solver::Euler::Godunov<Hydro> {
-	typedef ::Solver::Euler::Godunov<Hydro> Super;
+struct HLLExplicit : public Godunov<Hydro> {
+	typedef Godunov<Hydro> Super;
 	
 	enum { rank = Hydro::rank };
 	enum { numberOfStates = Hydro::numberOfStates };
@@ -36,7 +37,7 @@ void HLLExplicit<Hydro>::initStep(IHydro* ihydro) {
 		parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 			IVector index = v.first;
 			Cell &cell = v.second;
-			InterfaceVector &interface = cell.interfaces;
+			InterfaceVector &interface_ = cell.interfaces;
 			bool edge = false;
 			for (int side = 0; side < rank; ++side) {
 				if (index(side) < 1 || index(side) >= hydro->size(side)) {
@@ -104,13 +105,17 @@ void HLLExplicit<Hydro>::initStep(IHydro* ihydro) {
 					Real speedOfSound = sqrt(pressure / density);
 					
 					//compute eigenvectors and values at the interface based on averages
-					interface(side).eigenvalues(0) = velocityN - speedOfSound;
+					interface_(side).eigenvalues(0) = velocityN - speedOfSound;
 					for (int i = 0; i < rank; ++i) {
-						interface(side).eigenvalues(i+1) = velocityN;
+						interface_(side).eigenvalues(i+1) = velocityN;
 					}
-					interface(side).eigenvalues(rank+1) = velocityN + speedOfSound;
+					interface_(side).eigenvalues(rank+1) = velocityN + speedOfSound;
 				}
 			}
 		});
 	}
+}
+
+}
+}
 }

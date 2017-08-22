@@ -2,6 +2,7 @@
 
 struct IHydro;
 
+namespace Hydrodynamics {
 namespace Solver {
 
 //Solver is constructed and passed to Hydro 
@@ -16,5 +17,5 @@ struct ISolver {
 	virtual Real calcCFLTimestep(IHydro *hydro) = 0;
 };
 
-};
-
+}
+}

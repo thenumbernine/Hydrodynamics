@@ -3,6 +3,7 @@
 #include "Hydro/IHydro.h"
 #include "Tensor/Tensor.h"
 
+namespace Hydrodynamics {
 namespace InitialConditions {
 
 template<typename Real, int rank>
@@ -13,5 +14,5 @@ struct InitialConditions {
 	Tensor::Tensor<Real, Tensor::Upper<rank>> xmin, xmax;
 };
 
-};
-
+}
+}

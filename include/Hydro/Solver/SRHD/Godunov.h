@@ -3,12 +3,13 @@
 #include "Hydro/Solver/Godunov.h"
 #include "Hydro/Parallel.h"
 
+namespace Hydrodynamics {
 namespace Solver {
 namespace SRHD {
 
 template<typename Hydro>
-struct Godunov : public ::Solver::Godunov<Hydro> {
-	typedef ::Solver::Godunov<Hydro> Super;
+struct Godunov : public Hydrodynamics::Solver::Godunov<Hydro> {
+	typedef Hydrodynamics::Solver::Godunov<Hydro> Super;
 
 	typedef typename Hydro::Real Real;
 	typedef typename Hydro::Cell Cell;
@@ -38,5 +39,6 @@ void Godunov<Hydro>::updatePrimitives(IHydro *ihydro) {
 	});
 }
 
+}
 }
 }
