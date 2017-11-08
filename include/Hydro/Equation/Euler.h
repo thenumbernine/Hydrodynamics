@@ -13,7 +13,7 @@
 #include "Hydro/InitialConditions/Euler/Sedov.h"
 #include "Hydro/InitialConditions/Euler/Advect.h"
 #include "Hydro/InitialConditions/Euler/Wave.h"
-#include "Hydro/InitialConditions/Euler/KelvinHemholtz.h"
+#include "Hydro/InitialConditions/Euler/KelvinHelmholtz.h"
 #include "Hydro/InitialConditions/Euler/RayleighTaylor.h"
 
 #include <cmath>
@@ -65,7 +65,7 @@ Euler<Real, rank>::Euler() {
 	Super::initialConditions.template add<Hydrodynamics::InitialConditions::Euler::Sedov<Hydro>>("Sedov");
 	Super::initialConditions.template add<Hydrodynamics::InitialConditions::Euler::Advect<Hydro>>("Advect");
 	Super::initialConditions.template add<Hydrodynamics::InitialConditions::Euler::Wave<Hydro>>("Wave");
-	Super::initialConditions.template add<Hydrodynamics::InitialConditions::Euler::KelvinHemholtz<Hydro>>("KelvinHemholtz");
+	Super::initialConditions.template add<Hydrodynamics::InitialConditions::Euler::KelvinHelmholtz<Hydro>>("KelvinHelmholtz");
 	Super::initialConditions.template add<Hydrodynamics::InitialConditions::Euler::RayleighTaylor<Hydro>>("RayleighTaylor");
 }
 

@@ -10,7 +10,7 @@ namespace InitialConditions {
 namespace Euler {
 
 template<typename Hydro>
-struct KelvinHemholtz : public InitialConditions<typename Hydro::Real, Hydro::rank> {
+struct KelvinHelmholtz : public InitialConditions<typename Hydro::Real, Hydro::rank> {
 	typedef InitialConditions<typename Hydro::Real, Hydro::rank> Super;
 	
 	enum { rank = Hydro::rank };
@@ -21,18 +21,18 @@ struct KelvinHemholtz : public InitialConditions<typename Hydro::Real, Hydro::ra
 	typedef typename Hydro::IVector IVector;
 	typedef typename Hydro::Vector Vector;
 	
-	KelvinHemholtz();
+	KelvinHelmholtz();
 	virtual void operator()(IHydro *ihydro, Real noise); 
 };
 
 template<typename Hydro>
-KelvinHemholtz<Hydro>::KelvinHemholtz() {
+KelvinHelmholtz<Hydro>::KelvinHelmholtz() {
 	Super::xmin = Vector(-.5);
 	Super::xmax = Vector(.5);
 }
 
 template<typename Hydro>
-void KelvinHemholtz<Hydro>::operator()(IHydro *ihydro, Real noise) {
+void KelvinHelmholtz<Hydro>::operator()(IHydro *ihydro, Real noise) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		Cell &cell = v.second;

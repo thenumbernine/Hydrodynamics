@@ -104,7 +104,7 @@ int HydroApp::main(const std::vector<std::string>& args) {
 			std::cout << "  --initialConditions <initialConditions>" << std::endl;
 			std::cout << "    can be one of the following:" << std::endl;
 			std::cout << "      for Euler equation of state:" << std::endl;
-			std::cout << "        (Sod) Sedov Advect Wave KelvinHemholtz RayleighTaylor" << std::endl;
+			std::cout << "        (Sod) Sedov Advect Wave KelvinHelmholtz RayleighTaylor" << std::endl;
 			std::cout << "  --boundary <boundary>" << std::endl;
 			std::cout << "    can be one of the following: (Mirror) Peroiod" << std::endl;
 			std::cout << "  --solver <solver>" << std::endl;
