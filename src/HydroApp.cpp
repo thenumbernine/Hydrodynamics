@@ -50,7 +50,7 @@ public:
 	HydroArgs() 
 	: dim(2)
 	, size({256,256})
-	, numThreads(4)
+	, numThreads(std::thread::hardware_concurrency())
 	, useCFL(true)
 	, cfl(.5)
 	, noise(0.)
