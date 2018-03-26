@@ -4,7 +4,16 @@ depends:append{'../Common', '../GLApp', '../Tensor', '../Profiler', '../Parallel
 cppver='c++14'
 
 -- https://stackoverflow.com/questions/26065359/m-pi-flagged-as-undeclared-identifier 
-if platform=='msvc' then
+-- should I put this in lua-make?
+if platform == 'msvc'
+or platform == 'clang_win'
+or platform == 'mingw'
+then
 	macros:insert'_USE_MATH_DEFINES'
+end
+
+if platform == 'msvc'
+or platform == 'clang_win'
+then
 	compileFlags = compileFlags .. ' /bigobj'
 end

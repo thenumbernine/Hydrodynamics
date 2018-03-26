@@ -18,7 +18,7 @@ public:
 };
 
 template<typename Hydro>
-void IterativeCrankNicolson3<Hydro>::operator()(Hydro *hydro, Real dt, std::function<void(Hydro *hydro, Real dt, StateVector Hydro::Cell::*dq_dt)> deriv) {
+void IterativeCrankNicolson3<Hydro>::operator()(Hydro *hydro, Real dt, std::function<void(Hydro *hydro, Real dt, IterativeCrankNicolson3<Hydro>::StateVector IterativeCrankNicolson3<Hydro>::Cell::*dq_dt)> deriv) {
 	//first iteration
 	StateVector Cell::*srcQ = &Cell::tmpState0;
 	Super::copyState(hydro, srcQ, &Cell::state);

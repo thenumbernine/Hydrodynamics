@@ -18,7 +18,7 @@ public:
 };
 
 template<typename Hydro>
-void ForwardEuler<Hydro>::operator()(Hydro *hydro, Real dt, std::function<void(Hydro *hydro, Real dt, StateVector Hydro::Cell::*dq_dt)> deriv) {
+void ForwardEuler<Hydro>::operator()(Hydro *hydro, Real dt, std::function<void(Hydro *hydro, Real dt, ForwardEuler<Hydro>::StateVector ForwardEuler<Hydro>::Cell::*dq_dt)> deriv) {
 	StateVector Cell::*dq_dt = &Cell::tmpState0;
 	Super::copyState(hydro, dq_dt, &Cell::state);
 	deriv(hydro, dt, dq_dt);

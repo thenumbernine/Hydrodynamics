@@ -87,7 +87,7 @@ void Godunov<Hydro>::step(IHydro *ihydro, Real dt) {
 }
 
 template<typename Hydro>
-void Godunov<Hydro>::integrateFlux(IHydro *ihydro, Real dt, StateVector Hydro::Cell::*dq_dt) {
+void Godunov<Hydro>::integrateFlux(IHydro *ihydro, Real dt, Godunov<Hydro>::StateVector Godunov<Hydro>::Cell::*dq_dt) {
 	PROFILE()
 	
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);

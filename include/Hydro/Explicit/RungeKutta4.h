@@ -18,7 +18,7 @@ public:
 };
 
 template<typename Hydro>
-void RungeKutta4<Hydro>::operator()(Hydro *hydro, Real dt, std::function<void(Hydro *hydro, Real dt, StateVector Hydro::Cell::*dq_dt)> deriv) {
+void RungeKutta4<Hydro>::operator()(Hydro *hydro, Real dt, std::function<void(Hydro *hydro, Real dt, RungeKutta4<Hydro>::StateVector RungeKutta4<Hydro>::Cell::*dq_dt)> deriv) {
 	StateVector Cell::*src = &Cell::tmpState0;
 	Super::copyState(hydro, src, &Cell::state);
 	StateVector Cell::*k1 = &Cell::tmpState1;
