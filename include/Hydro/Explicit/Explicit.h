@@ -8,11 +8,11 @@ namespace Explicit {
 
 template<typename Hydro>
 struct Explicit {
-	enum { numberOfStates = Hydro::numberOfStates };
-	typedef typename Hydro::Real Real;
-	typedef typename Hydro::Cell Cell;
-	typedef typename Hydro::CellGrid CellGrid;
-	typedef typename Cell::StateVector StateVector;
+	static constexpr auto numberOfStates = Hydro::numberOfStates;
+	using Real = typename Hydro::Real;
+	using Cell = typename Hydro::Cell;
+	using CellGrid = typename Hydro::CellGrid;
+	using StateVector = typename Cell::StateVector;
 	
 	virtual void operator()(Hydro *hydro, Real dt, std::function<void(Hydro *hydro, Real dt, StateVector Cell::*dq_dt)> deriv) = 0;
 

@@ -8,18 +8,18 @@ namespace Solver {
 
 template<typename Hydro>
 struct Godunov : public Solver<Hydro> {
-	typedef Solver<Hydro> Super;
+	using Super = Solver<Hydro>;
 
-	enum { rank = Hydro::rank };
-	enum { numberOfStates = Hydro::numberOfStates };
+	static constexpr auto rank = Hydro::rank;
+	static constexpr auto numberOfStates = Hydro::numberOfStates;
 	
-	typedef typename Hydro::Real Real;
-	typedef typename Hydro::Cell Cell;
-	typedef typename Hydro::Interface Interface;	
-	typedef typename Hydro::StateVector StateVector;
-	typedef typename Hydro::IVector IVector;
-	typedef typename Hydro::CellGrid CellGrid;
-	typedef typename Hydro::InterfaceVector InterfaceVector;
+	using Real = typename Hydro::Real;
+	using Cell = typename Hydro::Cell;
+	using Interface = typename Hydro::Interface;	
+	using StateVector = typename Hydro::StateVector;
+	using IVector = typename Hydro::IVector;
+	using CellGrid = typename Hydro::CellGrid;
+	using InterfaceVector = typename Hydro::InterfaceVector;
 
 	virtual Real calcCFLTimestep(IHydro *ihydro);
 	virtual void step(IHydro *ihydro, Real dt);

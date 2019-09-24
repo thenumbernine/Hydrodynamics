@@ -5,12 +5,12 @@ namespace Hydrodynamics {
 
 template<int n>
 struct MinOneMinusOne {
-	enum { value = n - 1 };
+	static constexpr auto value = n - 1;
 };
 
 template<>
 struct MinOneMinusOne<1> {
-	enum { value = 1 };
+	static constexpr auto value = 1;
 };
 
 }

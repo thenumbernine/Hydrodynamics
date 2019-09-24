@@ -9,18 +9,18 @@ namespace Euler {
 
 template<typename Hydro>
 struct BurgersExplicit : public Burgers<Hydro> {
-	typedef Burgers<Hydro> Super; 
+	using Super = Burgers<Hydro>; 
 	
-	enum { rank = Hydro::rank };
-	enum { numberOfStates = Hydro::numberOfStates };
-	typedef typename Hydro::Real Real;
-	typedef typename Hydro::Cell Cell;
-	typedef typename Hydro::Interface Interface;
-	typedef typename Hydro::InterfaceVector InterfaceVector;
-	typedef typename Hydro::IVector IVector;
-	typedef typename Cell::Vector Vector;
-	typedef typename Cell::StateVector StateVector;
-	typedef typename Hydro::CellGrid CellGrid;
+	static constexpr auto rank = Hydro::rank;
+	static constexpr auto numberOfStates = Hydro::numberOfStates;
+	using Real = typename Hydro::Real;
+	using Cell = typename Hydro::Cell;
+	using Interface = typename Hydro::Interface;
+	using InterfaceVector = typename Hydro::InterfaceVector;
+	using IVector = typename Hydro::IVector;
+	using Vector = typename Cell::Vector;
+	using StateVector = typename Cell::StateVector;
+	using CellGrid = typename Hydro::CellGrid;
 	
 	virtual void step(IHydro *hydro, Real dt);
 	

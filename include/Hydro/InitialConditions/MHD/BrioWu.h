@@ -11,16 +11,16 @@ namespace MHD {
 
 template<typename Hydro>
 struct BrioWu : public InitialConditions<typename Hydro::Real, Hydro::rank> {
-	typedef InitialConditions<typename Hydro::Real, Hydro::rank> Super;
+	using Super = InitialConditions<typename Hydro::Real, Hydro::rank>;
 
-	enum { rank = Hydro::rank };
+	static constexpr auto rank = Hydro::rank;
 
-	typedef typename Hydro::Real Real;
-	typedef typename Hydro::CellGrid CellGrid;
-	typedef typename Hydro::Cell Cell;
-	typedef typename Hydro::IVector IVector;
-	typedef typename Hydro::Vector Vector;
-	typedef typename Hydro::Equation::Vector3 Vector3;
+	using Real = typename Hydro::Real;
+	using CellGrid = typename Hydro::CellGrid;
+	using Cell = typename Hydro::Cell;
+	using IVector = typename Hydro::IVector;
+	using Vector = typename Hydro::Vector;
+	using Vector3 = typename Hydro::Equation::Vector3;
 	
 	BrioWu();
 	virtual void operator()(IHydro *ihydro, Real noise); 

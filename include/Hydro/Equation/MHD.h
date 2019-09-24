@@ -11,19 +11,19 @@ namespace Equation {
 
 template<typename Real, int rank_>
 struct MHD : public ::Equation::Equation<Real, rank_> {
-	typedef ::Equation::Equation<Real, rank_> Super;
+	using Super = ::Equation::Equation<Real, rank_>;
 	
-	enum { rank = rank_ };
-	typedef Solver::ISolver<Real> ISolver;
-	typedef InitialConditions::InitialConditions<Real, rank> InitialConditions;
-	typedef Hydro<MHD<Real, rank>> Hydro;
+	static constexpr auto rank = rank_;
+	using ISolver = Solver::ISolver<Real>;
+	using InitialConditions = InitialConditions::InitialConditions<Real, rank>;
+	using Hydro = Hydro<MHD<Real, rank>>;
 	
-	enum { numberOfStates = 9 };	//mhd always needs to simulate all fields.  maybe not one or two of them.  might as well do all of them.
-	typedef Tensor::Tensor<Real, Tensor::Upper<rank>> Vector;
-	typedef Tensor::Tensor<Real, Tensor::Upper<numberOfStates>> StateVector;
-	typedef Tensor::Tensor<Real, Tensor::Lower<numberOfStates>, Tensor::Lower<numberOfStates>> StateMatrix;
-	typedef Tensor::Tensor<Real, Tensor::Upper<numberOfStates>, Tensor::Upper<numberOfStates>> StateInverseMatrix;
-	typedef Tensor::Tensor<Real, Tensor::Upper<3>> Vector3;
+	static constexpr auto numberOfStates = 9;	//mhd always needs to simulate all fields.  maybe not one or two of them.  might as well do all of them.
+	using Vector = Tensor::Tensor<Real, Tensor::Upper<rank>>;
+	using StateVector = Tensor::Tensor<Real, Tensor::Upper<numberOfStates>>;
+	using StateMatrix = Tensor::Tensor<Real, Tensor::Lower<numberOfStates>, Tensor::Lower<numberOfStates>>;
+	using StateInverseMatrix = Tensor::Tensor<Real, Tensor::Upper<numberOfStates>, Tensor::Upper<numberOfStates>>;
+	using Vector3 = Tensor::Tensor<Real, Tensor::Upper<3>>;
 
 	MHD();
 	

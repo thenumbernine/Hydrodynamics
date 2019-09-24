@@ -1,7 +1,6 @@
 distName='Hydro'
 distType='app'
 depends:append{'../Common', '../GLApp', '../Tensor', '../Profiler', '../Parallel'}
-cppver='c++14'
 
 -- https://stackoverflow.com/questions/26065359/m-pi-flagged-as-undeclared-identifier 
 -- should I put this in lua-make?

@@ -9,7 +9,7 @@ namespace Equation {
 
 template<typename Real_, int rank_>
 struct Equation {
-	enum { rank = rank_ };
+	static constexpr auto rank = rank_;
 	typedef Real_ Real;
 	typedef Solver::ISolver<Real> ISolver;
 	typedef InitialConditions::InitialConditions<Real, rank> InitialConditions;

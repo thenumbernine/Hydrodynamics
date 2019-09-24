@@ -16,25 +16,25 @@ namespace Hydrodynamics {
 
 template<typename Equation_>
 struct Hydro : public IHydro {
-	typedef Equation_ Equation;
+	using Equation = Equation_;
 	
-	typedef typename Equation::Real Real;
-	enum { rank = Equation::rank };
+	using Real = typename Equation::Real;
+	static constexpr auto rank = Equation::rank;
 
-	typedef Solver::ISolver<Real> ISolver;
-	typedef Explicit::Explicit<Hydro> Explicit;
-	typedef Limiter::Limiter<Real> Limiter;
-	typedef Hydrodynamics::DisplayMethod<Hydro> DisplayMethod;
+	using ISolver = Solver::ISolver<Real>;
+	using Explicit = Explicit::Explicit<Hydro>;
+	using Limiter = Limiter::Limiter<Real>;
+	using DisplayMethod = Hydrodynamics::DisplayMethod<Hydro>;
 	
-	enum { numberOfStates = Equation::numberOfStates };
-	typedef Hydrodynamics::Cell<Real, rank, numberOfStates> Cell;
-	typedef Hydrodynamics::Interface<Real, rank, numberOfStates> Interface;
+	static constexpr auto numberOfStates = Equation::numberOfStates;
+	using Cell = Hydrodynamics::Cell<Real, rank, numberOfStates>;
+	using Interface = Hydrodynamics::Interface<Real, rank, numberOfStates>;
 	
-	typedef Tensor::Vector<int, rank> IVector;
-	typedef typename Cell::Vector Vector;
-	typedef typename Cell::StateVector StateVector;
-	typedef typename Interface::StateMatrix StateMatrix;
-	typedef typename Interface::StateInverseMatrix StateInverseMatrix;
+	using IVector = Tensor::Vector<int, rank>;
+	using Vector = typename Cell::Vector;
+	using StateVector = typename Cell::StateVector;
+	using StateMatrix = typename Interface::StateMatrix;
+	using StateInverseMatrix = typename Interface::StateInverseMatrix;
 public:	//hydro args
 	IVector size;
 	bool useCFL;
@@ -54,8 +54,8 @@ public:	//'til I can work out access
 	int nghost;
 	Vector xmin, xmax;
 
-	typedef Tensor::Grid<std::pair<IVector, Cell>, rank> CellGrid;
-	typedef Tensor::Vector<Interface, rank> InterfaceVector;
+	using CellGrid = Tensor::Grid<std::pair<IVector, Cell>, rank>;
+	using InterfaceVector = Tensor::Vector<Interface, rank>;
 	CellGrid cells;
 
 	Plot<rank> plot;

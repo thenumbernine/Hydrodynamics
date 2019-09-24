@@ -102,8 +102,8 @@ struct InverseGaussJordan {
 		static_assert((int)OutputType::template IndexInfo<0>::dim == (int)OutputType::template IndexInfo<1>::dim, "output must be square!"); 
 		static_assert((int)InputType::template IndexInfo<0>::dim == (int)OutputType::template IndexInfo<0>::dim, "input and output dimensions must match!");
 		
-		enum { dim = InputType::template IndexInfo<0>::dim };
-		typedef typename InputType::Type Real;
+		static constexpr auto dim = InputType::template IndexInfo<0>::dim;
+		using Real = typename InputType::Type;
 
 		int indxc[dim], indxr[dim], ipiv[dim];
 		int i, icol = 0, irow = 0, j, k, l, ll;

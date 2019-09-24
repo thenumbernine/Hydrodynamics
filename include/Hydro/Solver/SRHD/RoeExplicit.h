@@ -9,17 +9,17 @@ namespace SRHD {
 
 template<typename Hydro>
 struct RoeExplicit : public Godunov<Hydro> {
-	typedef Godunov<Hydro> Super;
+	using Super = Godunov<Hydro>;
 	
-	enum { rank = Hydro::rank };
-	enum { numberOfStates = Hydro::numberOfStates };
+	static constexpr auto rank = Hydro::rank;
+	static constexpr auto numberOfStates = Hydro::numberOfStates;
 
-	typedef typename Hydro::Real Real;
-	typedef typename Hydro::Vector Vector;
-	typedef typename Hydro::IVector IVector;
-	typedef typename Hydro::InterfaceVector InterfaceVector;
-	typedef typename Hydro::Cell Cell;
-	typedef typename Hydro::CellGrid CellGrid;
+	using Real = typename Hydro::Real;
+	using Vector = typename Hydro::Vector;
+	using IVector = typename Hydro::IVector;
+	using InterfaceVector = typename Hydro::InterfaceVector;
+	using Cell = typename Hydro::Cell;
+	using CellGrid = typename Hydro::CellGrid;
 
 	virtual void initStep(IHydro *ihydro);
 };
@@ -52,8 +52,8 @@ void RoeExplicit<Hydro>::initStep(IHydro *ihydro) {
 					Cell &cellL = (&v - hydro->cells.step(side))->second;
 					Cell &cellR = cell;
 					
-					Vector xL = cellL.x;
-					Vector xR = cellR.x;
+					//Vector xL = cellL.x;
+					//Vector xR = cellR.x;
 
 					Vector normal;
 					normal(side) = Real(1);

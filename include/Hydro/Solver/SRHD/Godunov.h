@@ -9,11 +9,11 @@ namespace SRHD {
 
 template<typename Hydro>
 struct Godunov : public Hydrodynamics::Solver::Godunov<Hydro> {
-	typedef Hydrodynamics::Solver::Godunov<Hydro> Super;
+	using Super = Hydrodynamics::Solver::Godunov<Hydro>;
 
-	typedef typename Hydro::Real Real;
-	typedef typename Hydro::Cell Cell;
-	typedef typename Hydro::CellGrid CellGrid;
+	using Real = typename Hydro::Real;
+	using Cell = typename Hydro::Cell;
+	using CellGrid = typename Hydro::CellGrid;
 
 	virtual void step(IHydro *ihydro, Real dt);
 	virtual void updatePrimitives(IHydro *ihydro);

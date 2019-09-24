@@ -8,14 +8,14 @@ namespace Hydrodynamics {
 //cell-centered values
 template<typename Real_, int rank, int numberOfStates_>
 struct Cell {
-	enum { numberOfStates = numberOfStates_ };
+	static constexpr auto numberOfStates = numberOfStates_;
 	
 	//static values
-	typedef Real_ Real;
-	typedef Tensor::Vector<int, rank> IVector;
-	typedef Tensor::Tensor<Real, Tensor::Upper<rank> > Vector;
-	typedef Tensor::Tensor<Real, Tensor::Upper<numberOfStates> > StateVector;
-	typedef Hydrodynamics::Interface<Real, rank, numberOfStates> Interface;
+	using Real = Real_;
+	using IVector = Tensor::Vector<int, rank>;
+	using Vector = Tensor::Tensor<Real, Tensor::Upper<rank> >;
+	using StateVector = Tensor::Tensor<Real, Tensor::Upper<numberOfStates> >;
+	using Interface = Hydrodynamics::Interface<Real, rank, numberOfStates>;
 
 	Cell() : pressure(Real()) {}
 

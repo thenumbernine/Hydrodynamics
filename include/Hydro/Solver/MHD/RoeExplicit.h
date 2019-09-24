@@ -9,18 +9,18 @@ namespace MHD {
 
 template<typename Hydro>
 struct RoeExplicit : public Hydrodynamics::Solver::Godunov<Hydro> {
-	typedef Hydrodynamics::Solver::Godunov<Hydro> Super;
+	using Super = Hydrodynamics::Solver::Godunov<Hydro>;
 	
-	enum { rank = Hydro::rank };
-	enum { numberOfStates = Hydro::numberOfStates };
+	static constexpr auto rank = Hydro::rank;
+	static constexpr auto numberOfStates = Hydro::numberOfStates;
 
-	typedef typename Hydro::Real Real;
-	typedef typename Hydro::Vector Vector;
-	typedef typename Hydro::IVector IVector;
-	typedef typename Hydro::InterfaceVector InterfaceVector;
-	typedef typename Hydro::Cell Cell;
-	typedef typename Hydro::CellGrid CellGrid;
-	typedef typename Hydro::Equation::Vector3 Vector3;
+	using Real = typename Hydro::Real;
+	using Vector = typename Hydro::Vector;
+	using IVector = typename Hydro::IVector;
+	using InterfaceVector = typename Hydro::InterfaceVector;
+	using Cell = typename Hydro::Cell;
+	using CellGrid = typename Hydro::CellGrid;
+	using Vector3 = typename Hydro::Equation::Vector3;
 
 	virtual void initStep(IHydro *ihydro);
 };

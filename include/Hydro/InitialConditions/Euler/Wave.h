@@ -9,15 +9,15 @@ namespace Euler {
 
 template<typename Hydro>
 struct Wave : public InitialConditions<typename Hydro::Real, Hydro::rank> {
-	typedef InitialConditions<typename Hydro::Real, Hydro::rank> Super;
+	using Super = InitialConditions<typename Hydro::Real, Hydro::rank>;
 	
-	enum { rank = Hydro::rank };
+	static constexpr auto rank = Hydro::rank;
 
-	typedef typename Hydro::Real Real;
-	typedef typename Hydro::CellGrid CellGrid;
-	typedef typename Hydro::Cell Cell;
-	typedef typename Hydro::IVector IVector;
-	typedef typename Hydro::Vector Vector;
+	using Real = typename Hydro::Real;
+	using CellGrid = typename Hydro::CellGrid;
+	using Cell = typename Hydro::Cell;
+	using IVector = typename Hydro::IVector;
+	using Vector = typename Hydro::Vector;
 	
 	Wave();
 	virtual void operator()(IHydro *ihydro, Real noise); 

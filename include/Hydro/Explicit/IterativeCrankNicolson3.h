@@ -8,11 +8,11 @@ namespace Explicit {
 template<typename Hydro>
 class IterativeCrankNicolson3 : public Explicit<Hydro> {
 public:
-	typedef Explicit<Hydro> Super;
+	using Super = Explicit<Hydro>;
 	
-	typedef typename Hydro::Real Real;
-	typedef typename Hydro::Cell Cell;
-	typedef typename Cell::StateVector StateVector;
+	using Real = typename Hydro::Real;
+	using Cell = typename Hydro::Cell;
+	using StateVector = typename Cell::StateVector;
 	
 	virtual void operator()(Hydro *hydro, Real dt, std::function<void(Hydro *hydro, Real dt, StateVector Cell::*dq_dt)> deriv);
 };

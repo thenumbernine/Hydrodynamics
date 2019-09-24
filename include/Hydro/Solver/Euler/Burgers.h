@@ -9,16 +9,16 @@ namespace Euler {
 
 template<typename Hydro>
 struct Burgers : public Solver<Hydro> {
-	typedef Solver<Hydro> Super;
+	using Super = Solver<Hydro>;
 
-	enum { rank = Hydro::rank };
-	typedef typename Hydro::Real Real;
-	typedef typename Hydro::Vector Vector;
-	typedef typename Hydro::IVector IVector;
-	typedef typename Hydro::Interface Interface;
-	typedef typename Hydro::InterfaceVector InterfaceVector;
-	typedef typename Hydro::Cell Cell;
-	typedef typename Hydro::CellGrid CellGrid;
+	static constexpr auto rank = Hydro::rank;
+	using Real = typename Hydro::Real;
+	using Vector = typename Hydro::Vector;
+	using IVector = typename Hydro::IVector;
+	using Interface = typename Hydro::Interface;
+	using InterfaceVector = typename Hydro::InterfaceVector;
+	using Cell = typename Hydro::Cell;
+	using CellGrid = typename Hydro::CellGrid;
 
 	virtual Real calcCFLTimestep(IHydro *hydro);
 };

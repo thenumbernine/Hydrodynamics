@@ -7,18 +7,18 @@ namespace Hydrodynamics {
 //cell interface values
 template<typename Real_, int rank, int numberOfStates>
 struct Interface {
-	typedef Real_ Real;
-	typedef Tensor::Vector<int, rank> IVector;
-	typedef Tensor::Tensor<Real, Tensor::Upper<rank> > Vector;
-	typedef Tensor::Tensor<Real, Tensor::Upper<numberOfStates> > StateVector;
+	using Real = Real_;
+	using IVector = Tensor::Vector<int, rank>;
+	using Vector = Tensor::Tensor<Real, Tensor::Upper<rank> >;
+	using StateVector = Tensor::Tensor<Real, Tensor::Upper<numberOfStates> >;
 	
 	/*
 	in the tensor math library I don't have a generic any-2-indexes inverse function
 	i do have hardcoded a lower-lower function (for metric) that generates an upper-upper (for metric inverses)
 	so I'm working with that here:
 	*/
-	typedef Tensor::Tensor<Real, Tensor::Lower<numberOfStates>, Tensor::Lower<numberOfStates> > StateMatrix;
-	typedef Tensor::Tensor<Real, Tensor::Upper<numberOfStates>, Tensor::Upper<numberOfStates> > StateInverseMatrix;
+	using StateMatrix = Tensor::Tensor<Real, Tensor::Lower<numberOfStates>, Tensor::Lower<numberOfStates> >;
+	using StateInverseMatrix = Tensor::Tensor<Real, Tensor::Upper<numberOfStates>, Tensor::Upper<numberOfStates> >;
 
 	Interface() 
 	: velocity(Real())

@@ -9,17 +9,17 @@ namespace Euler {
 
 template<typename Hydro>
 struct RoeExplicit : public Godunov<Hydro> {
-	typedef Godunov<Hydro> Super;
+	using Super = Godunov<Hydro>;
 	
-	enum { rank = Hydro::rank };
-	enum { numberOfStates = Hydro::numberOfStates };
+	static constexpr auto rank = Hydro::rank;
+	static constexpr auto numberOfStates = Hydro::numberOfStates;
 
-	typedef typename Hydro::Real Real;
-	typedef typename Hydro::Vector Vector;
-	typedef typename Hydro::IVector IVector;
-	typedef typename Hydro::InterfaceVector InterfaceVector;
-	typedef typename Hydro::Cell Cell;
-	typedef typename Hydro::CellGrid CellGrid;
+	using Real = typename Hydro::Real;
+	using Vector = typename Hydro::Vector;
+	using IVector = typename Hydro::IVector;
+	using InterfaceVector = typename Hydro::InterfaceVector;
+	using Cell = typename Hydro::Cell;
+	using CellGrid = typename Hydro::CellGrid;
 
 	virtual void initStep(IHydro *ihydro);
 };

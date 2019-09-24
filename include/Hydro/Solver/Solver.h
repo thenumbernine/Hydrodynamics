@@ -9,14 +9,14 @@ namespace Solver {
 //to provide common functionality to children:
 template<typename Hydro>
 struct Solver : public ISolver<typename Hydro::Real> {
-	enum { rank = Hydro::rank };
+	static constexpr auto rank = Hydro::rank;
 
-	typedef typename Hydro::Real Real;
-	typedef typename Hydro::CellGrid CellGrid;
-	typedef typename Hydro::Cell Cell;
-	typedef typename Hydro::IVector IVector;
-	typedef typename Hydro::StateVector StateVector;
-	typedef typename Hydro::InterfaceVector InterfaceVector;
+	using Real = typename Hydro::Real;
+	using CellGrid = typename Hydro::CellGrid;
+	using Cell = typename Hydro::Cell;
+	using IVector = typename Hydro::IVector;
+	using StateVector = typename Hydro::StateVector;
+	using InterfaceVector = typename Hydro::InterfaceVector;
 
 	virtual void initStep(IHydro *hydro);
 };

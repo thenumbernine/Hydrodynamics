@@ -23,17 +23,17 @@ namespace Equation {
 
 template<typename Real, int rank_>
 struct Euler : public Equation<Real, rank_> {
-	typedef Equation<Real, rank_> Super;
+	using Super = Equation<Real, rank_>;
 	
-	enum { rank = rank_ };
-	typedef Solver::ISolver<Real> ISolver;
-	typedef Hydrodynamics::InitialConditions::InitialConditions<Real, rank> InitialConditions;
-	typedef Hydrodynamics::Hydro<Euler<Real, rank> > Hydro;
-	enum { numberOfStates = rank + 2 };
-	typedef Tensor::Tensor<Real, Tensor::Upper<rank> > Vector;
-	typedef Tensor::Tensor<Real, Tensor::Upper<numberOfStates> > StateVector;
-	typedef Tensor::Tensor<Real, Tensor::Lower<numberOfStates>, Tensor::Lower<numberOfStates> > StateMatrix;
-	typedef Tensor::Tensor<Real, Tensor::Upper<numberOfStates>, Tensor::Upper<numberOfStates> > StateInverseMatrix;
+	static constexpr auto rank = rank_;
+	using ISolver = Solver::ISolver<Real>;
+	using InitialConditions = Hydrodynamics::InitialConditions::InitialConditions<Real, rank>;
+	using Hydro = Hydrodynamics::Hydro<Euler<Real, rank> >;
+	static constexpr auto numberOfStates = rank + 2;
+	using Vector = Tensor::Tensor<Real, Tensor::Upper<rank> >;
+	using StateVector = Tensor::Tensor<Real, Tensor::Upper<numberOfStates> >;
+	using StateMatrix = Tensor::Tensor<Real, Tensor::Lower<numberOfStates>, Tensor::Lower<numberOfStates> >;
+	using StateInverseMatrix = Tensor::Tensor<Real, Tensor::Upper<numberOfStates>, Tensor::Upper<numberOfStates> >;
 
 	Euler();
 	

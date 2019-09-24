@@ -70,7 +70,7 @@ public:
 namespace Hydrodynamics {
 
 struct HydroApp : public GLApp::GLApp {
-	typedef ::GLApp::GLApp Super;
+	using Super = ::GLApp::GLApp;
 
 	std::shared_ptr<IHydro> ihydro;
 	HydroArgs hydroArgs;
@@ -210,10 +210,10 @@ int HydroApp::main(const std::vector<std::string>& args) {
 
 template<typename Real, int rank, typename Equation>
 void HydroApp::initType() {
-	typedef Hydrodynamics::Hydro<Equation> Hydro;
-	typedef Hydrodynamics::Solver::ISolver<Real> ISolver;
-	typedef Hydrodynamics::Explicit::Explicit<Hydro> Explicit;
-	typedef Hydrodynamics::Limiter::Limiter<Real> Limiter;
+	using Hydro = Hydrodynamics::Hydro<Equation>;
+	using ISolver = Hydrodynamics::Solver::ISolver<Real>;
+	using Explicit = Hydrodynamics::Explicit::Explicit<Hydro>;
+	using Limiter = Hydrodynamics::Limiter::Limiter<Real>;
 
 	std::shared_ptr<Equation> equation = std::make_shared<Equation>();
 
@@ -264,7 +264,7 @@ void HydroApp::initType() {
 	displayMethods.template add<PressureColoring<Hydro>>("pressure");
 	std::shared_ptr<DisplayMethod<Hydro>> displayMethod = displayMethods(hydroArgs.displayName);
 
-	typedef typename Hydro::IVector IVector;
+	using IVector = typename Hydro::IVector;
 	IVector sizev;
 	for (int i = 0; i < rank; ++i) {
 		sizev(i) = hydroArgs.size[i];

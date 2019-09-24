@@ -11,16 +11,16 @@ namespace Hydrodynamics {
 
 template<typename Hydro>
 struct DisplayMethod {
-	typedef typename Hydro::Real Real;
-	typedef typename Hydro::StateVector StateVector;
+	using Real = typename Hydro::Real;
+	using StateVector = typename Hydro::StateVector;
 	virtual Real getValue(const Hydro &hydro, StateVector state) = 0;
 };
 
 //TODO these are specific to Euler
 template<typename Hydro>
 struct DensityColoring : public DisplayMethod<Hydro> {
-	typedef typename Hydro::Real Real;
-	typedef typename Hydro::StateVector StateVector;
+	using Real = typename Hydro::Real;
+	using StateVector = typename Hydro::StateVector;
 	Real getValue(const Hydro &hydro, StateVector state) {
 		return state(0);
 	}
@@ -28,10 +28,10 @@ struct DensityColoring : public DisplayMethod<Hydro> {
 
 template<typename Hydro>
 struct VelocityColoring : public DisplayMethod<Hydro> {
-	enum { rank = Hydro::rank };
-	typedef typename Hydro::Real Real;
-	typedef typename Hydro::Vector Vector;
-	typedef typename Hydro::StateVector StateVector;
+	static constexpr auto rank = Hydro::rank;
+	using Real = typename Hydro::Real;
+	using Vector = typename Hydro::Vector;
+	using StateVector = typename Hydro::StateVector;
 	Real getValue(const Hydro &hydro, StateVector state) {
 		Real momentumSq = 0.f;
 		for (int i = 0; i < rank; ++i) {
@@ -44,9 +44,9 @@ struct VelocityColoring : public DisplayMethod<Hydro> {
 
 template<typename Hydro>
 struct PressureColoring : public DisplayMethod<Hydro> {
-	enum { rank = Hydro::rank };
-	typedef typename Hydro::Real Real;
-	typedef typename Hydro::StateVector StateVector;
+	static constexpr auto rank = Hydro::rank;
+	using Real = typename Hydro::Real;
+	using StateVector = typename Hydro::StateVector;
 	Real getValue(const Hydro &hydro, StateVector state) {
 		return (hydro.gamma - 1.) * state(0) * state(rank+1);
 	}
@@ -54,7 +54,7 @@ struct PressureColoring : public DisplayMethod<Hydro> {
 
 template<int rank>
 struct Plot {
-	typedef Tensor::Quat<float> Quat;
+	using Quat = Tensor::Quat<float>;
 	
 	Quat viewAngle;
 	float dist;
@@ -63,9 +63,9 @@ struct Plot {
 
 	template<typename Hydro>
 	void draw(Hydro &hydro, std::shared_ptr<DisplayMethod<Hydro>> displayMethod) {
-		typedef typename Hydro::CellGrid CellGrid;
-		typedef typename Hydro::Cell Cell;
-		typedef typename Hydro::IVector IVector;
+		using CellGrid = typename Hydro::CellGrid;
+		using Cell = typename Hydro::Cell;
+		using IVector = typename Hydro::IVector;
 		
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
@@ -131,14 +131,14 @@ struct Plot<1> {
 
 	template<typename Hydro>
 	void draw(Hydro &hydro, std::shared_ptr<DisplayMethod<Hydro>> displayMethod) {
-		typedef typename Hydro::CellGrid CellGrid;
-		typedef typename Hydro::Cell Cell;
+		using CellGrid = typename Hydro::CellGrid;
+		using Cell = typename Hydro::Cell;
 		glPushMatrix();
 		glTranslatef(-viewPos(0), -viewPos(1), 0);
 		glScalef(viewZoom, viewZoom, viewZoom);
 #if 0	//show piecewise step functions - in anticipation of getting PPM method working	
-		typedef typename Hydro::IVector IVector;
-		typedef typename Hydro::StateVector StateVector;
+		using IVector = typename Hydro::IVector;
+		using StateVector = typename Hydro::StateVector;
 		for (int state = 0; state < 3; ++state) {
 			Tensor::Vector<float,3> color;
 			color(state) = 1;
@@ -202,7 +202,7 @@ struct Plot<2> {
 
 	template<typename Hydro>
 	void draw(Hydro &hydro, std::shared_ptr<DisplayMethod<Hydro>> displayMethod) {
-		typedef typename Hydro::Cell Cell;
+		using Cell = typename Hydro::Cell;
 		glPushMatrix();
 		glTranslatef(-viewPos(0), -viewPos(1), 0);
 		glScalef(viewZoom, viewZoom, viewZoom);

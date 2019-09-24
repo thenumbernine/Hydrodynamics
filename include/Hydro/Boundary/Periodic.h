@@ -9,10 +9,10 @@ namespace Boundary {
 template<typename Hydro>
 class Periodic : public Boundary {
 public:
-	enum { rank = Hydro::rank };
-	enum { numberOfStates = Hydro::numberOfStates };
+	static constexpr auto rank = Hydro::rank;
+	static constexpr auto numberOfStates = Hydro::numberOfStates;
 
-	typedef typename Hydro::IVector IVector;
+	using IVector = typename Hydro::IVector;
 
 	virtual void operator()(IHydro *ihydro);
 };
@@ -23,8 +23,8 @@ void Periodic<Hydro>::operator()(IHydro *ihydro) {
 	
 	for (int side = 0; side < rank; ++side) {
 		//volume range over all other dimensions ...
-		typedef Tensor::Vector<int, MinOneMinusOne<rank>::value> BoundaryIntVector; 
-		typedef Tensor::RangeObj<MinOneMinusOne<rank>::value> BoundaryRangeObj;
+		using BoundaryIntVector = Tensor::Vector<int, MinOneMinusOne<rank>::value>; 
+		using BoundaryRangeObj = Tensor::RangeObj<MinOneMinusOne<rank>::value>;
 		BoundaryIntVector min, max;
 		for (int k = 0; k < rank - 1; ++k) {
 			if (k < side) {

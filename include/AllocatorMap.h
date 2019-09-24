@@ -21,7 +21,7 @@ struct AllocatorType : public Allocator<Type> {
 
 template<typename Type>
 struct AllocatorMap {
-	typedef std::map<std::string, std::shared_ptr<Allocator<Type>>> Map;
+	using Map = std::map<std::string, std::shared_ptr<Allocator<Type>>>;
 	Map map;
 	
 	std::shared_ptr<Type> operator()(const std::string& name);
