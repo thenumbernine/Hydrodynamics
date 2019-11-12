@@ -15,7 +15,7 @@
 #include "Hydro/Explicit/IterativeCrankNicolson3.h"
 #include "Hydro/Limiter.h"
 #include "GLApp/gl.h"
-#include "GLApp/GLApp.h" 
+#include "GLApp/GLApp.h"
 #include "Common/Exception.h"
 #include "SDL.h"
 #include <stdlib.h>
@@ -47,7 +47,7 @@ public:
 	std::string initialConditionsName;
 	std::string displayName;
 
-	HydroArgs() 
+	HydroArgs()
 	: dim(2)
 	, size({256,256})
 	, numThreads(std::thread::hardware_concurrency())
@@ -87,7 +87,7 @@ struct HydroApp : public GLApp::GLApp {
 	void initSize();
 	
 	virtual void init();
-	virtual void resize(int width, int height);
+	virtual void onResize();
 	virtual void update();
 	virtual void sdlEvent(SDL_Event &event);
 };
@@ -205,7 +205,7 @@ int HydroApp::main(const std::vector<std::string>& args) {
 		throw Common::Exception() << "got unknown cmdline argument: " << args[i];
 	}
 
-	return GLApp::main(args);
+	return Super::main(args);
 }
 
 template<typename Real, int rank, typename Equation>
@@ -297,7 +297,7 @@ void HydroApp::initType() {
 	Tensor::RangeObj<rank> range(IVector(), IVector(2));
 	hydro->minPotentialEnergy = HUGE_VAL;
 	for (IVector index : range) {
-		Real potentialSpecificEnergy = 0.; 
+		Real potentialSpecificEnergy = 0.;
 		Tensor::Vector<Real, rank> x;
 		for (int k = 0; k < rank; ++k) {
 			x(k) = index(k) ? hydro->xmax(k) : hydro->xmin(k);
@@ -340,7 +340,7 @@ void HydroApp::initSize() {
 }
 
 void HydroApp::init() {
-	GLApp::init();
+	Super::init();
 
 	//not sure where to put this yet:
 	{
@@ -397,19 +397,19 @@ void HydroApp::init() {
 	}
 }
 
-void HydroApp::resize(int width, int height) {
-	GLApp::resize(width, height);
-	ihydro->resize(width, height);
+void HydroApp::onResize() {
+	Super::onResize();
+	ihydro->resize(screenSize(0), screenSize(1));
 }
 	
 void HydroApp::update() {
-	PROFILE_BEGIN_FRAME()	
+	PROFILE_BEGIN_FRAME()
 	{
 		PROFILE()
-		GLApp::update();		
+		Super::update();
 		ihydro->update();
 		ihydro->draw();
-	}	
+	}
 	PROFILE_END_FRAME()
 }
 
@@ -421,14 +421,14 @@ void HydroApp::sdlEvent(SDL_Event &event) {
 
 	switch (event.type) {
 	case SDL_MOUSEMOTION:
-		{	
+		{
 			int idx = event.motion.xrel;
 			int idy = event.motion.yrel;
 			if (leftButtonDown) {
 				if (shiftDown) {
 					if (idy) {
 						ihydro->zoom(idy);
-					} 
+					}
 				} else {
 					if (idx || idy) {
 						ihydro->pan(idx, idy);
