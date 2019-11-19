@@ -223,7 +223,7 @@ void Godunov<Hydro>::integrateFlux(IHydro *ihydro, Real dt, Godunov<Hydro>::Stat
 						Real phi = (*hydro->limiter)(interface_(side).rTilde(state));
 						Real epsilon = eigenvalue * dt / dx;
 						Real deltaFluxTilde = eigenvalue * interface_(side).deltaStateTilde(state);
-						fluxTilde(state) = fluxTildeAvg(state) - .5 * deltaFluxTilde * (theta + phi * (epsilon - theta) / Real(rank));
+						fluxTilde(state) = fluxTildeAvg(state) - .5 * deltaFluxTilde * (theta + phi * (epsilon - theta));
 					}
 				
 					//reproject fluxTilde back into q

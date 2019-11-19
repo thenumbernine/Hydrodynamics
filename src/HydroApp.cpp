@@ -74,8 +74,10 @@ struct HydroApp : public GLApp::GLApp {
 
 	std::shared_ptr<IHydro> ihydro;
 	HydroArgs hydroArgs;
-	
-	virtual int main(const std::vector<std::string>& args);
+
+	virtual const char* getTitle() { return "Hydrodynamics"; }
+
+	virtual void init(const Init& args);
 
 	template<typename Real, int rank, typename Equation>
 	void initType();
@@ -86,127 +88,10 @@ struct HydroApp : public GLApp::GLApp {
 	template<int rank>
 	void initSize();
 	
-	virtual void init();
 	virtual void onResize();
-	virtual void update();
-	virtual void sdlEvent(SDL_Event &event);
+	virtual void onUpdate();
+	virtual void onSDLEvent(SDL_Event &event);
 };
-
-int HydroApp::main(const std::vector<std::string>& args) {
-	bool setSize = false;
-	bool setExternalForce = false;
-	for (int i = 1; i < (int)args.size(); ++i) {
-		if (args[i] ==  "--help") {
-			std::cout << "usage: hydro <args>" << std::endl;
-			std::cout << "args:" << std::endl;
-			std::cout << "  --equation <equation>" << std::endl;
-			std::cout << "    can be one of the following: (Euler)" << std::endl;
-			std::cout << "  --initialConditions <initialConditions>" << std::endl;
-			std::cout << "    can be one of the following:" << std::endl;
-			std::cout << "      for Euler equation of state:" << std::endl;
-			std::cout << "        (Sod) Sedov Advect Wave KelvinHelmholtz RayleighTaylor" << std::endl;
-			std::cout << "  --boundary <boundary>" << std::endl;
-			std::cout << "    can be one of the following: (Mirror) Peroiod" << std::endl;
-			std::cout << "  --solver <solver>" << std::endl;
-			std::cout << "    can be one of the following:" << std::endl;
-			std::cout << "    for Euler equation of state: Burgers Godunov (Roe)" << std::endl;
-			std::cout << "  --explicit <explicit>" << std::endl;
-			std::cout << "    can be one of the following:" << std::endl;
-			std::cout << "      (ForwardEuler) RungeKutta2 RungeKutta4 IterativeCrankNicolson3" << std::endl;
-			std::cout << "  --limiter <limiter>" << std::endl;
-			std::cout << "    can be one of the following:" << std::endl;
-			std::cout << "      DonorCell LaxWendroff BeamWarming Fromm CHARM HCUS HQUICK Koren MinMod" << std::endl;
-			std::cout << "      Oshker Ospre Smart Sweby UMIST VanAlbada1 VanAlbada2 VanLeer" << std::endl;
-			std::cout << "      MonotonizedCentral (Superbee) BarthJespersen" << std::endl;
-			std::cout << "  --display <display>" << std::endl;
-			std::cout << "    can be one of the following: (density) velocity pressure" << std::endl;
-			std::cout << "  --dim <dim>" << std::endl;
-			std::cout << "    the dimension, can be 1, 2, or 3.  default " << hydroArgs.dim << std::endl;
-			std::cout << "  --size <size1> <size2> ... <sizeN>" << std::endl;
-			std::cout << "    the grid size, for N = the dimension of the grid.  default ";
-			const char *comma = "";
-			for (int i : hydroArgs.size) { std::cout << comma << i; comma = ", "; }
-			std::cout << std::endl;
-			std::cout << "  --numThreads <numThreads> = the number of threads to use.  default " << hydroArgs.numThreads << std::endl;
-			std::cout << "  --useCFL <true|false> = whether to use CFL or a fixed timestep.  default " << (hydroArgs.useCFL ? "true" : "false") << std::endl;
-			std::cout << "  --cfl <CFL> = the CFL number.  default " << hydroArgs.cfl << std::endl;
-			std::cout << "  --fixedDT <dt> = the fixed timestep. default " << hydroArgs.fixedDT << std::endl;
-			std::cout << "  --noise <noise> = noise amplitude to apply to initial velocity.  default " << hydroArgs.noise << std::endl;
-			std::cout << "  --precision <precision> = precision: single double.  default: " << hydroArgs.precision << std::endl;
-			return 1;
-		}
-		if (i < (int)args.size()-1) {
-			if (args[i] == "--initialConditions") {
-				hydroArgs.initialConditionsName = args[++i];
-				continue;
-			} else if (args[i] == "--boundary") {
-				hydroArgs.boundaryName = args[++i];
-				continue;
-			} else if (args[i] == "--equation") {
-				hydroArgs.equationName = args[++i];
-				continue;
-			} else if (args[i] == "--solver") {
-				hydroArgs.solverName = args[++i];
-				continue;
-			} else if (args[i] == "--explicit") {
-				hydroArgs.explicitName = args[++i];
-				continue;
-			} else if (args[i] == "--limiter") {
-				hydroArgs.limiterName = args[++i];
-				continue;
-			} else if (args[i] == "--display") {
-				hydroArgs.displayName = args[++i];
-				continue;
-			} else if (args[i] == "--size") {
-				setSize = true;
-				hydroArgs.size.resize(hydroArgs.dim);
-				for (int k = 0; k < hydroArgs.dim; ++k) {
-					hydroArgs.size[k] = std::stoi(args[++i]);
-				}
-				continue;
-			} else if (args[i] == "--numThreads") {
-				hydroArgs.numThreads = std::stoi(args[++i]);
-				continue;
-			} else if (args[i] == "--useCFL") {
-				hydroArgs.useCFL = args[++i] == "true" ? true : false;
-				continue;
-			} else if (args[i] == "--cfl") {
-				hydroArgs.cfl = std::stof(args[++i]);
-				continue;
-			} else if (args[i] == "--noise") {
-				hydroArgs.noise = std::stof(args[++i]);
-				continue;
-			} else if (args[i] == "--fixedDT") {
-				hydroArgs.fixedDT = std::stof(args[++i]);
-				continue;
-			} else if (args[i] == "--gamma") {
-				hydroArgs.gamma = std::stof(args[++i]);
-				continue;
-			} else if (args[i] == "--dim") {
-				if (setSize) throw Common::Exception() << "you must set dim before you set size";
-				if (setExternalForce) throw Common::Exception() << "you must set dim before you set externalForce";
-				hydroArgs.dim = std::stoi(args[++i]);
-				continue;
-			} else if (args[i] == "--precision") {
-				hydroArgs.precision = args[++i];
-				continue;
-			}
-		}
-		if (i < (int)args.size()-hydroArgs.dim) {	//dim must be set first
-			if (args[i] == "--externalForce") {
-				setExternalForce = true;
-				hydroArgs.externalForce.resize(hydroArgs.dim);
-				for (int k = 0; k < hydroArgs.dim; ++k) {
-					hydroArgs.externalForce[k] = std::stof(args[++i]);
-				}
-				continue;
-			}
-		}
-		throw Common::Exception() << "got unknown cmdline argument: " << args[i];
-	}
-
-	return Super::main(args);
-}
 
 template<typename Real, int rank, typename Equation>
 void HydroApp::initType() {
@@ -313,6 +198,9 @@ std::cout << " min potential " << hydro->minPotentialEnergy << std::endl;
 	
 	//once min potential energy is determined, set up initial conditions
 	(*initialConditions)(&*ihydro, hydroArgs.noise);
+
+	//manually call, since the initial onResize() was called before ihydro was assigned
+	ihydro->resize(screenSize(0), screenSize(1));
 }
 
 template<typename Real, int rank>
@@ -339,8 +227,121 @@ void HydroApp::initSize() {
 	}
 }
 
-void HydroApp::init() {
-	Super::init();
+void HydroApp::init(const Init& args) {
+	bool setSize = false;
+	bool setExternalForce = false;
+	for (int i = 1; i < (int)args.size(); ++i) {
+		if (args[i] ==  "--help") {
+			std::cout << "usage: hydro <args>" << std::endl;
+			std::cout << "args:" << std::endl;
+			std::cout << "  --equation <equation>" << std::endl;
+			std::cout << "    can be one of the following: (Euler)" << std::endl;
+			std::cout << "  --initialConditions <initialConditions>" << std::endl;
+			std::cout << "    can be one of the following:" << std::endl;
+			std::cout << "      for Euler equation of state:" << std::endl;
+			std::cout << "        (Sod) Sedov Advect Wave KelvinHelmholtz RayleighTaylor" << std::endl;
+			std::cout << "  --boundary <boundary>" << std::endl;
+			std::cout << "    can be one of the following: (Mirror) Peroiod" << std::endl;
+			std::cout << "  --solver <solver>" << std::endl;
+			std::cout << "    can be one of the following:" << std::endl;
+			std::cout << "    for Euler equation of state: Burgers Godunov (Roe)" << std::endl;
+			std::cout << "  --explicit <explicit>" << std::endl;
+			std::cout << "    can be one of the following:" << std::endl;
+			std::cout << "      (ForwardEuler) RungeKutta2 RungeKutta4 IterativeCrankNicolson3" << std::endl;
+			std::cout << "  --limiter <limiter>" << std::endl;
+			std::cout << "    can be one of the following:" << std::endl;
+			std::cout << "      DonorCell LaxWendroff BeamWarming Fromm CHARM HCUS HQUICK Koren MinMod" << std::endl;
+			std::cout << "      Oshker Ospre Smart Sweby UMIST VanAlbada1 VanAlbada2 VanLeer" << std::endl;
+			std::cout << "      MonotonizedCentral (Superbee) BarthJespersen" << std::endl;
+			std::cout << "  --display <display>" << std::endl;
+			std::cout << "    can be one of the following: (density) velocity pressure" << std::endl;
+			std::cout << "  --dim <dim>" << std::endl;
+			std::cout << "    the dimension, can be 1, 2, or 3.  default " << hydroArgs.dim << std::endl;
+			std::cout << "  --size <size1> <size2> ... <sizeN>" << std::endl;
+			std::cout << "    the grid size, for N = the dimension of the grid.  default ";
+			const char *comma = "";
+			for (int i : hydroArgs.size) { std::cout << comma << i; comma = ", "; }
+			std::cout << std::endl;
+			std::cout << "  --numThreads <numThreads> = the number of threads to use.  default " << hydroArgs.numThreads << std::endl;
+			std::cout << "  --useCFL <true|false> = whether to use CFL or a fixed timestep.  default " << (hydroArgs.useCFL ? "true" : "false") << std::endl;
+			std::cout << "  --cfl <CFL> = the CFL number.  default " << hydroArgs.cfl << std::endl;
+			std::cout << "  --fixedDT <dt> = the fixed timestep. default " << hydroArgs.fixedDT << std::endl;
+			std::cout << "  --noise <noise> = noise amplitude to apply to initial velocity.  default " << hydroArgs.noise << std::endl;
+			std::cout << "  --precision <precision> = precision: single double.  default: " << hydroArgs.precision << std::endl;
+			requestExit(1);
+			return;
+		}
+		if (i < (int)args.size()-1) {
+			if (args[i] == "--initialConditions") {
+				hydroArgs.initialConditionsName = args[++i];
+				continue;
+			} else if (args[i] == "--boundary") {
+				hydroArgs.boundaryName = args[++i];
+				continue;
+			} else if (args[i] == "--equation") {
+				hydroArgs.equationName = args[++i];
+				continue;
+			} else if (args[i] == "--solver") {
+				hydroArgs.solverName = args[++i];
+				continue;
+			} else if (args[i] == "--explicit") {
+				hydroArgs.explicitName = args[++i];
+				continue;
+			} else if (args[i] == "--limiter") {
+				hydroArgs.limiterName = args[++i];
+				continue;
+			} else if (args[i] == "--display") {
+				hydroArgs.displayName = args[++i];
+				continue;
+			} else if (args[i] == "--size") {
+				setSize = true;
+				hydroArgs.size.resize(hydroArgs.dim);
+				for (int k = 0; k < hydroArgs.dim; ++k) {
+					hydroArgs.size[k] = std::stoi(args[++i]);
+				}
+				continue;
+			} else if (args[i] == "--numThreads") {
+				hydroArgs.numThreads = std::stoi(args[++i]);
+				continue;
+			} else if (args[i] == "--useCFL") {
+				hydroArgs.useCFL = args[++i] == "true" ? true : false;
+				continue;
+			} else if (args[i] == "--cfl") {
+				hydroArgs.cfl = std::stof(args[++i]);
+				continue;
+			} else if (args[i] == "--noise") {
+				hydroArgs.noise = std::stof(args[++i]);
+				continue;
+			} else if (args[i] == "--fixedDT") {
+				hydroArgs.fixedDT = std::stof(args[++i]);
+				continue;
+			} else if (args[i] == "--gamma") {
+				hydroArgs.gamma = std::stof(args[++i]);
+				continue;
+			} else if (args[i] == "--dim") {
+				if (setSize) throw Common::Exception() << "you must set dim before you set size";
+				if (setExternalForce) throw Common::Exception() << "you must set dim before you set externalForce";
+				hydroArgs.dim = std::stoi(args[++i]);
+				continue;
+			} else if (args[i] == "--precision") {
+				hydroArgs.precision = args[++i];
+				continue;
+			}
+		}
+		if (i < (int)args.size()-hydroArgs.dim) {	//dim must be set first
+			if (args[i] == "--externalForce") {
+				setExternalForce = true;
+				hydroArgs.externalForce.resize(hydroArgs.dim);
+				for (int k = 0; k < hydroArgs.dim; ++k) {
+					hydroArgs.externalForce[k] = std::stof(args[++i]);
+				}
+				continue;
+			}
+		}
+		throw Common::Exception() << "got unknown cmdline argument: " << args[i];
+	}
+	
+	Super::init(args);
 
 	//not sure where to put this yet:
 	{
@@ -399,21 +400,21 @@ void HydroApp::init() {
 
 void HydroApp::onResize() {
 	Super::onResize();
-	ihydro->resize(screenSize(0), screenSize(1));
+	if (ihydro) ihydro->resize(screenSize(0), screenSize(1));
 }
 	
-void HydroApp::update() {
+void HydroApp::onUpdate() {
 	PROFILE_BEGIN_FRAME()
 	{
 		PROFILE()
-		Super::update();
+		Super::onUpdate();
 		ihydro->update();
 		ihydro->draw();
 	}
 	PROFILE_END_FRAME()
 }
 
-void HydroApp::sdlEvent(SDL_Event &event) {
+void HydroApp::onSDLEvent(SDL_Event &event) {
 	static bool leftButtonDown = false;
 	static bool leftShiftDown = false;
 	static bool rightShiftDown = false;
