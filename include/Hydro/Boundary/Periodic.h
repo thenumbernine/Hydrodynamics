@@ -67,7 +67,7 @@ void Periodic<Hydro>::operator()(IHydro *ihydro) {
 		if (rank == 1) {
 			callback(BoundaryIntVector());
 		} else {
-#ifdef PLATFORM_msvc	//Microsoft is why we can't have nice things.
+#if PLATFORM_MSVC	//Microsoft is why we can't have nice things.
 			for (typename BoundaryRangeObj::iterator i = boundary.begin(); i != boundary.end(); ++i) {
 				callback(*i);
 			}
