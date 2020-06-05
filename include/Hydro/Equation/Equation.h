@@ -10,10 +10,10 @@ namespace Equation {
 template<typename Real_, int rank_>
 struct Equation {
 	static constexpr auto rank = rank_;
-	typedef Real_ Real;
-	typedef Solver::ISolver<Real> ISolver;
-	typedef InitialConditions::InitialConditions<Real, rank> InitialConditions;
-
+	using Real = Real_;
+	using ISolver = Solver::ISolver<Real>;
+	using InitialConditions = InitialConditions::InitialConditions<Real, rank>;
+	
 	//child classes need to populate these
 	AllocatorMap<ISolver> solvers;
 	AllocatorMap<InitialConditions> initialConditions;

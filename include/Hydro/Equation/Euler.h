@@ -26,8 +26,8 @@ struct Euler : public Equation<Real, rank_> {
 	using Super = Equation<Real, rank_>;
 	
 	static constexpr auto rank = rank_;
-	using ISolver = Solver::ISolver<Real>;
-	using InitialConditions = Hydrodynamics::InitialConditions::InitialConditions<Real, rank>;
+	using ISolver = typename Super::ISolver;
+	using InitialConditions = typename Super::InitialConditions;
 	using Hydro = Hydrodynamics::Hydro<Euler<Real, rank> >;
 	static constexpr auto numberOfStates = rank + 2;
 	using Vector = Tensor::Tensor<Real, Tensor::Upper<rank> >;
@@ -57,16 +57,25 @@ struct Euler : public Equation<Real, rank_> {
 //construct solverAllocator map
 template<typename Real, int rank>
 Euler<Real, rank>::Euler() {
-	Super::solvers.template add<Solver::Euler::BurgersExplicit<Hydro>>("Burgers");
-	Super::solvers.template add<Solver::Euler::GodunovExplicit<Hydro>>("Godunov");
-	Super::solvers.template add<Solver::Euler::RoeExplicit<Hydro>>("Roe");
 
-	Super::initialConditions.template add<Hydrodynamics::InitialConditions::Euler::Sod<Hydro>>("Sod");
-	Super::initialConditions.template add<Hydrodynamics::InitialConditions::Euler::Sedov<Hydro>>("Sedov");
-	Super::initialConditions.template add<Hydrodynamics::InitialConditions::Euler::Advect<Hydro>>("Advect");
-	Super::initialConditions.template add<Hydrodynamics::InitialConditions::Euler::Wave<Hydro>>("Wave");
-	Super::initialConditions.template add<Hydrodynamics::InitialConditions::Euler::KelvinHelmholtz<Hydro>>("KelvinHelmholtz");
-	Super::initialConditions.template add<Hydrodynamics::InitialConditions::Euler::RayleighTaylor<Hydro>>("RayleighTaylor");
+#define ALLOCATOR(BaseType, Name, Type) {#Name, []() -> std::shared_ptr<BaseType> { return std::dynamic_pointer_cast<BaseType>(std::make_shared<Type>()); }}
+	
+	Super::solvers = AllocatorMap<ISolver>{
+		ALLOCATOR(ISolver, Burgers, Solver::Euler::BurgersExplicit<Hydro>),
+		ALLOCATOR(ISolver, Godunov, Solver::Euler::GodunovExplicit<Hydro>),
+		ALLOCATOR(ISolver, Roe, Solver::Euler::RoeExplicit<Hydro>),
+	};
+
+	Super::initialConditions = AllocatorMap<Euler::InitialConditions>{
+		ALLOCATOR(InitialConditions, Sod, Hydrodynamics::InitialConditions::Euler::Sod<Hydro>),
+		ALLOCATOR(InitialConditions, Sedov, Hydrodynamics::InitialConditions::Euler::Sedov<Hydro>),
+		ALLOCATOR(InitialConditions, Advect, Hydrodynamics::InitialConditions::Euler::Advect<Hydro>),
+		ALLOCATOR(InitialConditions, Wave, Hydrodynamics::InitialConditions::Euler::Wave<Hydro>),
+		ALLOCATOR(InitialConditions, KelvinHelmholtz, Hydrodynamics::InitialConditions::Euler::KelvinHelmholtz<Hydro>),
+		ALLOCATOR(InitialConditions, RayleighTaylor, Hydrodynamics::InitialConditions::Euler::RayleighTaylor<Hydro>),
+	};
+
+#undef ALLOCATOR
 }
 
 template<typename Real, int rank>

@@ -45,9 +45,14 @@ struct SRHD : public Equation<Real, rank_> {
 //construct solverAllocator map
 template<typename Real, int rank>
 SRHD<Real, rank>::SRHD() {
-	Super::solvers.template add<Solver::SRHD::RoeExplicit<Hydro>>("Roe");
+	
+	Super::solvers["Roe"] = []() -> std::shared_ptr<Solver::SRHD::RoeExplicit<Hydro>> {
+		return std::make_shared<Solver::SRHD::RoeExplicit<Hydro>>();
+	};
 
-	Super::initialConditions.template add<Hydrodynamics::InitialConditions::SRHD::Sod<Hydro>>("Sod");
+	Super::initialConditions["Sod"] = []() -> std::shared_ptr<Hydrodynamics::InitialConditions::SRHD::Sod<Hydro>> { 
+		return std::make_shared<Hydrodynamics::InitialConditions::SRHD::Sod<Hydro>>();
+	};
 }
 
 template<typename Real, int rank>
