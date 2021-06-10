@@ -103,68 +103,90 @@ void HydroApp::initType() {
 	using Limiter = Hydrodynamics::Limiter::Limiter<Real>;
 
 	std::shared_ptr<Equation> equation = std::make_shared<Equation>();
+//printf("here\n"); exit(0); // works
 
 	//these are eos-specific
+	std::cout << "initialConditions = " << hydroArgs.initialConditionsName << std::endl;	
 	std::shared_ptr<InitialConditions::InitialConditions<Real, rank>> initialConditions = equation->initialConditions[hydroArgs.initialConditionsName]();
+
+	std::cout << "solver = " << hydroArgs.solverName << std::endl;	
 	std::shared_ptr<ISolver> solver = equation->solvers[hydroArgs.solverName]();
 
 #define ALLOCATOR(BaseType, Name, Type) {#Name, []() -> std::shared_ptr<BaseType> { return std::make_shared<Type>(); }}
 
-	AllocatorMap<Boundary::Boundary> boundaryMethods = {
-		ALLOCATOR(Boundary::Boundary, Mirror, Boundary::Mirror<Hydro>),
-		ALLOCATOR(Boundary::Boundary, Periodic, Boundary::Periodic<Hydro>),
-		//ALLOCATOR(Constant, Boundary::Boundary, Boundary::Constant<Hydro>),
-		//ALLOCATOR(FreeFlow, Boundary::Boundary, Boundary::FreeFlow<Hydro>),
-	};
-	std::shared_ptr<Boundary::Boundary> boundaryMethod = boundaryMethods[hydroArgs.boundaryName]();
+	std::shared_ptr<Boundary::Boundary> boundaryMethod;
+	{
+		AllocatorMap<Boundary::Boundary> boundaryMethods = {
+			ALLOCATOR(Boundary::Boundary, Mirror, Boundary::Mirror<Hydro>),
+			ALLOCATOR(Boundary::Boundary, Periodic, Boundary::Periodic<Hydro>),
+			//ALLOCATOR(Constant, Boundary::Boundary, Boundary::Constant<Hydro>),
+			//ALLOCATOR(FreeFlow, Boundary::Boundary, Boundary::FreeFlow<Hydro>),
+		};
+		std::cout << "boundary = " << hydroArgs.boundaryName << std::endl;	
+		boundaryMethod = boundaryMethods[hydroArgs.boundaryName]();
+	}
 
-	AllocatorMap<Explicit> explicitMethods = {
-		ALLOCATOR(Explicit, ForwardEuler, Hydrodynamics::Explicit::ForwardEuler<Hydro>),
-		ALLOCATOR(Explicit, RungeKutta2, Hydrodynamics::Explicit::RungeKutta2<Hydro>),
-		ALLOCATOR(Explicit, RungeKutta4, Hydrodynamics::Explicit::RungeKutta4<Hydro>),
-		ALLOCATOR(Explicit, IterativeCrankNicolson3, Hydrodynamics::Explicit::IterativeCrankNicolson3<Hydro>),
-	};
-	std::shared_ptr<Explicit> explicitMethod = explicitMethods[hydroArgs.explicitName]();
+	std::shared_ptr<Explicit> explicitMethod;
+	{
+		AllocatorMap<Explicit> explicitMethods = {
+			ALLOCATOR(Explicit, ForwardEuler, Hydrodynamics::Explicit::ForwardEuler<Hydro>),
+			ALLOCATOR(Explicit, RungeKutta2, Hydrodynamics::Explicit::RungeKutta2<Hydro>),
+			ALLOCATOR(Explicit, RungeKutta4, Hydrodynamics::Explicit::RungeKutta4<Hydro>),
+			ALLOCATOR(Explicit, IterativeCrankNicolson3, Hydrodynamics::Explicit::IterativeCrankNicolson3<Hydro>),
+		};
+		std::cout << "explicit = " << hydroArgs.explicitName << std::endl;	
+		explicitMethod = explicitMethods[hydroArgs.explicitName]();
+	}
 
-	AllocatorMap<Limiter> limiters = {
-		ALLOCATOR(Limiter, "DonorCell", Hydrodynamics::Limiter::DonorCell<Real>),
-		ALLOCATOR(Limiter, "LaxWendroff", Hydrodynamics::Limiter::LaxWendroff<Real>),
-		ALLOCATOR(Limiter, "BeamWarming", Hydrodynamics::Limiter::BeamWarming<Real>),
-		ALLOCATOR(Limiter, "Fromm", Hydrodynamics::Limiter::Fromm<Real>),
-		ALLOCATOR(Limiter, "CHARM", Hydrodynamics::Limiter::CHARM<Real>),
-		ALLOCATOR(Limiter, "HCUS", Hydrodynamics::Limiter::HCUS<Real>),
-		ALLOCATOR(Limiter, "HQUICK", Hydrodynamics::Limiter::HQUICK<Real>),
-		ALLOCATOR(Limiter, "Koren", Hydrodynamics::Limiter::Koren<Real>),
-		ALLOCATOR(Limiter, "MinMod", Hydrodynamics::Limiter::MinMod<Real>),
-		ALLOCATOR(Limiter, "Oshker", Hydrodynamics::Limiter::Oshker<Real>),
-		ALLOCATOR(Limiter, "Ospre", Hydrodynamics::Limiter::Ospre<Real>),
-		ALLOCATOR(Limiter, "Smart", Hydrodynamics::Limiter::Smart<Real>),
-		ALLOCATOR(Limiter, "Sweby", Hydrodynamics::Limiter::Sweby<Real>),
-		ALLOCATOR(Limiter, "UMIST", Hydrodynamics::Limiter::UMIST<Real>),
-		ALLOCATOR(Limiter, "VanAlbada1", Hydrodynamics::Limiter::VanAlbada1<Real>),
-		ALLOCATOR(Limiter, "VanAlbada2", Hydrodynamics::Limiter::VanAlbada2<Real>),
-		ALLOCATOR(Limiter, "VanLeer", Hydrodynamics::Limiter::VanLeer<Real>),
-		ALLOCATOR(Limiter, "MonotonizedCentral", Hydrodynamics::Limiter::MonotonizedCentral<Real>),
-		ALLOCATOR(Limiter, "Superbee", Hydrodynamics::Limiter::Superbee<Real>),
-		ALLOCATOR(Limiter, "BarthJespersen", Hydrodynamics::Limiter::BarthJespersen<Real>),
-	};
-	std::shared_ptr<Limiter> limiter = limiters[hydroArgs.limiterName]();
+	std::shared_ptr<Limiter> limiter; 
+	{
+		AllocatorMap<Limiter> limiters = {
+			ALLOCATOR(Limiter, DonorCell, Hydrodynamics::Limiter::DonorCell<Real>),
+			ALLOCATOR(Limiter, LaxWendroff, Hydrodynamics::Limiter::LaxWendroff<Real>),
+			ALLOCATOR(Limiter, BeamWarming, Hydrodynamics::Limiter::BeamWarming<Real>),
+			ALLOCATOR(Limiter, Fromm, Hydrodynamics::Limiter::Fromm<Real>),
+			ALLOCATOR(Limiter, CHARM, Hydrodynamics::Limiter::CHARM<Real>),
+			ALLOCATOR(Limiter, HCUS, Hydrodynamics::Limiter::HCUS<Real>),
+			ALLOCATOR(Limiter, HQUICK, Hydrodynamics::Limiter::HQUICK<Real>),
+			ALLOCATOR(Limiter, Koren, Hydrodynamics::Limiter::Koren<Real>),
+			ALLOCATOR(Limiter, MinMod, Hydrodynamics::Limiter::MinMod<Real>),
+			ALLOCATOR(Limiter, Oshker, Hydrodynamics::Limiter::Oshker<Real>),
+			ALLOCATOR(Limiter, Ospre, Hydrodynamics::Limiter::Ospre<Real>),
+			ALLOCATOR(Limiter, Smart, Hydrodynamics::Limiter::Smart<Real>),
+			ALLOCATOR(Limiter, Sweby, Hydrodynamics::Limiter::Sweby<Real>),
+			ALLOCATOR(Limiter, UMIST, Hydrodynamics::Limiter::UMIST<Real>),
+			ALLOCATOR(Limiter, VanAlbada1, Hydrodynamics::Limiter::VanAlbada1<Real>),
+			ALLOCATOR(Limiter, VanAlbada2, Hydrodynamics::Limiter::VanAlbada2<Real>),
+			ALLOCATOR(Limiter, VanLeer, Hydrodynamics::Limiter::VanLeer<Real>),
+			ALLOCATOR(Limiter, MonotonizedCentral, Hydrodynamics::Limiter::MonotonizedCentral<Real>),
+			ALLOCATOR(Limiter, Superbee, Hydrodynamics::Limiter::Superbee<Real>),
+			ALLOCATOR(Limiter, BarthJespersen, Hydrodynamics::Limiter::BarthJespersen<Real>),
+		};
+		std::cout << "limiter = " << hydroArgs.limiterName << std::endl;	
+		limiter = limiters[hydroArgs.limiterName]();
+	}
 
-	AllocatorMap<DisplayMethod<Hydro>> displayMethods = {
-		ALLOCATOR(DisplayMethod<Hydro>, "density", DensityColoring<Hydro>),
-		ALLOCATOR(DisplayMethod<Hydro>, "velocity", VelocityColoring<Hydro>),
-		ALLOCATOR(DisplayMethod<Hydro>, "pressure", PressureColoring<Hydro>),
-	};
-	std::shared_ptr<DisplayMethod<Hydro>> displayMethod = displayMethods[hydroArgs.displayName]();
+	std::shared_ptr<DisplayMethod<Hydro>> displayMethod;
+	{
+		AllocatorMap<DisplayMethod<Hydro>> displayMethods = {
+			ALLOCATOR(DisplayMethod<Hydro>, density, DensityColoring<Hydro>),
+			ALLOCATOR(DisplayMethod<Hydro>, velocity, VelocityColoring<Hydro>),
+			ALLOCATOR(DisplayMethod<Hydro>, pressure, PressureColoring<Hydro>),
+		};
+		std::cout << "display = " << hydroArgs.displayName << std::endl;	
+		displayMethod = displayMethods[hydroArgs.displayName]();
+	}
 
 #undef ALLOCATOR
 
 	using IVector = typename Hydro::IVector;
 	IVector sizev;
 	for (int i = 0; i < rank; ++i) {
+		std::cout << "size("<<i<<") = " << hydroArgs.size[i] << std::endl;	
 		sizev(i) = hydroArgs.size[i];
 	}
 
+	std::cout << "numThreads = " << hydroArgs.numThreads << std::endl;	
 	parallel = std::make_shared<::Parallel::Parallel>(hydroArgs.numThreads);
 
 	std::shared_ptr<Hydro> hydro = std::make_shared<Hydro>(

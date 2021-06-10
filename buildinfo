@@ -3,7 +3,7 @@ distType='app'
 depends:append{'../Common', '../GLApp', '../Tensor', '../Profiler', '../Parallel'}
 
 -- https://stackoverflow.com/questions/26065359/m-pi-flagged-as-undeclared-identifier 
--- should I put this in lua-make?
+-- should I put this in lua-make? or in Common?
 if platform == 'msvc'
 or platform == 'clang_win'
 or platform == 'mingw'
