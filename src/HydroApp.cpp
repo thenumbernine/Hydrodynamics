@@ -1,4 +1,11 @@
+#ifdef DISABLE_PROFILER
+#define PROFILE()
+#define PROFILE_BEGIN_FRAME()
+#define PROFILE_END_FRAME()
+#else
 #include "Profiler/Profiler.h"	//placed at the top so everyone can use it without including it because I am lazy like that
+#endif
+
 #include "Common/Macros.h"		//similar laziness
 #include "Hydro/Hydro.h"
 #include "Hydro/Equation/Euler.h"
@@ -25,6 +32,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <thread>
 
 class HydroArgs {
 public:
@@ -69,7 +77,7 @@ public:
 
 namespace Hydrodynamics {
 
-std::shared_ptr<::Parallel::Parallel> parallel;
+std::shared_ptr<Parallel> parallel;
 
 struct HydroApp : public GLApp::GLApp {
 	using Super = ::GLApp::GLApp;
@@ -187,7 +195,7 @@ void HydroApp::initType() {
 	}
 
 	std::cout << "numThreads = " << hydroArgs.numThreads << std::endl;	
-	parallel = std::make_shared<::Parallel::Parallel>(hydroArgs.numThreads);
+	parallel = std::make_shared<Parallel>(hydroArgs.numThreads);
 
 	std::shared_ptr<Hydro> hydro = std::make_shared<Hydro>(
 		sizev,

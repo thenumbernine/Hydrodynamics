@@ -16,3 +16,8 @@ or platform == 'clang_win'
 then
 	compileFlags = compileFlags .. ' /bigobj'
 end
+
+--[[ optional for debugging
+macros:insert'DISABLE_MULTITHREAD'
+macros:insert'DISABLE_PROFILER'
+--]]
