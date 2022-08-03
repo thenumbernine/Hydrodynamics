@@ -20,7 +20,7 @@ TO DO:
 - configuration scripts, especially as I add different EOS's with new variables 
 
 Sources:
-	the "Hydrodynamics II" book found online here: http://www.mpia-hd.mpg.de/homes/dullemon/lectures/hydrodynamicsII/ 
-	http://www.cfdbooks.com/cfdcodes.html 
-	"Riemann Solvers and Numerical Methods for Fluid Dynamics," Toro
-	http://people.nas.nasa.gov/~pulliam/Classes/New_notes/euler_notes.pdf
+- the "Hydrodynamics II" book found online here: [http://www.mpia-hd.mpg.de/homes/dullemon/lectures/hydrodynamicsII/](http://www.mpia-hd.mpg.de/homes/dullemon/lectures/hydrodynamicsII/)
+- [http://www.cfdbooks.com/cfdcodes.html](http://www.cfdbooks.com/cfdcodes.html)
+- "Riemann Solvers and Numerical Methods for Fluid Dynamics," Toro
+- [http://people.nas.nasa.gov/~pulliam/Classes/New_notes/euler_notes.pdf](http://people.nas.nasa.gov/~pulliam/Classes/New_notes/euler_notes.pdf)
