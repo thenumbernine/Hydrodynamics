@@ -8,5 +8,5 @@ include ../Profiler/Include.mk
 include ../Parallel/Include.mk
 
 # me trying to figure out if numerical inaccuracy compared to javascript version (which uses doubles) is due to build options
-#CFLAGS+= -m32 -mfpmath=387 -mno-sse
+#CXXFLAGS+= -m32 -mfpmath=387 -mno-sse
 #LDFLAGS+= -m32
