@@ -21,8 +21,8 @@
 #include "Hydro/Explicit/RungeKutta4.h"
 #include "Hydro/Explicit/IterativeCrankNicolson3.h"
 #include "Hydro/Limiter.h"
-#include "GLApp/gl.h"
 #include "GLApp/GLApp.h"
+#include "GLCxx/gl.h"
 #include "Common/Exception.h"
 #include "SDL.h"
 #include <stdlib.h>

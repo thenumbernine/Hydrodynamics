@@ -2,6 +2,7 @@ DIST_FILENAME=Hydro
 DIST_TYPE=app
 
 include ../Common/Base.mk
+include ../GLCxx/Include.mk
 include ../GLApp/Include.mk
 include ../Tensor/Include.mk
 include ../Profiler/Include.mk

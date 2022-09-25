@@ -2,7 +2,7 @@
 
 #include "Tensor/Quat.h"
 #include "Tensor/Vector.h"
-#include "GLApp/gl.h"
+#include "GLCxx/gl.h"
 #include <algorithm>
 #include <memory>
 #include <math.h>
