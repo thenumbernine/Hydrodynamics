@@ -22,6 +22,7 @@
 #include "Hydro/Explicit/IterativeCrankNicolson3.h"
 #include "Hydro/Limiter.h"
 #include "GLApp/GLApp.h"
+#include "GLCxx/Texture.h"
 #include "GLCxx/gl.h"
 #include "Common/Exception.h"
 #include "SDL.h"
@@ -385,11 +386,6 @@ void HydroApp::init(const Init& args) {
 
 	//not sure where to put this yet:
 	{
-		static GLuint texID = 0;
-
-		glGenTextures(1, &texID);
-		glBindTexture(GL_TEXTURE_1D, texID);
-
 		float colors[][3] = {
 			{0,0,0},	// black ... ?
 			{0,0,1},	// blue
@@ -417,10 +413,12 @@ void HydroApp::init(const Init& args) {
 			}
 		}
 
-		glTexImage1D(GL_TEXTURE_1D, 0, GL_RGB, width, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		static auto tex = GLCxx::Texture1D()
+			.bind()
+			.create1D(width, GL_RGB, GL_RGB, GL_UNSIGNED_BYTE, data)
+			.setParam<GL_TEXTURE_MAG_FILTER>(GL_LINEAR)
+			.setParam<GL_TEXTURE_MIN_FILTER>(GL_NEAREST)
+			.setParam<GL_TEXTURE_WRAP_S>(GL_REPEAT);
 	}
 	
 	switch (hydroArgs.dim) {
