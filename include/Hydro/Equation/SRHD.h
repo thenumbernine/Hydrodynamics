@@ -21,10 +21,10 @@ struct SRHD : public Equation<Real, rank_> {
 	using InitialConditions = Hydrodynamics::InitialConditions::InitialConditions<Real, rank>;
 	using Hydro = Hydrodynamics::Hydro<SRHD<Real, rank> >;
 	static constexpr auto numberOfStates = rank + 2;
-	using Vector = Tensor::Tensor<Real, Tensor::Upper<rank> >;
-	using StateVector = Tensor::Tensor<Real, Tensor::Upper<numberOfStates> >;
-	using StateMatrix = Tensor::Tensor<Real, Tensor::Lower<numberOfStates>, Tensor::Lower<numberOfStates> >;
-	using StateInverseMatrix = Tensor::Tensor<Real, Tensor::Upper<numberOfStates>, Tensor::Upper<numberOfStates> >;
+	using Vector = Tensor::_tensor<Real, rank>;
+	using StateVector = Tensor::_tensor<Real, numberOfStates>;
+	using StateMatrix = Tensor::_tensor<Real, numberOfStates, numberOfStates>;
+	using StateInverseMatrix = Tensor::_tensor<Real, numberOfStates, numberOfStates>;
 
 	SRHD();
 	

@@ -30,7 +30,7 @@ struct Hydro : public IHydro {
 	using Cell = Hydrodynamics::Cell<Real, rank, numberOfStates>;
 	using Interface = Hydrodynamics::Interface<Real, rank, numberOfStates>;
 	
-	using IVector = Tensor::Vector<int, rank>;
+	using IVector = Tensor::intN<rank>;
 	using Vector = typename Cell::Vector;
 	using StateVector = typename Cell::StateVector;
 	using StateMatrix = typename Interface::StateMatrix;
@@ -55,7 +55,7 @@ public:	//'til I can work out access
 	Vector xmin, xmax;
 
 	using CellGrid = Tensor::Grid<std::pair<IVector, Cell>, rank>;
-	using InterfaceVector = Tensor::Vector<Interface, rank>;
+	using InterfaceVector = Tensor::_vec<Interface, rank>;
 	CellGrid cells;
 
 	Plot<rank> plot;

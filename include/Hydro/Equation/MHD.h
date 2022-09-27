@@ -19,11 +19,11 @@ struct MHD : public ::Equation::Equation<Real, rank_> {
 	using Hydro = Hydro<MHD<Real, rank>>;
 	
 	static constexpr auto numberOfStates = 9;	//mhd always needs to simulate all fields.  maybe not one or two of them.  might as well do all of them.
-	using Vector = Tensor::Tensor<Real, Tensor::Upper<rank>>;
-	using StateVector = Tensor::Tensor<Real, Tensor::Upper<numberOfStates>>;
-	using StateMatrix = Tensor::Tensor<Real, Tensor::Lower<numberOfStates>, Tensor::Lower<numberOfStates>>;
-	using StateInverseMatrix = Tensor::Tensor<Real, Tensor::Upper<numberOfStates>, Tensor::Upper<numberOfStates>>;
-	using Vector3 = Tensor::Tensor<Real, Tensor::Upper<3>>;
+	using Vector = Tensor::_tensor<Real, rank>;
+	using StateVector = Tensor::_tensor<Real, numberOfStates>;
+	using StateMatrix = Tensor::_tensor<Real, numberOfStates, numberOfStates>;
+	using StateInverseMatrix = Tensor::_tensor<Real, numberOfStates, numberOfStates>;
+	using Vector3 = Tensor::_tensor<Real, 3>;
 
 	MHD();
 	

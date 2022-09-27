@@ -97,7 +97,7 @@ void GodunovExplicit<Hydro>::initStep(IHydro *ihydro) {
 					Real totalSpecificEnthalpyR = totalSpecificEnergyR + pressureR / densityR;
 
 					Real density = (densityL + densityR) * .5;
-					Vector velocity = (velocityL + velocityR) * .5;
+					Vector velocity = (velocityL + velocityR) * Real(.5);
 					Real totalSpecificEnergy = (totalSpecificEnergyL + totalSpecificEnergyR) * .5;
 					Real internalSpecificEnergy = (internalSpecificEnergyL + internalSpecificEnergyR) * .5;
 					Real pressure = (pressureL + pressureR) * .5;

@@ -54,9 +54,9 @@ struct PressureColoring : public DisplayMethod<Hydro> {
 
 template<int rank>
 struct Plot {
-	using Quat = Tensor::Quat<float>;
+	using quatf = Tensor::quatf;
 	
-	Quat viewAngle;
+	quatf viewAngle;
 	float dist;
 
 	Plot() : dist(2.) {}
@@ -70,7 +70,7 @@ struct Plot {
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		glTranslatef(0,0,-dist);
-		Quat angleAxis = viewAngle.toAngleAxis();
+		quatf angleAxis = viewAngle.toAngleAxis();
 		glRotatef(angleAxis(3) * 180. / M_PI, angleAxis(0), angleAxis(1), angleAxis(2));
 		
 		glEnable(GL_TEXTURE_1D);
@@ -111,8 +111,8 @@ struct Plot {
 		float magn = sqrt(dx * dx + dy * dy);
 		float fdx = (float)dx / magn;
 		float fdy = (float)dy / magn;
-		Quat rotation = Quat(fdy, fdx, 0, magn * M_PI / 180.).fromAngleAxis();
-		viewAngle = (rotation * viewAngle).unit();
+		quatf rotation = quatf(fdy, fdx, 0, magn * M_PI / 180.).fromAngleAxis();
+		viewAngle = normalize(rotation * viewAngle);
 	}
 
 	void zoom(int dz) {
@@ -123,7 +123,7 @@ struct Plot {
 //1D case
 template<>
 struct Plot<1> {
-	Tensor::Vector<float, 2> viewPos;
+	Tensor::float2 viewPos;
 	float viewZoom;
 
 	Plot() : viewZoom(1.) {}
@@ -139,9 +139,9 @@ struct Plot<1> {
 		using IVector = typename Hydro::IVector;
 		using StateVector = typename Hydro::StateVector;
 		for (int state = 0; state < 3; ++state) {
-			Tensor::Vector<float,3> color;
+			Tensor::float3 color;
 			color(state) = 1;
-			glColor3fv(color.v);
+			glColor3fv(color.s);
 			for (int i = 0; i < hydro.size(0); ++i) {
 				Cell &cell = hydro.cells(IVector(i));
 				StateVector primitivesLeft = hydro.equation->getPrimitives(cell.stateLeft(0));
@@ -157,9 +157,9 @@ struct Plot<1> {
 #endif
 #if 1	//good ol fashioned graph
 		for (int state = 0; state < 3; ++state) {
-			Tensor::Vector<float,3> color;
+			Tensor::float3 color;
 			color(state) = 1;
-			glColor3fv(color.v);
+			glColor3fv(color.s);
 			glBegin(GL_LINE_STRIP);
 			for (typename CellGrid::value_type &v : hydro.cells) {
 				Cell &cell = v.second;
@@ -194,7 +194,7 @@ struct Plot<1> {
 //2D case
 template<>
 struct Plot<2> {
-	Tensor::Vector<float, 2> viewPos;
+	Tensor::float2 viewPos;
 	float viewZoom;
 
 	Plot() : viewZoom(1.) {}

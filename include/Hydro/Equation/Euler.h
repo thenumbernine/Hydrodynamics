@@ -30,10 +30,10 @@ struct Euler : public Equation<Real, rank_> {
 	using InitialConditions = typename Super::InitialConditions;
 	using Hydro = Hydrodynamics::Hydro<Euler<Real, rank> >;
 	static constexpr auto numberOfStates = rank + 2;
-	using Vector = Tensor::Tensor<Real, Tensor::Upper<rank> >;
-	using StateVector = Tensor::Tensor<Real, Tensor::Upper<numberOfStates> >;
-	using StateMatrix = Tensor::Tensor<Real, Tensor::Lower<numberOfStates>, Tensor::Lower<numberOfStates> >;
-	using StateInverseMatrix = Tensor::Tensor<Real, Tensor::Upper<numberOfStates>, Tensor::Upper<numberOfStates> >;
+	using Vector = Tensor::_tensor<Real, rank>;
+	using StateVector = Tensor::_tensor<Real, numberOfStates>;
+	using StateMatrix = Tensor::_tensor<Real, numberOfStates, numberOfStates>;
+	using StateInverseMatrix = Tensor::_tensor<Real, numberOfStates, numberOfStates>;
 
 	Euler();
 	
@@ -123,10 +123,10 @@ void Euler<Real, rank>::buildEigenstate(
 #if 1	//specify eigenbasis in terms of normal (works)
 
 	//common with Euler Equation
-	Tensor::Vector<Vector, MinOneMinusOne<rank>::value> tangents;
+	Tensor::_vec<Vector, MinOneMinusOne<rank>::value> tangents;
 	BuildPerpendicularBasis<rank>::template go<Real>(normal, tangents);
 	Real velocityAlongNormal = Real(0);
-	Tensor::Vector<Real, MinOneMinusOne<rank>::value> velocityAlongTangents;
+	Tensor::_vec<Real, MinOneMinusOne<rank>::value> velocityAlongTangents;
 	Real velocitySq = Real(0);
 	for (int k = 0; k < rank; ++k) {
 		velocityAlongNormal += normal(k) * velocity(k);

@@ -23,7 +23,7 @@ void Periodic<Hydro>::operator()(IHydro *ihydro) {
 	
 	for (int side = 0; side < rank; ++side) {
 		//volume range over all other dimensions ...
-		using BoundaryIntVector = Tensor::Vector<int, MinOneMinusOne<rank>::value>; 
+		using BoundaryIntVector = Tensor::intN<MinOneMinusOne<rank>::value>; 
 		using BoundaryRangeObj = Tensor::RangeObj<MinOneMinusOne<rank>::value>;
 		BoundaryIntVector min, max;
 		for (int k = 0; k < rank - 1; ++k) {

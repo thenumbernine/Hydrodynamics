@@ -12,9 +12,9 @@ struct Cell {
 	
 	//static values
 	using Real = Real_;
-	using IVector = Tensor::Vector<int, rank>;
-	using Vector = Tensor::Tensor<Real, Tensor::Upper<rank> >;
-	using StateVector = Tensor::Tensor<Real, Tensor::Upper<numberOfStates> >;
+	using IVector = Tensor::intN<rank>;
+	using Vector = Tensor::_tensor<Real, rank>;
+	using StateVector = Tensor::_tensor<Real, numberOfStates>;
 	using Interface = Hydrodynamics::Interface<Real, rank, numberOfStates>;
 
 	Cell() : pressure(Real()) {}
@@ -30,7 +30,7 @@ struct Cell {
 	Real pressure;
 	
 	//used for Godunov
-	Tensor::Vector<StateVector, rank> stateLeft, stateRight;	//sized by state
+	Tensor::_vec<StateVector, rank> stateLeft, stateRight;	//sized by state
 
 	//used for integration
 	StateVector dq_dt;
@@ -41,7 +41,7 @@ struct Cell {
 	StateVector tmpState4;
 
 	//merging grids
-	Tensor::Vector<Interface, rank> interfaces;
+	Tensor::_vec<Interface, rank> interfaces;
 };
 
 }

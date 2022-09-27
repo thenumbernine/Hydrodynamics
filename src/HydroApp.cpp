@@ -224,12 +224,13 @@ void HydroApp::initType() {
 	hydro->minPotentialEnergy = HUGE_VAL;
 	for (IVector index : range) {
 		Real potentialSpecificEnergy = 0.;
-		Tensor::Vector<Real, rank> x;
+		Tensor::_vec<Real, rank> x;
 		for (int k = 0; k < rank; ++k) {
 			x(k) = index(k) ? hydro->xmax(k) : hydro->xmin(k);
 			potentialSpecificEnergy += x(k) * hydro->externalForce(k);
 		}
-		std::cout << " corner " << index << " potential " << potentialSpecificEnergy << " corner " << x << " external force " << hydro->externalForce << std::endl;
+// TODO i've broken operator<< for tensors
+//		std::cout << " corner " << index << " potential " << potentialSpecificEnergy << " corner " << x << " external force " << hydro->externalForce << std::endl;
 		hydro->minPotentialEnergy = std::min<Real>(hydro->minPotentialEnergy, potentialSpecificEnergy);
 	}
 	//add its negative to all potential energy calculations

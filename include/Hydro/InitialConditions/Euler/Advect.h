@@ -32,7 +32,7 @@ Advect<Hydro>::Advect() {
 template<typename Hydro>
 void Advect<Hydro>::operator()(IHydro *ihydro, Real noise) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
-	Vector xmid = (hydro->xmin + hydro->xmax) * .5;
+	Vector xmid = (hydro->xmin + hydro->xmax) * Real(.5);
 	parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		Cell &cell = v.second;
 		Vector x = cell.x;
@@ -43,7 +43,7 @@ void Advect<Hydro>::operator()(IHydro *ihydro, Real noise) {
 				break;
 			}
 		}
-		Real density = lhs ? .5 : 1.;
+		Real density = Real(lhs ? .5 : 1.);
 		Vector velocity(1.);
 		for (int k = 0; k < rank; ++k) {
 			velocity(k) += crand() * noise;
@@ -52,9 +52,9 @@ void Advect<Hydro>::operator()(IHydro *ihydro, Real noise) {
 		for (int k = 0; k < rank; ++k) {
 			velocitySq += velocity(k) * velocity(k);
 		}
-		Real kineticSpecificEnergy = .5 * velocitySq;
-		Real pressure = 1.;
-		Real totalSpecificEnergy = pressure / (density * (hydro->gamma - 1.)) + kineticSpecificEnergy;
+		Real kineticSpecificEnergy = Real(.5) * velocitySq;
+		Real pressure = 1;
+		Real totalSpecificEnergy = pressure / (density * (hydro->gamma - 1)) + kineticSpecificEnergy;
 		cell.state(0) = density;
 		for (int k = 0; k < rank; ++k) {
 			cell.state(k+1) = density * velocity(k);

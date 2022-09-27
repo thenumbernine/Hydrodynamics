@@ -35,7 +35,7 @@ template<typename Hydro>
 void Sod<Hydro>::operator()(IHydro *ihydro, Real noise) {
 	Hydro *hydro = dynamic_cast<Hydro*>(ihydro);
 	hydro->gamma = 1.4;
-	Vector xmid = hydro->xmin * .5 + hydro->xmax * .5;
+	Vector xmid = (hydro->xmin + hydro->xmax) * Real(.5);
 	parallel->foreach(hydro->cells.begin(), hydro->cells.end(), [&](typename CellGrid::value_type &v) {
 		Cell &cell = v.second;
 		Vector x = cell.x;
