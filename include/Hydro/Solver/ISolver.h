@@ -12,6 +12,7 @@ namespace Solver {
 //so Solver will be the interface 
 template<typename Real>
 struct ISolver {
+	virtual ~ISolver() {}
 	virtual void initStep(IHydro *hydro) = 0;
 	virtual void step(IHydro *hydro, Real dt) = 0;
 	virtual Real calcCFLTimestep(IHydro *hydro) = 0;

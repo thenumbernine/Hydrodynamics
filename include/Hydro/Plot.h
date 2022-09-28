@@ -13,6 +13,7 @@ template<typename Hydro>
 struct DisplayMethod {
 	using Real = typename Hydro::Real;
 	using StateVector = typename Hydro::StateVector;
+	virtual ~DisplayMethod() {}
 	virtual Real getValue(const Hydro &hydro, StateVector state) = 0;
 };
 

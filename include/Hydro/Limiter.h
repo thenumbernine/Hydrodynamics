@@ -8,6 +8,7 @@ namespace Limiter {
 
 template<typename Real>
 struct Limiter {
+	virtual ~Limiter() {}
 	virtual Real operator()(Real) = 0;
 };
 

@@ -13,7 +13,8 @@ struct Explicit {
 	using Cell = typename Hydro::Cell;
 	using CellGrid = typename Hydro::CellGrid;
 	using StateVector = typename Cell::StateVector;
-	
+
+	virtual ~Explicit() {}
 	virtual void operator()(Hydro *hydro, Real dt, std::function<void(Hydro *hydro, Real dt, StateVector Cell::*dq_dt)> deriv) = 0;
 
 protected:
