@@ -21,3 +21,8 @@ end
 macros:insert'DISABLE_MULTITHREAD'
 macros:insert'DISABLE_PROFILER'
 --]]
+
+--[[ better template error messages, but misses static-sized index errors
+compiler = 'clang++'
+linker = 'clang++'
+--]]
