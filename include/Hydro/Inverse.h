@@ -98,11 +98,11 @@ struct InverseGaussJordan {
 	static OutputType go(InputType input) {
 		static_assert(InputType::rank == 2, "input must be a matrix!");
 		static_assert(OutputType::rank == 2, "output must be a matrix!");
-		static_assert(InputType::template ith_dim<0> == InputType::template ith_dim<1>, "input must be square!"); 
-		static_assert(OutputType::template ith_dim<0> == OutputType::template ith_dim<1>, "output must be square!"); 
-		static_assert(InputType::template ith_dim<0> == OutputType::template ith_dim<0>, "input and output dimensions must match!");
+		static_assert(InputType::template dim<0> == InputType::template dim<1>, "input must be square!"); 
+		static_assert(OutputType::template dim<0> == OutputType::template dim<1>, "output must be square!"); 
+		static_assert(InputType::template dim<0> == OutputType::template dim<0>, "input and output dimensions must match!");
 		
-		static constexpr auto dim = InputType::template ith_dim<0>;
+		static constexpr auto dim = InputType::template dim<0>;
 		using Real = typename InputType::ScalarType;
 
 		int indxc[dim], indxr[dim], ipiv[dim];
