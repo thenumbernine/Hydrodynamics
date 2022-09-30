@@ -103,7 +103,7 @@ struct InverseGaussJordan {
 		static_assert(InputType::template dim<0> == OutputType::template dim<0>, "input and output dimensions must match!");
 		
 		static constexpr auto dim = InputType::template dim<0>;
-		using Real = typename InputType::ScalarType;
+		using Real = typename InputType::Scalar;
 
 		int indxc[dim], indxr[dim], ipiv[dim];
 		int i, icol = 0, irow = 0, j, k, l, ll;
