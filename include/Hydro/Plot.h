@@ -142,7 +142,7 @@ struct Plot<1> {
 		for (int state = 0; state < 3; ++state) {
 			Tensor::float3 color;
 			color(state) = 1;
-			glColor3fv(color.s);
+			glColor3fv(color.s.data());
 			for (int i = 0; i < hydro.size(0); ++i) {
 				Cell &cell = hydro.cells(IVector(i));
 				StateVector primitivesLeft = hydro.equation->getPrimitives(cell.stateLeft(0));
@@ -160,7 +160,7 @@ struct Plot<1> {
 		for (int state = 0; state < 3; ++state) {
 			Tensor::float3 color;
 			color(state) = 1;
-			glColor3fv(color.s);
+			glColor3fv(color.s.data());
 			glBegin(GL_LINE_STRIP);
 			for (typename CellGrid::value_type &v : hydro.cells) {
 				Cell &cell = v.second;
