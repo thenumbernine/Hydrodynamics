@@ -164,7 +164,7 @@ void Hydro<Equation>::resetCoordinates(Vector xmin_, Vector xmax_) {
 				--indexL(k);
 				IVector indexL2 = indexL;
 				--indexL2(k);
-				for (int j = 0; j < interface_(k).x.dims; ++j) {
+				for (int j = 0; j < interface_(k).x.template dim<0>; ++j) {
 					interface_(k).x(j) = 2. * cells(indexL).second.interfaces(k).x(j) - cells(indexL2).second.interfaces(k).x(j);
 				}
 			} else if (index(k) == 0) {
@@ -172,7 +172,7 @@ void Hydro<Equation>::resetCoordinates(Vector xmin_, Vector xmax_) {
 				++indexR(k);
 				IVector indexR2 = indexR;
 				++indexR2(k);			
-				for (int j = 0; j < interface_(k).x.dims; ++j) {
+				for (int j = 0; j < interface_(k).x.template dim<0>; ++j) {
 					interface_(k).x(j) = 2. * cells(indexR).second.interfaces(k).x(j) - cells(indexR2).second.interfaces(k).x(j);
 				}
 			}
