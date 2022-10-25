@@ -57,10 +57,8 @@ template<int rank>
 struct Plot {
 	using quatf = Tensor::quatf;
 	
-	quatf viewAngle;
-	float dist;
-
-	Plot() : dist(2.) {}
+	quatf viewAngle = {1};
+	float dist = 2.f;
 
 	template<typename Hydro>
 	void draw(Hydro &hydro, std::shared_ptr<DisplayMethod<Hydro>> displayMethod) {
@@ -125,9 +123,7 @@ struct Plot {
 template<>
 struct Plot<1> {
 	Tensor::float2 viewPos;
-	float viewZoom;
-
-	Plot() : viewZoom(1.) {}
+	float viewZoom = 1.f;
 
 	template<typename Hydro>
 	void draw(Hydro &hydro, std::shared_ptr<DisplayMethod<Hydro>> displayMethod) {
@@ -196,9 +192,7 @@ struct Plot<1> {
 template<>
 struct Plot<2> {
 	Tensor::float2 viewPos;
-	float viewZoom;
-
-	Plot() : viewZoom(1.) {}
+	float viewZoom = 1.f;
 
 	template<typename Hydro>
 	void draw(Hydro &hydro, std::shared_ptr<DisplayMethod<Hydro>> displayMethod) {
