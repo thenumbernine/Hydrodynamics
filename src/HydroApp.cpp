@@ -86,7 +86,7 @@ struct HydroApp : public GLApp::GLApp {
 	std::shared_ptr<IHydro> ihydro;
 	HydroArgs hydroArgs;
 
-	virtual const char* getTitle() { return "Hydrodynamics"; }
+	virtual std::string getTitle() { return "Hydrodynamics"; }
 
 	virtual void init(const Init& args);
 
