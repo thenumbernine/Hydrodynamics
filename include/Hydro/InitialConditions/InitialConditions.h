@@ -12,7 +12,7 @@ struct InitialConditions {
 	virtual void operator()(IHydro *hydro, Real noise) = 0;
 	
 	//initialize on construction for energy potential calculations to use
-	Tensor::_tensor<Real, rank> xmin, xmax;
+	Tensor::tensor<Real, rank> xmin, xmax;
 };
 
 }

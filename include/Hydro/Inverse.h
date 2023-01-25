@@ -9,8 +9,8 @@ template<int rank>
 struct BuildPerpendicularBasis {
 	template<typename Real>
 	static void go(
-		Tensor::_tensor<Real, rank> normal, 
-		Tensor::_vec<Tensor::_tensor<Real, rank>, MinOneMinusOne<rank>::value> &tangents) 
+		Tensor::tensor<Real, rank> normal, 
+		Tensor::vec<Tensor::tensor<Real, rank>, MinOneMinusOne<rank>::value> &tangents) 
 	{
 		//1) pick normal's max abs component
 		//2) fill in all axii but that component
@@ -65,10 +65,10 @@ template<>
 struct BuildPerpendicularBasis<1> {
 	template<typename Real>
 	static void go(
-		Tensor::_tensor<Real, 1> normal, 
+		Tensor::tensor<Real, 1> normal, 
 		//the 2nd param should be ,0, but MSVC complains if I allocate a size-zero array
 		// so the array has to be size 1, so the pattern has to be 1 here as well ...
-		Tensor::_vec<Tensor::_tensor<Real, 1>, 1> &tangents)
+		Tensor::vec<Tensor::tensor<Real, 1>, 1> &tangents)
 	{
 	}
 };
@@ -77,8 +77,8 @@ template<>
 struct BuildPerpendicularBasis<2> {
 	template<typename Real>
 	static void go(
-		Tensor::_tensor<Real, 2> normal, 
-		Tensor::_vec<Tensor::_tensor<Real, 2>, 1> &tangents) 
+		Tensor::tensor<Real, 2> normal, 
+		Tensor::vec<Tensor::tensor<Real, 2>, 1> &tangents) 
 	{
 		tangents(0)(0) = -normal(1);
 		tangents(0)(1) = normal(0);

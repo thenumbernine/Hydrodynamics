@@ -55,7 +55,7 @@ public:	//'til I can work out access
 	Vector xmin, xmax;
 
 	using CellGrid = Tensor::Grid<std::pair<IVector, Cell>, rank>;
-	using InterfaceVector = Tensor::_vec<Interface, rank>;
+	using InterfaceVector = Tensor::vec<Interface, rank>;
 	CellGrid cells;
 
 	Plot<rank> plot;

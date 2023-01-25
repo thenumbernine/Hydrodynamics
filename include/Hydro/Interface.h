@@ -9,16 +9,16 @@ template<typename Real_, int rank, int numberOfStates>
 struct Interface {
 	using Real = Real_;
 	using IVector = Tensor::intN<rank>;
-	using Vector = Tensor::_tensor<Real, rank >;
-	using StateVector = Tensor::_tensor<Real, numberOfStates >;
+	using Vector = Tensor::tensor<Real, rank >;
+	using StateVector = Tensor::tensor<Real, numberOfStates >;
 	
 	/*
 	in the tensor math library I don't have a generic any-2-indexes inverse function
 	i do have hardcoded a lower-lower function (for metric) that generates an upper-upper (for metric inverses)
 	so I'm working with that here:
 	*/
-	using StateMatrix = Tensor::_tensor<Real, numberOfStates, numberOfStates>;
-	using StateInverseMatrix = Tensor::_tensor<Real, numberOfStates, numberOfStates>;
+	using StateMatrix = Tensor::tensor<Real, numberOfStates, numberOfStates>;
+	using StateInverseMatrix = Tensor::tensor<Real, numberOfStates, numberOfStates>;
 
 	Interface() 
 	: velocity(Real())
